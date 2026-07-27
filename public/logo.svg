@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 248 44" fill="none" role="img" aria-label="Peakfront Equipment Rental">
+  <path d="M0 0H40V30L20 40L0 30V0Z" fill="#0B2545"/>
+  <rect x="14" y="14" width="12" height="12" transform="rotate(45 20 20)" fill="#F39C12"/>
+  <text
+    x="52"
+    y="21"
+    fill="#0B2545"
+    font-family="'Plus Jakarta Sans', Inter, ui-sans-serif, system-ui, sans-serif"
+    font-size="18"
+    font-weight="800"
+    letter-spacing="-0.02em"
+  >
+    PEAKFRONT
+  </text>
+  <text
+    x="52"
+    y="36"
+    fill="#F39C12"
+    font-family="ui-monospace, 'JetBrains Mono', SFMono-Regular, monospace"
+    font-size="8.5"
+    font-weight="500"
+    letter-spacing="0.16em"
+  >
+    EQUIPMENT RENTAL
+  </text>
+</svg>

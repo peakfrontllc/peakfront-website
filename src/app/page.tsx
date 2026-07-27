@@ -6,6 +6,7 @@ import Faq from "@/components/sections/Faq";
 import FeaturedEquipment from "@/components/sections/FeaturedEquipment";
 import Hero from "@/components/sections/Hero";
 import Industries from "@/components/sections/Industries";
+import ProjectsTeaser from "@/components/sections/ProjectsTeaser";
 import Testimonials from "@/components/sections/Testimonials";
 import Timeline from "@/components/sections/Timeline";
 import WhyPeakfront from "@/components/sections/WhyPeakfront";
@@ -33,6 +34,7 @@ export default function Home() {
       <WhyPeakfront />
       <Timeline />
       <Industries />
+      <ProjectsTeaser />
       <About />
       <Testimonials />
       <Faq />

@@ -1,0 +1,56 @@
+# Peakfront Project Admin (Decap CMS)
+# Access at: https://yourdomain.com/admin
+#
+# SETUP (one-time):
+# 1. GitHub → Settings → Developer settings → OAuth Apps → New OAuth App
+#    - Homepage URL: https://peakfront.ae (or your Vercel URL)
+#    - Callback URL: https://api.netlify.com/auth/done
+# 2. In Netlify (or use Decap's GitHub backend directly):
+#    For Vercel-only hosting, use GitHub backend below with a Personal Access Token
+#    OR deploy admin via Netlify Identity (recommended in Decap docs)
+#
+# SIMPLE LOCAL EDITING (no OAuth):
+#   npx decap-server
+#   Open http://localhost:3000/admin with local_backend: true uncommented below
+
+backend:
+  name: github
+  repo: peakfrontllc/peakfront-website
+  branch: main
+
+# Uncomment for local editing with `npx decap-server`:
+# local_backend: true
+
+media_folder: public/images/projects
+public_folder: /images/projects
+
+collections:
+  - name: projects_list
+    label: Project Portfolio
+    files:
+      - name: projects
+        label: All Projects
+        file: data/projects.json
+        fields:
+          - label: Projects
+            name: projects
+            label_singular: Project
+            widget: list
+            summary: "{{fields.projectName}} — {{fields.completionDate}}"
+            fields:
+              - { label: ID (unique slug), name: id, widget: string, hint: "e.g. mussafah-yard-2026" }
+              - { label: Project Name, name: projectName, widget: string }
+              - { label: Client, name: client, widget: string }
+              - { label: Main Contractor, name: mainContractor, widget: string }
+              - { label: Scope of Work, name: scopeOfWork, widget: text }
+              - label: Equipment Supplied
+                name: equipment
+                widget: list
+                field: { label: Item, name: item, widget: string }
+              - { label: Location, name: location, widget: string, required: false }
+              - { label: Start Date, name: startDate, widget: string, hint: "e.g. Jan-25" }
+              - { label: Completion Date, name: completionDate, widget: string, hint: 'Use "Running" for ongoing' }
+              - label: Status
+                name: status
+                widget: select
+                options: [ongoing, completed]

@@ -328,13 +328,14 @@ export const testimonials: {
 ];
 
 export const navLinks = [
-  { href: "#equipment", label: "Equipment" },
-  { href: "#featured", label: "Featured" },
-  { href: "#why", label: "Why Peakfront" },
-  { href: "#industries", label: "Industries" },
-  { href: "#about", label: "About" },
-  { href: "#faq", label: "FAQ" },
-  { href: "#contact", label: "Contact" },
+  { href: "/#equipment", label: "Equipment" },
+  { href: "/#featured", label: "Featured" },
+  { href: "/#why", label: "Why Peakfront" },
+  { href: "/#industries", label: "Industries" },
+  { href: "/our-project", label: "Our Projects" },
+  { href: "/#about", label: "About" },
+  { href: "/#faq", label: "FAQ" },
+  { href: "/#contact", label: "Contact" },
 ] as const;
 
 export const HERO_IMAGE = "/images/hero.webp";

@@ -1,6 +1,7 @@
 "use client";
 
 import { Menu, Phone, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { navLinks } from "@/lib/content";
@@ -56,13 +57,18 @@ export default function Header() {
     >
       <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-4 py-3 sm:gap-6 sm:px-5 sm:py-4 lg:px-10">
         <Link
-          href="#top"
+          href="/"
           className="flex min-w-0 flex-1 items-center gap-2.5 sm:flex-none sm:gap-3"
           aria-label="Peakfront Equipment Rental — home"
         >
-          <span className="relative grid h-10 w-10 shrink-0 place-items-center bg-navy [clip-path:polygon(0_0,100%_0,100%_75%,50%_100%,0_75%)]">
-            <span className="h-3 w-3 rotate-45 bg-amber" />
-          </span>
+          <Image
+            src="/logo-mark.svg"
+            alt=""
+            width={40}
+            height={40}
+            className="h-10 w-10 shrink-0"
+            priority
+          />
           <span className="min-w-0 text-base font-extrabold leading-none tracking-tight text-white sm:text-lg">
             <span className="block truncate">PEAKFRONT</span>
             <span className="mt-1 block font-mono text-[8px] font-medium uppercase tracking-[0.16em] text-amber sm:text-[9px] sm:tracking-[0.18em]">
