@@ -28,10 +28,10 @@ function FacebookIcon({ className }: { className?: string }) {
 
 const socialLinks = [
   { href: "https://www.linkedin.com", label: "LinkedIn", icon: Network },
-  { href: "https://www.facebook.com", label: "Facebook", icon: FacebookIcon },
-  { href: "https://www.instagram.com", label: "Instagram", icon: Camera },
-  { href: "https://www.tiktok.com", label: "TikTok", icon: Music2 },
-  { href: "https://www.youtube.com", label: "YouTube", icon: Play },
+  { href: "https://www.facebook.com/profile.php?id=61592219567182", label: "Facebook", icon: FacebookIcon },
+  { href: "https://www.instagram.com/peakfrontae/", label: "Instagram", icon: Camera },
+  { href: "https://www.tiktok.com/@peakfrontae", label: "TikTok", icon: Music2 },
+  { href: "https://www.youtube.com/@peakfrontae", label: "YouTube", icon: Play },
 ] as const;
 
 export default function Footer() {

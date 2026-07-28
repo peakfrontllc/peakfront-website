@@ -68,9 +68,9 @@ export function getLocalBusinessJsonLd() {
     },
     priceRange: "$$",
     sameAs: [
-      "https://www.facebook.com",
+      "https://www.facebook.com/profile.php?id=61592219567182",
       "https://www.linkedin.com",
-      "https://www.instagram.com",
+      "https://www.instagram.com/peakfrontae/",
     ],
   };
 }
