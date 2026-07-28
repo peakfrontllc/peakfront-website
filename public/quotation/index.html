@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Peakfront — Quotation</title>
+  <style>
+    :root {
+      --navy: #0b2545;
+      --amber: #f39c12;
+      --line: #e2e8f0;
+      --muted: #64748b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #eef2f6;
+      color: var(--navy);
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      background: white;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .toolbar h1 {
+      margin: 0;
+      font-size: 1rem;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    button, a.btn {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      background: var(--navy);
+      color: white;
+      padding: 0.55rem 0.95rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    button.secondary, a.btn.secondary {
+      background: white;
+      color: var(--navy);
+      border: 1px solid var(--line);
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 1.5rem auto;
+      background: white;
+      box-shadow: 0 12px 40px rgba(11, 37, 69, 0.08);
+      padding: 14mm 14mm 16mm;
+    }
+
+    .header {
+      text-align: center;
+      border-bottom: 3px solid var(--amber);
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+    }
+
+    .header img { width: 220px; margin-bottom: 8px; }
+    .header p { margin: 4px 0; font-size: 10pt; color: var(--muted); }
+
+    .title {
+      margin: 16px 0 12px;
+      text-align: center;
+      font-size: 14pt;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--navy);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 16px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 8pt;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 8px 10px;
+      font: inherit;
+      color: var(--navy);
+      background: #fbfdff;
+    }
+
+    textarea { min-height: 54px; resize: vertical; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 10pt;
+    }
+
+    th {
+      background: var(--navy);
+      color: white;
+      padding: 8px 6px;
+      text-align: left;
+      font-size: 8.5pt;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    th.num, td.num { text-align: right; }
+    th.center, td.center { text-align: center; }
+
+    td {
+      border: 1px solid var(--line);
+      padding: 4px;
+      vertical-align: top;
+    }
+
+    td input {
+      border: none;
+      background: transparent;
+      padding: 6px 4px;
+    }
+
+    td input:focus {
+      outline: 2px solid rgba(243, 156, 18, 0.35);
+      background: #fffdf8;
+      border-radius: 3px;
+    }
+
+    .totals {
+      margin-left: auto;
+      width: min(100%, 320px);
+      margin-top: 8px;
+    }
+
+    .totals table td {
+      border: none;
+      padding: 6px 0;
+    }
+
+    .totals .grand {
+      font-size: 12pt;
+      font-weight: 700;
+      color: var(--navy);
+      border-top: 2px solid var(--amber);
+      padding-top: 8px;
+    }
+
+    .terms {
+      margin-top: 18px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      font-size: 9pt;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .terms h3 {
+      margin: 0 0 8px;
+      font-size: 9pt;
+      color: var(--navy);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 24px;
+      font-size: 10pt;
+    }
+
+    .signatures .box {
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+      min-height: 70px;
+    }
+
+    @media print {
+      body { background: white; }
+      .toolbar { display: none !important; }
+      .page {
+        width: auto;
+        margin: 0;
+        box-shadow: none;
+        padding: 0;
+      }
+      input, textarea { border: none; background: transparent; padding: 0; }
+      button { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <h1>Peakfront Quotation — editable</h1>
+    <button type="button" class="secondary" onclick="addRow()">Add row</button>
+    <button type="button" class="secondary" onclick="recalc()">Recalculate</button>
+    <button type="button" onclick="window.print()">Print / Save PDF</button>
+    <a class="btn secondary" href="./Peakfront-Quotation-Template.docx" download>Download Word template</a>
+    <a class="btn secondary" href="./Peakfront-Quotation-Template.xlsx" download>Download Excel template</a>
+  </div>
+
+  <main class="page">
+    <header class="header">
+      <img src="/logo.svg" alt="Peakfront" />
+      <p><strong>Peakfront Equipment Rental LLC SPC</strong></p>
+      <p>Heavy Equipment &amp; Transport Rental</p>
+      <p>Mussafah 17, Abu Dhabi, United Arab Emirates · +971 527459432 · info@peakfront.ae · www.peakfront.ae</p>
+    </header>
+
+    <div class="title">QUOTATION</div>
+
+    <section class="grid">
+      <div>
+        <label for="quoteNo">Quote No.</label>
+        <input id="quoteNo" type="text" value="PFQ-2026-001" />
+      </div>
+      <div>
+        <label for="quoteDate">Date</label>
+        <input id="quoteDate" type="date" />
+      </div>
+      <div>
+        <label for="client">Client / Company</label>
+        <input id="client" type="text" placeholder="Client company name" />
+      </div>
+      <div>
+        <label for="contact">Contact Person</label>
+        <input id="contact" type="text" placeholder="Contact name" />
+      </div>
+      <div>
+        <label for="project">Project / Site</label>
+        <input id="project" type="text" placeholder="Project name" />
+      </div>
+      <div>
+        <label for="location">Location</label>
+        <input id="location" type="text" placeholder="Site location" />
+      </div>
+      <div>
+        <label for="period">Rental Period</label>
+        <input id="period" type="text" placeholder="e.g. 01 Apr – 30 Apr 2026" />
+      </div>
+      <div>
+        <label for="validUntil">Valid Until</label>
+        <input id="validUntil" type="date" />
+      </div>
+    </section>
+
+    <table id="items">
+      <thead>
+        <tr>
+          <th class="center" style="width:4%">#</th>
+          <th style="width:36%">Description</th>
+          <th class="center" style="width:8%">Qty</th>
+          <th class="center" style="width:10%">Unit</th>
+          <th class="num" style="width:12%">Rate (AED)</th>
+          <th class="center" style="width:8%">Days</th>
+          <th class="num" style="width:14%">Amount (AED)</th>
+          <th class="no-print" style="width:8%"></th>
+        </tr>
+      </thead>
+      <tbody id="itemBody"></tbody>
+    </table>
+
+    <div class="totals">
+      <table>
+        <tr>
+          <td>Subtotal</td>
+          <td class="num" id="subtotal">0.00</td>
+        </tr>
+        <tr>
+          <td>VAT (5%)</td>
+          <td class="num" id="vat">0.00</td>
+        </tr>
+        <tr class="grand">
+          <td>Grand Total (AED)</td>
+          <td class="num" id="grandTotal">0.00</td>
+        </tr>
+      </table>
+    </div>
+
+    <section class="terms">
+      <h3>Terms &amp; Conditions</h3>
+      <textarea id="terms">Rates are in AED and exclude fuel, operator and mobilisation unless stated.
+Delivery, permits and offloading quoted separately where applicable.
+Equipment supplied subject to availability and standard rental agreement.
+Payment terms: as agreed. Quote valid for 7 days from date above.</textarea>
+    </section>
+
+    <section class="signatures">
+      <div>
+        <strong>Prepared by</strong>
+        <div class="box">
+          Irfan Dayan<br />
+          Managing Director<br />
+          Peakfront Equipment Rental LLC SPC
+        </div>
+      </div>
+      <div>
+        <strong>Accepted by (Client)</strong>
+        <div class="box"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const sampleRows = [
+      { description: "20T Crawler Excavator", qty: 1, unit: "Unit", rate: 950, days: 1 },
+      { description: "Low Bed Trailer", qty: 1, unit: "Trip", rate: 1200, days: 1 },
+    ];
+
+    const itemBody = document.getElementById("itemBody");
+    const quoteDate = document.getElementById("quoteDate");
+    const validUntil = document.getElementById("validUntil");
+
+    function formatMoney(value) {
+      return Number(value || 0).toLocaleString("en-AE", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
+
+    function parseNum(value) {
+      const num = parseFloat(String(value).replace(/,/g, ""));
+      return Number.isFinite(num) ? num : 0;
+    }
+
+    function addRow(data = {}) {
+      const index = itemBody.children.length + 1;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="center">${index}</td>
+        <td><input type="text" value="${data.description || ""}" placeholder="Equipment / service description" oninput="recalc()" /></td>
+        <td class="center"><input type="number" min="0" step="1" value="${data.qty ?? ""}" oninput="recalc()" /></td>
+        <td class="center"><input type="text" value="${data.unit || ""}" placeholder="Unit / Day / Trip" /></td>
+        <td class="num"><input type="number" min="0" step="0.01" value="${data.rate ?? ""}" oninput="recalc()" /></td>
+        <td class="center"><input type="number" min="0" step="1" value="${data.days ?? 1}" oninput="recalc()" /></td>
+        <td class="num amount">0.00</td>
+        <td class="no-print"><button type="button" class="secondary" onclick="removeRow(this)">Remove</button></td>
+      `;
+      itemBody.appendChild(tr);
+      recalc();
+    }
+
+    function removeRow(button) {
+      button.closest("tr").remove();
+      [...itemBody.children].forEach((row, i) => {
+        row.firstElementChild.textContent = i + 1;
+      });
+      recalc();
+    }
+
+    function recalc() {
+      let subtotal = 0;
+      [...itemBody.querySelectorAll("tr")].forEach((row) => {
+        const inputs = row.querySelectorAll("input");
+        const qty = parseNum(inputs[1].value);
+        const rate = parseNum(inputs[3].value);
+        const days = parseNum(inputs[4].value) || 1;
+        const amount = qty * rate * days;
+        row.querySelector(".amount").textContent = formatMoney(amount);
+        subtotal += amount;
+      });
+      const vat = subtotal * 0.05;
+      document.getElementById("subtotal").textContent = formatMoney(subtotal);
+      document.getElementById("vat").textContent = formatMoney(vat);
+      document.getElementById("grandTotal").textContent = formatMoney(subtotal + vat);
+    }
+
+    function setDefaultDates() {
+      const today = new Date();
+      const valid = new Date(today);
+      valid.setDate(valid.getDate() + 7);
+      quoteDate.value = today.toISOString().slice(0, 10);
+      validUntil.value = valid.toISOString().slice(0, 10);
+    }
+
+    sampleRows.forEach(addRow);
+    setDefaultDates();
+    recalc();
+  </script>
+</body>
+</html>

@@ -36,7 +36,7 @@ export default function About() {
           </p>
           <div className="mt-10 grid gap-px border border-navy/10 bg-navy/10 sm:grid-cols-3">
             <div className="bg-white p-6">
-              <div className="font-mono text-2xl font-bold text-blue">500+</div>
+              <div className="font-mono text-2xl font-bold text-blue">100+</div>
               <div className="mt-1 text-xs uppercase tracking-wider text-slate-500">
                 Units in network
               </div>

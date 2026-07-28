@@ -1,122 +1,214 @@
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const cardDir = join(root, "public", "business-card");
+const publicDir = join(root, "public");
+const cardDir = join(publicDir, "business-card");
+const imagesDir = join(publicDir, "images");
 
 const WIDTH = 1050;
 const HEIGHT = 600;
+const LEFT = 530;
+const RIGHT = WIDTH - LEFT;
+const HALF_H = HEIGHT / 2;
 
-const COLORS = {
-  navy: "#1a2634",
-  navyLight: "#243447",
-  gold: "#c9a227",
-  goldLight: "#dbb84a",
+const C = {
+  navy: "#0b2545",
+  navyDeep: "#081c33",
+  navyLight: "#14365f",
+  amber: "#f39c12",
   white: "#ffffff",
-  blueDark: "#1e4a72",
-  blueMid: "#2a6a9a",
-  blueLight: "#3d8fc4",
+  soft: "#e8eef5",
+  muted: "#8fa3bc",
 };
 
-function textureSvg(width, height) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+const CONTACT = {
+  name: "Irfan Dayan",
+  title: "Managing Director",
+  company: "Peakfront Equipment Rental LLC SPC",
+  phone: "+971 527459432",
+  email: "info@peakfront.ae",
+  website: "www.peakfront.ae",
+  address: "Mussafah 17, Abu Dhabi, United Arab Emirates",
+};
+
+const FONT = "Arial, Helvetica, sans-serif";
+
+function escXml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function svgBuffer(content) {
+  return Buffer.from(content);
+}
+
+function frontPanelSvg() {
+  return svgBuffer(`<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
     <defs>
-      <filter id="grain" x="0%" y="0%" width="100%" height="100%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="4" seed="8" stitchTiles="stitch"/>
-        <feColorMatrix type="matrix" values="
-          0.35 0 0 0 0.08
-          0 0.35 0 0 0.08
-          0 0 0.35 0 0.1
-          0 0 0 0.22 0"/>
-      </filter>
-      <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="${COLORS.navy}"/>
-        <stop offset="100%" stop-color="${COLORS.navyLight}"/>
+      <linearGradient id="panel" x1="0" y1="0" x2="0.4" y2="1">
+        <stop offset="0%" stop-color="${C.navyDeep}"/>
+        <stop offset="100%" stop-color="${C.navy}"/>
+      </linearGradient>
+      <linearGradient id="edgeFade" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="${C.navy}" stop-opacity="1"/>
+        <stop offset="100%" stop-color="${C.navy}" stop-opacity="0"/>
       </linearGradient>
     </defs>
-    <rect width="100%" height="100%" fill="url(#bg)"/>
-    <rect width="100%" height="100%" filter="url(#grain)"/>
-  </svg>`;
+
+    <rect width="${LEFT}" height="${HEIGHT}" fill="url(#panel)"/>
+    <rect width="5" height="${HEIGHT}" fill="${C.amber}"/>
+
+    <text x="44" y="156" fill="${C.amber}" font-family="${FONT}" font-size="10.5" font-weight="700" letter-spacing="0.2em">HEAVY EQUIPMENT &amp; TRANSPORT RENTAL</text>
+    <text x="44" y="178" fill="${C.muted}" font-family="${FONT}" font-size="11" letter-spacing="0.08em">Abu Dhabi · Dubai · UAE</text>
+
+    <line x1="44" y1="198" x2="486" y2="198" stroke="${C.amber}" stroke-width="1.5" opacity="0.75"/>
+
+    <text x="44" y="248" fill="${C.white}" font-family="${FONT}" font-size="36" font-weight="700">${escXml(CONTACT.name)}</text>
+    <text x="44" y="280" fill="${C.amber}" font-family="${FONT}" font-size="11.5" font-weight="700" letter-spacing="0.18em">${escXml(CONTACT.title.toUpperCase())}</text>
+    <text x="44" y="302" fill="${C.muted}" font-family="${FONT}" font-size="11">${escXml(CONTACT.company)}</text>
+
+    <line x1="44" y1="322" x2="486" y2="322" stroke="${C.white}" stroke-opacity="0.12"/>
+
+    <text x="44" y="358" fill="${C.soft}" font-family="${FONT}" font-size="17">${escXml(CONTACT.phone)}</text>
+    <text x="44" y="390" fill="${C.soft}" font-family="${FONT}" font-size="17">${escXml(CONTACT.email)}</text>
+    <text x="44" y="422" fill="${C.soft}" font-family="${FONT}" font-size="17">${escXml(CONTACT.website)}</text>
+    <text x="44" y="456" fill="${C.muted}" font-family="${FONT}" font-size="12.5">${escXml(CONTACT.address)}</text>
+
+    <rect x="${LEFT - 48}" y="0" width="48" height="${HEIGHT}" fill="url(#edgeFade)"/>
+  </svg>`);
 }
 
-function mountainLogoSvg({ x, y, scale = 1, showTagline = false }) {
-  const s = scale;
-  return `<g transform="translate(${x}, ${y}) scale(${s})">
+function photoLabelSvg(label, width, height) {
+  return svgBuffer(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
     <defs>
-      <linearGradient id="mountGrad" x1="0%" y1="100%" x2="0%" y2="0%">
-        <stop offset="0%" stop-color="${COLORS.blueDark}"/>
-        <stop offset="55%" stop-color="${COLORS.blueMid}"/>
-        <stop offset="100%" stop-color="${COLORS.blueLight}"/>
+      <linearGradient id="labelFade" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0%" stop-color="${C.navyDeep}" stop-opacity="0.92"/>
+        <stop offset="100%" stop-color="${C.navyDeep}" stop-opacity="0"/>
       </linearGradient>
-      <filter id="emboss" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.35"/>
-      </filter>
     </defs>
-    <circle cx="70" cy="68" r="66" fill="none" stroke="${COLORS.blueMid}" stroke-width="2.2" opacity="0.9" filter="url(#emboss)"/>
-    <path d="M14 96 L34 58 L50 72 L66 42 L82 56 L98 36 L118 52 L126 96 Z" fill="url(#mountGrad)"/>
-    <path d="M34 96 L50 72 L66 96 Z" fill="${COLORS.blueDark}" opacity="0.55"/>
-    <path d="M66 96 L82 56 L98 96 Z" fill="${COLORS.blueDark}" opacity="0.4"/>
-    <path d="M58 96 C62 86 66 80 70 76 C74 80 78 86 82 96" fill="${COLORS.blueDark}" opacity="0.65"/>
-    <path d="M58 96 C62 86 66 80 70 76" stroke="${COLORS.blueMid}" stroke-width="6.5" stroke-linecap="round" fill="none"/>
-    <path d="M70 76 C74 80 78 86 82 96" stroke="${COLORS.gold}" stroke-width="6.5" stroke-linecap="round" fill="none"/>
-    <path d="M70 76 L70 96" stroke="${COLORS.white}" stroke-width="1.2" opacity="0.25"/>
-    <text x="70" y="118" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="17.5" font-weight="700" letter-spacing="1.2">
-      <tspan fill="${COLORS.white}">PEAK</tspan><tspan fill="${COLORS.gold}">FRONT</tspan>
-    </text>
-    ${
-      showTagline
-        ? `<g transform="translate(70, 134)">
-            <line x1="-108" y1="0" x2="-68" y2="0" stroke="${COLORS.white}" stroke-width="0.9" opacity="0.5"/>
-            <text x="0" y="4" text-anchor="middle" fill="${COLORS.white}" font-family="Arial, Helvetica, sans-serif" font-size="7.2" font-weight="400" letter-spacing="2.4" opacity="0.88">EQUIPMENT &#8226; TRANSPORT &#8226; SOLUTIONS</text>
-            <line x1="68" y1="0" x2="108" y2="0" stroke="${COLORS.white}" stroke-width="0.9" opacity="0.5"/>
-          </g>`
-        : ""
-    }
-  </g>`;
+    <rect width="${width}" height="72" y="${height - 72}" fill="url(#labelFade)"/>
+    <rect x="0" y="${height - 3}" width="${width}" height="3" fill="${C.amber}" opacity="0.9"/>
+    <text x="20" y="${height - 22}" fill="${C.white}" font-family="${FONT}" font-size="13" font-weight="700" letter-spacing="0.14em">${escXml(label)}</text>
+  </svg>`);
 }
 
-function frontSvg() {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
-    ${mountainLogoSvg({ x: 72, y: 145, scale: 1.55 })}
+function backOverlaySvg() {
+  return svgBuffer(`<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
+    <rect x="44" y="108" width="962" height="384" rx="6" fill="${C.navyDeep}" fill-opacity="0.88" stroke="${C.amber}" stroke-width="1" stroke-opacity="0.35"/>
 
-    <text x="430" y="210" fill="${COLORS.gold}" font-family="Georgia, 'Times New Roman', serif" font-size="46" font-weight="700">Irfan Dayan</text>
-    <text x="430" y="252" fill="${COLORS.white}" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="300" letter-spacing="0.5" opacity="0.92">Managing Director</text>
+    <text x="525" y="318" text-anchor="middle" fill="${C.amber}" font-family="${FONT}" font-size="10" font-weight="700" letter-spacing="0.18em">HEAVY EQUIPMENT</text>
+    <text x="262" y="346" text-anchor="middle" fill="${C.soft}" font-family="${FONT}" font-size="12.5">Excavators · Loaders · Dozers</text>
+    <text x="262" y="368" text-anchor="middle" fill="${C.soft}" font-family="${FONT}" font-size="12.5">Telehandlers · Forklifts · Cranes</text>
 
-    <line x1="430" y1="278" x2="980" y2="278" stroke="${COLORS.gold}" stroke-width="2" opacity="0.85"/>
+    <line x1="525" y1="288" x2="525" y2="388" stroke="${C.white}" stroke-opacity="0.15"/>
 
-    <text x="430" y="330" fill="${COLORS.white}" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="400" opacity="0.95">+971 52 745 9432</text>
-    <text x="430" y="372" fill="${COLORS.white}" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="400" opacity="0.95">peakfrontuae@gmail.com</text>
-    <text x="430" y="414" fill="${COLORS.white}" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="400" opacity="0.95">peakfrontuae.com</text>
+    <text x="788" y="318" text-anchor="middle" fill="${C.amber}" font-family="${FONT}" font-size="10" font-weight="700" letter-spacing="0.18em">TRANSPORT &amp; HAULAGE</text>
+    <text x="788" y="346" text-anchor="middle" fill="${C.soft}" font-family="${FONT}" font-size="12.5">Flatbeds · Low Bed Trailers</text>
+    <text x="788" y="368" text-anchor="middle" fill="${C.soft}" font-family="${FONT}" font-size="12.5">Tankers · Tippers · Buses</text>
 
-    <text x="525" y="548" text-anchor="middle" fill="${COLORS.white}" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="300" letter-spacing="0.4" opacity="0.75">Musafa 23, Building Zila, Office 34</text>
-  </svg>`;
+    <line x1="120" y1="402" x2="930" y2="402" stroke="${C.white}" stroke-opacity="0.14"/>
+
+    <text x="525" y="436" text-anchor="middle" fill="${C.white}" font-family="${FONT}" font-size="26" font-weight="700">${escXml(CONTACT.website)}</text>
+    <text x="525" y="464" text-anchor="middle" fill="${C.muted}" font-family="${FONT}" font-size="13">${escXml(CONTACT.address)}</text>
+    <text x="525" y="488" text-anchor="middle" fill="${C.soft}" font-family="${FONT}" font-size="14">${escXml(CONTACT.phone)} · ${escXml(CONTACT.email)}</text>
+
+    <rect x="0" y="${HEIGHT - 5}" width="${WIDTH}" height="5" fill="${C.amber}"/>
+  </svg>`);
 }
 
-function backSvg() {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
-    ${mountainLogoSvg({ x: 455, y: 95, scale: 2.15, showTagline: true })}
-  </svg>`;
+function splitLabelsSvg() {
+  return svgBuffer(`<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}">
+    <rect x="${LEFT}" y="${HALF_H - 2}" width="${RIGHT}" height="4" fill="${C.amber}"/>
+    <text x="${LEFT + 20}" y="36" fill="${C.white}" font-family="${FONT}" font-size="9.5" font-weight="700" letter-spacing="0.16em">HEAVY MACHINES</text>
+    <text x="${LEFT + RIGHT - 20}" y="36" text-anchor="end" fill="${C.white}" font-family="${FONT}" font-size="9.5" font-weight="700" letter-spacing="0.16em">TRANSPORT FLEET</text>
+  </svg>`);
 }
 
-async function renderCard(name, overlaySvg) {
-  const texture = await sharp(Buffer.from(textureSvg(WIDTH, HEIGHT))).png().toBuffer();
-  const overlay = await sharp(Buffer.from(overlaySvg)).png().toBuffer();
-  const out = join(cardDir, `${name}.png`);
+async function coverImage(filename, width, height, position = "centre") {
+  return sharp(join(imagesDir, filename))
+    .modulate({ brightness: 0.95, saturation: 0.92 })
+    .resize(width, height, { fit: "cover", position })
+    .jpeg({ quality: 93 })
+    .toBuffer();
+}
 
-  await sharp(texture)
-    .composite([{ input: overlay, blend: "over" }])
+async function logoLight(width) {
+  const svg = readFileSync(join(publicDir, "logo-light.svg"));
+  return sharp(svg).resize({ width }).png().toBuffer();
+}
+
+async function buildFront() {
+  const heavyPhoto = await coverImage("crawler-excavator.webp", RIGHT, HALF_H, "centre");
+  const transportPhoto = await coverImage("transport.webp", RIGHT, HALF_H, "centre");
+
+  const heavyLabel = await sharp(photoLabelSvg("HEAVY EQUIPMENT", RIGHT, HALF_H)).png().toBuffer();
+  const transportLabel = await sharp(
+    photoLabelSvg("TRANSPORT & HAULAGE", RIGHT, HALF_H),
+  ).png().toBuffer();
+
+  const panel = await sharp(frontPanelSvg()).png().toBuffer();
+  const labels = await sharp(splitLabelsSvg()).png().toBuffer();
+  const logo = await logoLight(270);
+
+  return sharp({
+    create: { width: WIDTH, height: HEIGHT, channels: 3, background: C.navy },
+  })
+    .composite([
+      { input: heavyPhoto, left: LEFT, top: 0 },
+      { input: transportPhoto, left: LEFT, top: HALF_H },
+      { input: heavyLabel, left: LEFT, top: 0 },
+      { input: transportLabel, left: LEFT, top: HALF_H },
+      { input: panel, left: 0, top: 0 },
+      { input: labels, left: 0, top: 0 },
+      { input: logo, left: 44, top: 42 },
+    ])
     .png({ compressionLevel: 9 })
-    .toFile(out);
-
-  console.log(`Generated ${out}`);
+    .toBuffer();
 }
 
-await renderCard("front", frontSvg());
-await renderCard("back", backSvg());
+async function buildBack() {
+  const left = await coverImage("heavy-equipment.webp", WIDTH / 2, HEIGHT, "centre");
+  const right = await coverImage("transport.webp", WIDTH / 2, HEIGHT, "centre");
+  const overlay = await sharp(backOverlaySvg()).png().toBuffer();
+  const logo = await logoLight(340);
 
-writeFileSync(join(cardDir, "front.svg"), frontSvg());
-writeFileSync(join(cardDir, "back.svg"), backSvg());
+  const photo = await sharp({
+    create: { width: WIDTH, height: HEIGHT, channels: 3, background: C.navy },
+  })
+    .composite([
+      { input: left, left: 0, top: 0 },
+      { input: right, left: WIDTH / 2, top: 0 },
+    ])
+    .jpeg({ quality: 93 })
+    .toBuffer();
 
-console.log("Done.");
+  return sharp(photo)
+    .composite([
+      { input: overlay, left: 0, top: 0 },
+      { input: logo, left: 355, top: 138 },
+    ])
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+}
+
+async function main() {
+  const front = await buildFront();
+  const back = await buildBack();
+
+  writeFileSync(join(cardDir, "front.png"), front);
+  writeFileSync(join(cardDir, "back.png"), back);
+
+  console.log(`Generated ${join(cardDir, "front.png")}`);
+  console.log(`Generated ${join(cardDir, "back.png")}`);
+  console.log("Done.");
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

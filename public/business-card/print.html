@@ -8,7 +8,6 @@
     :root {
       --navy: #0b2545;
       --amber: #f39c12;
-      --blue: #1565c0;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,19 +24,14 @@
       margin: 0 auto 2rem;
     }
 
-    h1 {
-      font-size: 1.5rem;
-      margin-bottom: 0.5rem;
-    }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
 
     p, li {
       line-height: 1.6;
       color: #475569;
     }
 
-    ul {
-      margin: 1rem 0 0 1.25rem;
-    }
+    ul { margin: 1rem 0 0 1.25rem; }
 
     .actions {
       display: flex;
@@ -83,7 +77,7 @@
       font-size: 0.85rem;
       text-transform: uppercase;
       letter-spacing: 0.12em;
-      color: var(--blue);
+      color: #1565c0;
       margin-bottom: 1rem;
     }
 
@@ -97,33 +91,11 @@
       display: block;
     }
 
-    .preview-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-    }
-
     @media print {
-      body {
-        background: white;
-        padding: 0;
-      }
-
-      header, .actions, .card-wrap h2, .no-print {
-        display: none !important;
-      }
-
-      .sheet {
-        max-width: none;
-        gap: 0;
-      }
-
-      .card-wrap {
-        box-shadow: none;
-        padding: 0;
-        page-break-inside: avoid;
-      }
-
+      body { background: white; padding: 0; }
+      header, .actions, .card-wrap h2, .no-print { display: none !important; }
+      .sheet { max-width: none; gap: 0; }
+      .card-wrap { box-shadow: none; padding: 0; page-break-inside: avoid; }
       .card {
         width: 3.5in;
         height: 2in;
@@ -132,11 +104,7 @@
         border-radius: 0;
         page-break-after: always;
       }
-
-      @page {
-        size: 3.5in 2in;
-        margin: 0;
-      }
+      @page { size: 3.5in 2in; margin: 0; }
     }
   </style>
 </head>
@@ -144,31 +112,30 @@
   <header class="no-print">
     <h1>Peakfront Equipment Rental LLC SPC — Business Card</h1>
     <p>
-      <strong>Irfan Dayan</strong> &middot; Managing Director<br />
-      Cards match your Peakfront brand style &mdash; 3.5&Prime; &times; 2&Prime; at 300 DPI.
+      <strong>Irfan Dayan</strong> · Managing Director<br />
+      +971 527459432 · info@peakfront.ae · www.peakfront.ae<br />
+      Mussafah 17, Abu Dhabi, United Arab Emirates
     </p>
     <ul>
-      <li>Download the SVG files for your print shop, or use Print below.</li>
-      <li>For bleed, ask your printer for a template — these files are trim size.</li>
-      <li>Recommended stock: 350–400 gsm matte or soft-touch laminate.</li>
+      <li>Standard landscape format: 3.5&Prime; &times; 2&Prime; at 300 DPI.</li>
+      <li>Front: contact details with excavator photo. Back: fleet &amp; services.</li>
+      <li>Regenerate: <code>npm run generate:business-card</code></li>
     </ul>
     <div class="actions">
       <button onclick="window.print()">Print cards</button>
       <a class="button secondary" href="./front.png" download="peakfront-card-front.png">Download front (PNG)</a>
       <a class="button secondary" href="./back.png" download="peakfront-card-back.png">Download back (PNG)</a>
-      <a class="button secondary" href="./front.svg" download="peakfront-card-front.svg">Download front (SVG)</a>
-      <a class="button secondary" href="./back.svg" download="peakfront-card-back.svg">Download back (SVG)</a>
     </div>
   </header>
 
   <main class="sheet">
     <div class="card-wrap">
       <h2>Front — Contact</h2>
-      <img class="card" src="./front.svg" alt="Peakfront business card front" />
+      <img class="card" src="./front.png" alt="Peakfront business card front" />
     </div>
     <div class="card-wrap">
-      <h2>Back — Brand</h2>
-      <img class="card" src="./back.svg" alt="Peakfront business card back" />
+      <h2>Back — Services</h2>
+      <img class="card" src="./back.png" alt="Peakfront business card back" />
     </div>
   </main>
 </body>

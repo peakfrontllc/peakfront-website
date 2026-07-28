@@ -32,7 +32,7 @@ const COMPANY = {
 };
 
 const heroStats = [
-  { value: "500+", label: "Equipment Available" },
+  { value: "100+", label: "Equipment Available" },
   { value: "24 hrs", label: "Fast UAE Delivery" },
   { value: "Trusted", label: "Supplier Network" },
   { value: "24/7", label: "Professional Support" },
@@ -660,7 +660,7 @@ function buildHtml(images) {
           <p class="lead">${esc(COMPANY.description)}</p>
           <p class="lead">${esc(COMPANY.extended)}</p>
           <div class="stat-row">
-            <div><strong>500+</strong><span>Units in network</span></div>
+            <div><strong>100+</strong><span>Units in network</span></div>
             <div><strong>7</strong><span>Emirates covered</span></div>
             <div><strong>24/7</strong><span>Rental desk</span></div>
           </div>

@@ -8,7 +8,11 @@
     "start": "next start",
     "lint": "eslint",
     "generate:favicons": "node scripts/generate-favicons.mjs",
-    "generate:portfolio": "node scripts/generate-portfolio.mjs"
+    "generate:logos": "node scripts/generate-logos.mjs",
+    "generate:portfolio": "node scripts/generate-portfolio.mjs",
+    "generate:pamphlet": "node scripts/generate-pamphlet.mjs",
+    "generate:business-card": "node scripts/generate-business-card.mjs",
+    "generate:quotation": "node scripts/generate-quotation.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.27.0",
@@ -22,8 +26,10 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "docx": "^9.7.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
+    "exceljs": "^4.4.0",
     "png-to-ico": "^3.0.2",
     "puppeteer": "^25.4.0",
     "sharp": "^0.35.3",

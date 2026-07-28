@@ -31,7 +31,7 @@ export const heroStats: {
   value: string;
   label: string;
 }[] = [
-  { icon: Boxes, value: "500+", label: "Equipment Available" },
+  { icon: Boxes, value: "100+", label: "Equipment Available" },
   { icon: Truck, value: "24 hrs", label: "Fast UAE Delivery" },
   { icon: ShieldCheck, value: "Trusted", label: "Supplier Network" },
   { icon: Headphones, value: "24/7", label: "Professional Support" },
