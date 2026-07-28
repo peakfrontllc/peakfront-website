@@ -34,6 +34,7 @@ function QuoteDrawerForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [whatsappUrl, setWhatsappUrl] = useState("");
+  const submittingRef = useRef(false);
 
   const updateField = useCallback((field: keyof FormData, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -41,16 +42,23 @@ function QuoteDrawerForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
+
+    submittingRef.current = true;
     setError("");
     setSubmitting(true);
 
+    const submissionId = crypto.randomUUID();
     const whatsappMessage = buildWhatsAppMessage(form);
     setWhatsappUrl(buildWhatsAppUrl(whatsappMessage));
 
     try {
       const response = await fetch("/api/quote", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Quote-Submission-Id": submissionId,
+        },
         body: JSON.stringify(form),
       });
 
@@ -68,6 +76,7 @@ function QuoteDrawerForm({
           : "Could not send your request. Try WhatsApp instead.",
       );
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };

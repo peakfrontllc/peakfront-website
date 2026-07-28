@@ -71,14 +71,20 @@ export async function POST(request: Request) {
     ? `Quote Request: ${body.equipment.trim()}`
     : "New Quote Request — Peakfront Website";
 
-  const { error } = await resend.emails.send({
+  const submissionId = request.headers.get("X-Quote-Submission-Id")?.trim();
+  const emailPayload = {
     from,
     to: [to],
     replyTo: body.email.trim() || undefined,
     subject,
     text: formatQuotePlainText(body),
     html: formatQuoteHtml(body),
-  });
+  };
+
+  const { error } = await resend.emails.send(
+    emailPayload,
+    submissionId ? { idempotencyKey: `quote/${submissionId}` } : undefined,
+  );
 
   if (error) {
     console.error("Resend error:", error);
