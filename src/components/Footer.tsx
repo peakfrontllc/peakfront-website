@@ -76,7 +76,6 @@ export default function Footer() {
               <Link href="#contact" className="hover:text-amber">
                 Contact
               </Link>
-              {/* TODO: Create privacy and terms pages before launch */}
               <Link href="/privacy" className="hover:text-amber">
                 Privacy Policy
               </Link>
