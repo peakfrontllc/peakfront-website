@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Peakfront — Official Documents</title>
+  <style>
+    :root { --navy:#0b2545; --amber:#f39c12; --line:#e2e8f0; --muted:#64748b; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Arial,Helvetica,sans-serif; background:#eef2f6; color:var(--navy); }
+    .wrap { max-width:980px; margin:0 auto; padding:2rem 1.25rem 3rem; }
+    header { text-align:center; margin-bottom:2rem; }
+    header img { width:240px; margin-bottom:1rem; }
+    header p { color:var(--muted); margin:.35rem 0; }
+    h1 { margin:.5rem 0 .25rem; font-size:1.6rem; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1rem; }
+    a.card { display:block; background:white; border:1px solid var(--line); border-radius:10px; padding:1.1rem 1.2rem; text-decoration:none; color:inherit; box-shadow:0 8px 24px rgba(11,37,69,.06); transition:transform .15s,border-color .15s; }
+    a.card:hover { transform:translateY(-2px); border-color:var(--amber); }
+    .tag { display:inline-block; font-size:.7rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--amber); margin-bottom:.45rem; }
+    .card h2 { margin:0 0 .35rem; font-size:1.05rem; }
+    .card p { margin:0; font-size:.92rem; color:var(--muted); line-height:1.45; }
+    footer { margin-top:2rem; text-align:center; font-size:.85rem; color:var(--muted); }
+    code { background:#f8fafc; padding:.1rem .35rem; border-radius:4px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <img src="/logo.svg" alt="Peakfront" />
+      <h1>Official Documents</h1>
+      <p>Peakfront Equipment Rental LLC SPC — templates for sales, procurement, operations and finance.</p>
+      <p>Regenerate all files: <code>npm run generate:docs</code></p>
+    </header>
+    <div class="grid">
+      <a class="card" href="./quotation/"><span class="tag">Sales</span><h2>Quotation</h2><p>Send quotes to clients</p></a>
+      <a class="card" href="./rfq/"><span class="tag">Procurement</span><h2>Request For Quotation</h2><p>Request pricing from suppliers</p></a>
+      <a class="card" href="./rental-agreement/"><span class="tag">Legal</span><h2>Rental Agreement</h2><p>Equipment lease contract with client</p></a>
+      <a class="card" href="./purchase-order/"><span class="tag">Procurement</span><h2>Purchase Order</h2><p>Official PO to suppliers</p></a>
+      <a class="card" href="./delivery/"><span class="tag">Operations</span><h2>Delivery Note</h2><p>Equipment handover on delivery/collection</p></a>
+      <a class="card" href="./timesheet/"><span class="tag">Operations</span><h2>Daily Timesheet</h2><p>Record equipment hours on site</p></a>
+      <a class="card" href="./inspection/"><span class="tag">Operations</span><h2>Inspection Report</h2><p>Pre/post rental equipment checklist</p></a>
+      <a class="card" href="./invoice/"><span class="tag">Finance</span><h2>Invoice</h2><p>Tax invoice for clients</p></a>
+      <a class="card" href="./pamphlet/"><span class="tag">Marketing</span><h2>Company Pamphlet</h2><p>Single-page A4 marketing PDF</p></a>
+      <a class="card" href="./business-card/"><span class="tag">Marketing</span><h2>Business Card</h2><p>Print-ready business cards</p></a>
+    </div>
+    <footer>Open any template in your browser, or download Word / Excel versions from each page.</footer>
+  </div>
+</body>
+</html>

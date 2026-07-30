@@ -1,181 +1,30 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
 import sharp from "sharp";
+import { readFileSync } from "node:fs";
+import {
+  COMPANY,
+  CONTACT,
+  SITE_URL,
+  equipmentCategories,
+  esc,
+  getAboutStats,
+  getPortfolioProjects,
+  heroStats,
+  industries,
+  licenseListHtml,
+  categoryUrl,
+  timelineSteps,
+  whyItems,
+} from "./shared/marketing-data.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const publicDir = join(root, "public");
 const outDir = join(publicDir, "portfolio");
-const projectsData = JSON.parse(
-  readFileSync(join(root, "data", "projects.json"), "utf8"),
-);
 
-const CONTACT = {
-  phone: "+971 52 745 9432",
-  email: "info@peakfront.ae",
-  website: "www.peakfront.ae",
-  address: "Mussafah Industrial Area, M-17, Abu Dhabi, United Arab Emirates",
-  hours: "Sat - Thu: 7:00 - 19:00 | Fri: On call",
-};
-
-const COMPANY = {
-  name: "Peakfront Equipment Rental LLC SPC",
-  shortName: "Peakfront",
-  tagline: "Heavy Equipment, Transport & Power Rental Across the UAE",
-  owner: "Irfan Dayan",
-  ownerTitle: "Managing Director",
-  description:
-    "Peakfront Equipment Rental LLC provides heavy equipment, transport vehicles, buses, generators, pumps and construction machinery across the UAE.",
-  extended:
-    "We work with trusted suppliers to provide reliable rental solutions for contractors, infrastructure projects, industrial facilities and commercial developments — combining depth of fleet with the responsiveness of a single accountable partner.",
-};
-
-const heroStats = [
-  { value: "100+", label: "Equipment Available" },
-  { value: "24 hrs", label: "Fast UAE Delivery" },
-  { value: "Trusted", label: "Supplier Network" },
-  { value: "24/7", label: "Professional Support" },
-];
-
-const equipmentCategories = [
-  {
-    title: "Heavy Equipment",
-    image: "heavy-equipment.webp",
-    description:
-      "Earthmoving and lifting fleet for excavation, grading, compaction and material handling on large-scale sites.",
-    tags: [
-      "Excavators",
-      "Wheel Loaders",
-      "Bulldozers",
-      "Backhoe Loaders",
-      "Telehandlers",
-      "Forklifts",
-    ],
-  },
-  {
-    title: "Transport",
-    image: "transport.webp",
-    description:
-      "Haulage and site logistics — from pickups to low bed trailers moving plant across all seven emirates.",
-    tags: [
-      "Pickup Trucks",
-      "Flatbed Trucks",
-      "Low Bed Trailers",
-      "Water Tankers",
-      "Tipper Trucks",
-    ],
-  },
-  {
-    title: "Buses",
-    image: "buses.webp",
-    description:
-      "Staff mobility solutions with licensed drivers, scheduled routes and fully air-conditioned cabins.",
-    tags: ["Mini Buses", "Coaster Buses", "Luxury Coaches", "Staff Transportation"],
-  },
-  {
-    title: "Power Equipment",
-    image: "power-equipment.webp",
-    description:
-      "Temporary power, dewatering and site utilities — serviced, fuelled and delivered ready to run.",
-    tags: ["Generators", "Diesel Pumps", "Air Compressors", "Lighting Towers"],
-  },
-];
-
-const whyItems = [
-  {
-    title: "Professional Supplier Network",
-    description:
-      "Pre-qualified partners across the Emirates giving you depth of fleet on short notice.",
-  },
-  {
-    title: "Competitive Prices",
-    description:
-      "Direct-source pricing with transparent daily, weekly and monthly structures.",
-  },
-  {
-    title: "Fast Delivery",
-    description:
-      "Mobilisation in as little as four hours within Abu Dhabi and Dubai.",
-  },
-  {
-    title: "24/7 Support",
-    description:
-      "A live rental desk for breakdowns, extensions and emergency dispatch.",
-  },
-  {
-    title: "Reliable Equipment",
-    description: "Serviced, inspected and third-party certified machines only.",
-  },
-  {
-    title: "Flexible Rental Terms",
-    description:
-      "Scale units up or down as your programme changes — no rigid lock-ins.",
-  },
-];
-
-const timelineSteps = [
-  {
-    step: "01",
-    title: "Send your requirement",
-    description:
-      "Share equipment type, quantity, duration and site location — by form, phone or WhatsApp.",
-  },
-  {
-    step: "02",
-    title: "Receive quotation",
-    description:
-      "A detailed rate breakdown with availability, mobilisation cost and terms, typically within the hour.",
-  },
-  {
-    step: "03",
-    title: "Equipment delivered",
-    description:
-      "We schedule transport, permits and offloading so the machine is working on arrival.",
-  },
-  {
-    step: "04",
-    title: "Project completed",
-    description:
-      "Extend, swap or demobilise on your call, with servicing handled throughout.",
-  },
-];
-
-const industries = [
-  "Construction",
-  "Oil & Gas",
-  "Infrastructure",
-  "Events",
-  "Manufacturing",
-  "Government Projects",
-  "Utilities",
-  "Logistics",
-];
-
-const testimonials = [
-  {
-    quote:
-      "Peakfront mobilised three excavators and a low bed to our Al Ain site inside a day. Their coordination kept our earthworks programme on schedule.",
-    name: "Rashid Al Mansoori",
-    role: "Project Manager, Infrastructure Contractor",
-  },
-  {
-    quote:
-      "We needed staff buses on short notice for a 400-worker camp move. Peakfront had coaster buses on site the next morning, drivers included.",
-    name: "Fatima Al Suwaidi",
-    role: "Operations Lead, Facilities Management",
-  },
-  {
-    quote:
-      "Our dewatering pump failed at 11pm mid-pour. Peakfront had a replacement unit running by 2am. That's the kind of support that keeps us calling them first.",
-    name: "Ahmed Al Hashimi",
-    role: "Construction Manager, Government Projects",
-  },
-];
-
-const projects = projectsData.projects
-  .filter((p) => !p.id.includes("test"))
-  .slice(0, 4);
+const projects = getPortfolioProjects(4);
 
 async function imageDataUri(filename, width = 1200) {
   const path = join(publicDir, "images", filename);
@@ -192,25 +41,19 @@ async function logoDataUri() {
   return `data:image/png;base64,${buffer.toString("base64")}`;
 }
 
-function esc(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
-
 function buildHtml(images) {
   const { hero, about, logo } = images;
+  const aboutStats = getAboutStats();
 
   const categoryCards = equipmentCategories
     .map(
       (cat) => `
       <article class="category-card">
-        <img src="${images[cat.image]}" alt="${esc(cat.title)}" />
+        <img src="${images[cat.image]}" alt="${esc(cat.imageAlt)}" />
         <div class="category-body">
           <h3>${esc(cat.title)}</h3>
           <p>${esc(cat.description)}</p>
+          <p class="category-url">${esc(categoryUrl(cat))}</p>
           <div class="tags">${cat.tags.map((t) => `<span>${esc(t)}</span>`).join("")}</div>
         </div>
       </article>`,
@@ -222,7 +65,7 @@ function buildHtml(images) {
       (item) => `
       <article class="why-card">
         <h3>${esc(item.title)}</h3>
-        <p>${esc(item.description)}</p>
+        <p>${esc(item.text)}</p>
       </article>`,
     )
     .join("");
@@ -234,7 +77,7 @@ function buildHtml(images) {
         <div class="step-num">${esc(step.step)}</div>
         <div>
           <h3>${esc(step.title)}</h3>
-          <p>${esc(step.description)}</p>
+          <p>${esc(step.text)}</p>
         </div>
       </article>`,
     )
@@ -261,13 +104,10 @@ function buildHtml(images) {
     })
     .join("");
 
-  const testimonialCards = testimonials
+  const statRow = aboutStats
     .map(
-      (t) => `
-      <blockquote class="quote-card">
-        <p>"${esc(t.quote)}"</p>
-        <footer><strong>${esc(t.name)}</strong><span>${esc(t.role)}</span></footer>
-      </blockquote>`,
+      (stat) => `
+      <div><strong>${esc(stat.value)}</strong><span>${esc(stat.label)}</span></div>`,
     )
     .join("");
 
@@ -445,6 +285,44 @@ function buildHtml(images) {
       color: #64748b;
     }
 
+    .license-box {
+      margin-top: 6mm;
+      border: 1px solid #dbe3ec;
+      background: #f8fafc;
+      padding: 4.5mm;
+    }
+    .license-box h3 {
+      font-size: 9pt;
+      margin-bottom: 1.5mm;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .license-box .license-sub {
+      font-size: 7.5pt;
+      color: #64748b;
+      margin-bottom: 3mm;
+    }
+    .license-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5mm;
+    }
+    .license-item {
+      display: flex;
+      gap: 3mm;
+      font-size: 7pt;
+      line-height: 1.35;
+      color: #475569;
+    }
+    .license-code {
+      flex-shrink: 0;
+      font-weight: 700;
+      color: #1565c0;
+      font-family: "Courier New", monospace;
+      min-width: 14mm;
+    }
+
     .why-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -475,6 +353,12 @@ function buildHtml(images) {
     .category-body { padding: 4mm; }
     .category-body h3 { font-size: 11pt; margin-bottom: 2mm; }
     .category-body p { font-size: 8pt; line-height: 1.45; color: #475569; }
+    .category-url {
+      margin-top: 2mm;
+      font-size: 7pt;
+      color: #1565c0;
+      font-weight: 600;
+    }
 
     .tags {
       display: flex;
@@ -526,6 +410,22 @@ function buildHtml(images) {
     .step-card h3 { font-size: 10pt; margin-bottom: 1.5mm; }
     .step-card p { font-size: 8pt; line-height: 1.45; color: #475569; }
 
+    .references-note {
+      margin-top: 8mm;
+      border-left: 3px solid #f39c12;
+      padding: 2mm 0 2mm 5mm;
+    }
+    .references-note p {
+      font-size: 9pt;
+      line-height: 1.5;
+      color: #475569;
+    }
+    .references-note a {
+      color: #1565c0;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
     .project-card {
       border: 1px solid #dbe3ec;
       padding: 4.5mm;
@@ -557,31 +457,6 @@ function buildHtml(images) {
       color: #64748b;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-    }
-
-    .quotes {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 4mm;
-    }
-    .quote-card {
-      border-left: 3px solid #f39c12;
-      padding: 2mm 0 2mm 5mm;
-    }
-    .quote-card p {
-      font-size: 9pt;
-      line-height: 1.5;
-      color: #334155;
-      font-style: italic;
-    }
-    .quote-card footer {
-      margin-top: 2mm;
-      font-size: 8pt;
-    }
-    .quote-card footer span {
-      display: block;
-      color: #64748b;
-      margin-top: 0.5mm;
     }
 
     .contact-page {
@@ -635,7 +510,7 @@ function buildHtml(images) {
 </head>
 <body>
   <section class="page cover">
-    <img class="cover-image" src="${hero}" alt="" />
+    <img class="cover-image" src="${hero}" alt="Crawler excavator working on a construction site in Abu Dhabi at dawn" />
     <div class="cover-overlay"></div>
     <div class="cover-content">
       <img class="cover-logo" src="${logo}" alt="Peakfront" />
@@ -659,13 +534,14 @@ function buildHtml(images) {
         <div>
           <p class="lead">${esc(COMPANY.description)}</p>
           <p class="lead">${esc(COMPANY.extended)}</p>
-          <div class="stat-row">
-            <div><strong>100+</strong><span>Units in network</span></div>
-            <div><strong>7</strong><span>Emirates covered</span></div>
-            <div><strong>24/7</strong><span>Rental desk</span></div>
+          <div class="stat-row">${statRow}</div>
+          <div class="license-box">
+            <h3>Licensed &amp; Regulated</h3>
+            <p class="license-sub">${esc(COMPANY.name)} — registered activities with TAMM / ADDED</p>
+            <ul class="license-list">${licenseListHtml(false)}</ul>
           </div>
         </div>
-        <img src="${about}" alt="Peakfront fleet" />
+        <img src="${about}" alt="Peakfront heavy equipment rental fleet staged in Mussafah, Abu Dhabi" />
       </div>
     </div>
     <div class="page-footer"><span>${esc(COMPANY.shortName)} Portfolio</span><span>Page 2</span></div>
@@ -694,6 +570,7 @@ function buildHtml(images) {
       </div>
       <p class="eyebrow">Rental Categories</p>
       <h2>Four core fleets — one accountable partner</h2>
+      <p class="lead">Browse full category listings and indicative rates at ${esc(CONTACT.websiteDisplay)}.</p>
       <div class="category-grid">${categoryCards}</div>
     </div>
     <div class="page-footer"><span>${esc(COMPANY.shortName)} Portfolio</span><span>Page 4</span></div>
@@ -708,8 +585,9 @@ function buildHtml(images) {
       <p class="eyebrow">Rental Process</p>
       <h2>From enquiry to demobilisation in four steps</h2>
       <div class="steps">${timeline}</div>
-      <p class="eyebrow" style="margin-top:8mm;">Client Feedback</p>
-      <div class="quotes">${testimonialCards}</div>
+      <div class="references-note">
+        <p><strong>Client references</strong> — verified testimonials and detailed project case studies are available on request. View our current track record at <a href="${esc(SITE_URL)}/our-project">${esc(CONTACT.websiteDisplay)}/our-project</a>.</p>
+      </div>
     </div>
     <div class="page-footer"><span>${esc(COMPANY.shortName)} Portfolio</span><span>Page 5</span></div>
   </section>
@@ -735,7 +613,7 @@ function buildHtml(images) {
     <div class="contact-grid">
       <div><dt>Phone / WhatsApp</dt><dd>${esc(CONTACT.phone)}</dd></div>
       <div><dt>Email</dt><dd>${esc(CONTACT.email)}</dd></div>
-      <div><dt>Website</dt><dd>${esc(CONTACT.website)}</dd></div>
+      <div><dt>Website</dt><dd>${esc(CONTACT.websiteDisplay)}</dd></div>
       <div><dt>Office Hours</dt><dd>${esc(CONTACT.hours)}</dd></div>
       <div style="grid-column: span 2;"><dt>Address</dt><dd>${esc(CONTACT.address)}</dd></div>
       <div style="grid-column: span 2;"><dt>Contact Person</dt><dd>${esc(COMPANY.owner)} — ${esc(COMPANY.ownerTitle)}</dd></div>
@@ -770,23 +648,31 @@ async function main() {
 
   const html = buildHtml(images);
   const htmlPath = join(outDir, "portfolio.html");
+  const indexPath = join(outDir, "index.html");
   const pdfPath = join(outDir, "Peakfront-Company-Portfolio.pdf");
 
   writeFileSync(htmlPath, html);
+  writeFileSync(indexPath, html);
 
-  const browser = await puppeteer.launch({ headless: true });
-  const page = await browser.newPage();
-  await page.setContent(html, { waitUntil: "networkidle0" });
-  await page.pdf({
-    path: pdfPath,
-    format: "A4",
-    printBackground: true,
-    preferCSSPageSize: true,
-  });
-  await browser.close();
+  try {
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
+    await page.pdf({
+      path: pdfPath,
+      format: "A4",
+      printBackground: true,
+      preferCSSPageSize: true,
+    });
+    await browser.close();
+    console.log(`Generated ${pdfPath}`);
+  } catch (error) {
+    console.warn("PDF generation skipped — open the HTML and Print → Save as PDF.");
+    console.warn(error.message);
+  }
 
-  console.log(`Generated ${pdfPath}`);
-  console.log(`Preview HTML: ${htmlPath}`);
+  console.log(`Generated ${htmlPath}`);
+  console.log(`Generated ${indexPath}`);
 }
 
 main().catch((error) => {

@@ -10,10 +10,11 @@ import ProjectsTeaser from "@/components/sections/ProjectsTeaser";
 import Testimonials from "@/components/sections/Testimonials";
 import Timeline from "@/components/sections/Timeline";
 import WhyPeakfront from "@/components/sections/WhyPeakfront";
-import { faqs } from "@/lib/content";
+import { faqs, featuredItems } from "@/lib/content";
 import {
   getFaqJsonLd,
   getLocalBusinessJsonLd,
+  getProductJsonLd,
   getWebSiteJsonLd,
 } from "@/lib/seo";
 
@@ -25,6 +26,7 @@ export default function Home() {
           getLocalBusinessJsonLd(),
           getWebSiteJsonLd(),
           getFaqJsonLd(faqs),
+          ...featuredItems.map(getProductJsonLd),
         ]}
       />
       <div id="top" aria-hidden="true" />

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { projects } from "@/lib/projects";
+import { getProjectStats } from "@/lib/stats";
 
 export default function ProjectsTeaser() {
-  const ongoingCount = projects.filter(
-    (p) => p.status === "ongoing" || p.completionDate.toLowerCase() === "running",
-  ).length;
+  const {
+    contractsDeliveredLabel,
+    projectsRunning,
+    projectsRunningLabel,
+  } = getProjectStats();
 
   return (
     <section className="border-t border-navy/10 bg-white py-16 sm:py-20">
@@ -18,15 +20,15 @@ export default function ProjectsTeaser() {
             </span>
           </div>
           <h2 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">
-            {projects.length}+ contracts delivered across the UAE
+            {contractsDeliveredLabel} contracts delivered across the UAE
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
             View the full list of completed and ongoing mobilisations — clients,
             contractors, equipment supplied and contract dates.
-            {ongoingCount > 0 && (
+            {projectsRunning > 0 && (
               <span className="mt-1 block font-medium text-navy">
-                {ongoingCount} project{ongoingCount === 1 ? "" : "s"} currently
-                running.
+                {projectsRunningLabel} project
+                {projectsRunning === 1 ? "" : "s"} currently running.
               </span>
             )}
           </p>

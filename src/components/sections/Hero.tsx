@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import QuoteButton from "@/components/QuoteButton";
-import { heroStats, HERO_IMAGE } from "@/lib/content";
+import { heroStats, HERO_IMAGE, HERO_IMAGE_ALT } from "@/lib/content";
 
 export default function Hero() {
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -52,9 +52,10 @@ export default function Hero() {
       <div className="absolute inset-0 overflow-hidden">
         <Image
           src={HERO_IMAGE}
-          alt="Excavator working on an Abu Dhabi construction site at dawn"
+          alt={HERO_IMAGE_ALT}
           fill
           priority
+          fetchPriority="high"
           sizes="100vw"
           className="object-cover"
           style={{

@@ -1,12 +1,13 @@
 import {
   Camera,
   Music2,
-  Network,
   Play,
 } from "lucide-react";
 import Link from "next/link";
+import LicensedSection from "@/components/LicensedSection";
 import { navLinks } from "@/lib/content";
 import { CONTACT } from "@/lib/constants";
+import { LEGAL_ENTITY_NAME } from "@/lib/license";
 
 function FacebookIcon({ className }: { className?: string }) {
   return (
@@ -27,7 +28,6 @@ function FacebookIcon({ className }: { className?: string }) {
 }
 
 const socialLinks = [
-  { href: "https://www.linkedin.com", label: "LinkedIn", icon: Network },
   { href: "https://www.facebook.com/profile.php?id=61592219567182", label: "Facebook", icon: FacebookIcon },
   { href: "https://www.instagram.com/peakfrontae/", label: "Instagram", icon: Camera },
   { href: "https://www.tiktok.com/@peakfrontae", label: "TikTok", icon: Music2 },
@@ -102,10 +102,10 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-white/10 py-8 text-xs text-white/45 sm:flex sm:items-center sm:justify-between">
-          <span>
-            © 2026 Peakfront Equipment Rental LLC. All rights reserved.
-          </span>
+        <LicensedSection />
+
+        <div className="mt-8 border-t border-white/10 py-8 text-xs text-white/55 sm:flex sm:items-center sm:justify-between">
+          <span>© 2026 {LEGAL_ENTITY_NAME}. All rights reserved.</span>
           <span className="mt-3 block font-mono uppercase tracking-[0.18em] sm:mt-0">
             Abu Dhabi · UAE
           </span>

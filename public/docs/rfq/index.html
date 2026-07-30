@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Peakfront — Request For Quotation</title>
+  <style>
+    :root {
+      --navy: #0b2545;
+      --amber: #f39c12;
+      --line: #e2e8f0;
+      --muted: #64748b;
+      --supplier: #fffbeb;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #eef2f6;
+      color: var(--navy);
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      background: white;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .toolbar h1 {
+      margin: 0;
+      font-size: 1rem;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    button, a.btn {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      background: var(--navy);
+      color: white;
+      padding: 0.55rem 0.95rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    button.secondary, a.btn.secondary {
+      background: white;
+      color: var(--navy);
+      border: 1px solid var(--line);
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 1.5rem auto;
+      background: white;
+      box-shadow: 0 12px 40px rgba(11, 37, 69, 0.08);
+      padding: 14mm 14mm 16mm;
+    }
+
+    .header {
+      text-align: center;
+      border-bottom: 3px solid var(--amber);
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+    }
+
+    .header img { width: 220px; margin-bottom: 8px; }
+    .header p { margin: 4px 0; font-size: 10pt; color: var(--muted); }
+
+    .title {
+      margin: 16px 0 6px;
+      text-align: center;
+      font-size: 14pt;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--navy);
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 9.5pt;
+      color: var(--muted);
+      font-style: italic;
+      margin-bottom: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 16px;
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 8pt;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 8px 10px;
+      font: inherit;
+      color: var(--navy);
+      background: #fbfdff;
+    }
+
+    textarea { min-height: 54px; resize: vertical; }
+
+    .section-label {
+      font-size: 8.5pt;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--navy);
+      margin: 12px 0 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0;
+      font-size: 9.5pt;
+    }
+
+    th {
+      background: var(--navy);
+      color: white;
+      padding: 8px 6px;
+      text-align: left;
+      font-size: 8pt;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    th.supplier { background: #92400e; }
+
+    th.num, td.num { text-align: right; }
+    th.center, td.center { text-align: center; }
+
+    td {
+      border: 1px solid var(--line);
+      padding: 4px;
+      vertical-align: top;
+    }
+
+    td.supplier { background: var(--supplier); }
+
+    td input {
+      border: none;
+      background: transparent;
+      padding: 6px 4px;
+    }
+
+    td input:focus {
+      outline: 2px solid rgba(243, 156, 18, 0.35);
+      background: #fffdf8;
+      border-radius: 3px;
+    }
+
+    .hint {
+      font-size: 8pt;
+      color: var(--muted);
+      font-style: italic;
+      margin: 4px 0 8px;
+    }
+
+    .totals {
+      margin-left: auto;
+      width: min(100%, 320px);
+      margin-top: 8px;
+    }
+
+    .totals table td {
+      border: none;
+      padding: 6px 0;
+    }
+
+    .totals .supplier-value {
+      background: var(--supplier);
+      padding: 4px 8px;
+      border-radius: 4px;
+      text-align: right;
+      min-width: 90px;
+    }
+
+    .totals .grand {
+      font-size: 12pt;
+      font-weight: 700;
+      color: var(--navy);
+      border-top: 2px solid var(--amber);
+      padding-top: 8px;
+    }
+
+    .terms {
+      margin-top: 18px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      font-size: 9pt;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .terms h3 {
+      margin: 0 0 8px;
+      font-size: 9pt;
+      color: var(--navy);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 24px;
+      font-size: 10pt;
+    }
+
+    .signatures .box {
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+      min-height: 70px;
+    }
+
+    .signatures .supplier-box {
+      background: var(--supplier);
+      border-radius: 4px;
+      padding: 10px;
+      min-height: 70px;
+    }
+
+    @media print {
+      body { background: white; }
+      .toolbar { display: none !important; }
+      .page {
+        width: auto;
+        margin: 0;
+        box-shadow: none;
+        padding: 0;
+      }
+      input, textarea { border: none; background: transparent; padding: 0; }
+      button { display: none; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <h1>Peakfront RFQ — editable</h1>
+    <button type="button" class="secondary" onclick="addRow()">Add row</button>
+    <button type="button" class="secondary" onclick="recalc()">Recalculate</button>
+    <button type="button" onclick="window.print()">Print / Save PDF</button>
+    <a class="btn secondary back" href="../">← All documents</a>
+    <a class="btn secondary" href="./Peakfront-RFQ-Template.docx" download>Download Word template</a>
+    <a class="btn secondary" href="./Peakfront-RFQ-Template.xlsx" download>Download Excel template</a>
+  </div>
+
+  <main class="page">
+    <header class="header">
+      <img src="/logo.svg" alt="Peakfront" />
+      <p><strong>Peakfront Equipment Rental LLC SPC</strong></p>
+      <p>Heavy Equipment &amp; Transport Rental</p>
+      <p>Mussafah 17, Abu Dhabi, United Arab Emirates · +971 527459432 · info@peakfront.ae · www.peakfront.ae</p>
+    </header>
+
+    <div class="title">REQUEST FOR QUOTATION</div>
+    <p class="subtitle">Please provide your best quotation for the items below</p>
+
+    <section class="grid">
+      <div>
+        <label for="rfqNo">RFQ No.</label>
+        <input id="rfqNo" type="text" value="PFRQ-2026-001" />
+      </div>
+      <div>
+        <label for="rfqDate">Date</label>
+        <input id="rfqDate" type="date" />
+      </div>
+      <div>
+        <label for="supplier">Supplier / Vendor</label>
+        <input id="supplier" type="text" placeholder="Supplier company name" />
+      </div>
+      <div>
+        <label for="contact">Contact Person</label>
+        <input id="contact" type="text" placeholder="Contact name" />
+      </div>
+      <div>
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="supplier@example.com" />
+      </div>
+      <div>
+        <label for="phone">Phone</label>
+        <input id="phone" type="text" placeholder="+971 …" />
+      </div>
+      <div>
+        <label for="project">Project / Reference</label>
+        <input id="project" type="text" placeholder="Project name" />
+      </div>
+      <div>
+        <label for="location">Delivery / Site Location</label>
+        <input id="location" type="text" placeholder="Site location" />
+      </div>
+      <div>
+        <label for="requiredBy">Required By</label>
+        <input id="requiredBy" type="date" />
+      </div>
+      <div>
+        <label for="duration">Duration / Period</label>
+        <input id="duration" type="text" placeholder="e.g. 01 Apr – 30 Apr 2026" />
+      </div>
+    </section>
+
+    <div class="section-label">Items Requested</div>
+    <table id="items">
+      <thead>
+        <tr>
+          <th class="center" style="width:4%">#</th>
+          <th style="width:24%">Description</th>
+          <th class="center" style="width:7%">Qty</th>
+          <th class="center" style="width:9%">Unit</th>
+          <th style="width:24%">Specifications / Notes</th>
+          <th class="supplier num" style="width:12%">Unit Price (AED)</th>
+          <th class="supplier center" style="width:12%">Lead Time</th>
+          <th class="no-print" style="width:8%"></th>
+        </tr>
+      </thead>
+      <tbody id="itemBody"></tbody>
+    </table>
+    <p class="hint">Amber columns — to be completed by supplier</p>
+
+    <div class="totals">
+      <table>
+        <tr>
+          <td>Subtotal (AED)</td>
+          <td class="num supplier-value" id="subtotal">0.00</td>
+        </tr>
+        <tr>
+          <td>VAT (5%)</td>
+          <td class="num supplier-value" id="vat">0.00</td>
+        </tr>
+        <tr class="grand">
+          <td>Grand Total (AED)</td>
+          <td class="num supplier-value" id="grandTotal">0.00</td>
+        </tr>
+      </table>
+    </div>
+
+    <section class="terms">
+      <h3>Instructions to Supplier</h3>
+      <textarea id="terms">Quote all prices in AED. State whether VAT is included or excluded.
+Include mobilisation, delivery and offloading charges separately where applicable.
+Confirm equipment availability, condition and any operator/fuel inclusions.
+State quote validity period and payment terms offered.</textarea>
+    </section>
+
+    <section class="signatures">
+      <div>
+        <strong>Requested by</strong>
+        <div class="box">
+          Irfan Dayan<br />
+          Managing Director<br />
+          Peakfront Equipment Rental LLC SPC
+        </div>
+      </div>
+      <div>
+        <strong>Quoted by (Supplier)</strong>
+        <div class="supplier-box"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const sampleRows = [
+      {
+        description: "20T Crawler Excavator",
+        qty: 1,
+        unit: "Unit",
+        specs: "With operator, minimum 10 hr/day",
+        price: "",
+        leadTime: "",
+      },
+      {
+        description: "Low Bed Trailer (40T)",
+        qty: 1,
+        unit: "Trip",
+        specs: "Abu Dhabi to site — include loading",
+        price: "",
+        leadTime: "",
+      },
+    ];
+
+    const itemBody = document.getElementById("itemBody");
+    const rfqDate = document.getElementById("rfqDate");
+    const requiredBy = document.getElementById("requiredBy");
+
+    function formatMoney(value) {
+      return Number(value || 0).toLocaleString("en-AE", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
+
+    function parseNum(value) {
+      const num = parseFloat(String(value).replace(/,/g, ""));
+      return Number.isFinite(num) ? num : 0;
+    }
+
+    function addRow(data = {}) {
+      const index = itemBody.children.length + 1;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="center">${index}</td>
+        <td><input type="text" value="${data.description || ""}" placeholder="Equipment / service description" /></td>
+        <td class="center"><input type="number" min="0" step="1" value="${data.qty ?? ""}" oninput="recalc()" /></td>
+        <td class="center"><input type="text" value="${data.unit || ""}" placeholder="Unit / Day / Trip" /></td>
+        <td><input type="text" value="${data.specs || ""}" placeholder="Specifications, inclusions, notes" /></td>
+        <td class="supplier num"><input type="number" min="0" step="0.01" value="${data.price ?? ""}" placeholder="0.00" oninput="recalc()" /></td>
+        <td class="supplier center"><input type="text" value="${data.leadTime || ""}" placeholder="e.g. 2 days" /></td>
+        <td class="no-print"><button type="button" class="secondary" onclick="removeRow(this)">Remove</button></td>
+      `;
+      itemBody.appendChild(tr);
+      recalc();
+    }
+
+    function removeRow(button) {
+      button.closest("tr").remove();
+      [...itemBody.children].forEach((row, i) => {
+        row.firstElementChild.textContent = i + 1;
+      });
+      recalc();
+    }
+
+    function recalc() {
+      let subtotal = 0;
+      [...itemBody.querySelectorAll("tr")].forEach((row) => {
+        const inputs = row.querySelectorAll("input");
+        const qty = parseNum(inputs[1].value);
+        const price = parseNum(inputs[4].value);
+        subtotal += qty * price;
+      });
+      const vat = subtotal * 0.05;
+      document.getElementById("subtotal").textContent = formatMoney(subtotal);
+      document.getElementById("vat").textContent = formatMoney(vat);
+      document.getElementById("grandTotal").textContent = formatMoney(subtotal + vat);
+    }
+
+    function setDefaultDates() {
+      const today = new Date();
+      const required = new Date(today);
+      required.setDate(required.getDate() + 14);
+      rfqDate.value = today.toISOString().slice(0, 10);
+      requiredBy.value = required.toISOString().slice(0, 10);
+    }
+
+    sampleRows.forEach(addRow);
+    setDefaultDates();
+    recalc();
+  </script>
+</body>
+</html>

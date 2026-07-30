@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Peakfront — Invoice — editable</title>
+  <style>
+    :root { --navy:#0b2545; --amber:#f39c12; --line:#e2e8f0; --muted:#64748b; --supplier:#fffbeb; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Arial,Helvetica,sans-serif; background:#eef2f6; color:var(--navy); }
+    .toolbar { position:sticky; top:0; z-index:10; display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; padding:1rem 1.25rem; background:white; border-bottom:1px solid var(--line); }
+    .toolbar h1 { margin:0; font-size:1rem; flex:1; min-width:200px; }
+    button, a.btn { appearance:none; border:none; cursor:pointer; text-decoration:none; background:var(--navy); color:white; padding:.55rem .95rem; border-radius:6px; font-size:.9rem; font-weight:600; }
+    button.secondary, a.btn.secondary { background:white; color:var(--navy); border:1px solid var(--line); }
+    .page { width:210mm; min-height:297mm; margin:1.5rem auto; background:white; box-shadow:0 12px 40px rgba(11,37,69,.08); padding:14mm; }
+    .header { text-align:center; border-bottom:3px solid var(--amber); padding-bottom:10px; margin-bottom:16px; }
+    .header img { width:220px; margin-bottom:8px; }
+    .header p { margin:4px 0; font-size:10pt; color:var(--muted); }
+    .title { margin:16px 0 12px; text-align:center; font-size:14pt; font-weight:700; letter-spacing:.12em; }
+    .subtitle { text-align:center; font-size:9.5pt; color:var(--muted); font-style:italic; margin:-6px 0 16px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; margin-bottom:16px; }
+    label { display:block; font-size:8pt; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+    input, textarea { width:100%; border:1px solid var(--line); border-radius:4px; padding:8px 10px; font:inherit; color:var(--navy); background:#fbfdff; }
+    textarea { min-height:70px; resize:vertical; }
+    table { width:100%; border-collapse:collapse; margin:12px 0; font-size:9.5pt; }
+    th { background:var(--navy); color:white; padding:8px 6px; text-align:left; font-size:8pt; letter-spacing:.06em; text-transform:uppercase; }
+    th.supplier { background:#92400e; }
+    td { border:1px solid var(--line); padding:4px; vertical-align:top; }
+    td input, td textarea { border:none; background:transparent; padding:6px 4px; min-height:auto; }
+    .terms { margin-top:18px; padding-top:12px; border-top:1px solid var(--line); font-size:9pt; color:var(--muted); }
+    .terms h3 { margin:0 0 8px; font-size:9pt; color:var(--navy); text-transform:uppercase; letter-spacing:.1em; }
+    .signatures { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:24px; font-size:10pt; }
+    .signatures .box { border-top:1px solid var(--line); padding-top:10px; min-height:70px; }
+    .signatures .supplier-box { background:var(--supplier); border-radius:4px; padding:10px; min-height:70px; }
+    .back { margin-left:auto; }
+    @media print { body{background:white;} .toolbar,.no-print{display:none!important;} .page{width:auto;margin:0;box-shadow:none;padding:0;} input,textarea{border:none;background:transparent;} }
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <h1>Invoice — editable</h1>
+    <button type="button" class="secondary" onclick="recalc()">Recalculate</button><a class="btn secondary" href="./Peakfront-Invoice-Template.docx" download>Download Word</a><a class="btn secondary" href="./Peakfront-Invoice-Template.xlsx" download>Download Excel</a>
+    <button type="button" onclick="window.print()">Print / Save PDF</button>
+    <a class="btn secondary back" href="../">← All documents</a>
+  </div>
+  <main class="page">
+    <header class="header">
+      <img src="/logo.svg" alt="Peakfront" />
+      <p><strong>Peakfront Equipment Rental LLC SPC</strong></p>
+      <p>Heavy Equipment &amp; Transport Rental</p>
+      <p>Mussafah 17, Abu Dhabi, United Arab Emirates · +971 527459432 · info@peakfront.ae · www.peakfront.ae</p>
+    </header>
+    <div class="title">TAX INVOICE</div>
+      <section class="grid"><div><label for="invNo">Invoice No.</label><input id="invNo" type="text" placeholder="PINV-2026-001" /></div><div><label for="invDate">Date</label><input id="invDate" type="date" placeholder="" /></div><div><label for="billTo">Bill To</label><input id="billTo" type="text" placeholder="" /></div><div><label for="contact">Contact Person</label><input id="contact" type="text" placeholder="" /></div><div><label for="clientTrn">Client TRN</label><input id="clientTrn" type="text" placeholder="" /></div><div><label for="dueDate">Due Date</label><input id="dueDate" type="date" placeholder="" /></div><div><label for="project">Project / Site</label><input id="project" type="text" placeholder="" /></div><div><label for="ref">Quote / Agreement Ref.</label><input id="ref" type="text" placeholder="" /></div></section>
+      <table><thead><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th><th>Rate</th><th>Days</th><th>Amount</th></tr></thead><tbody id="rows"></tbody></table>
+      <div style="margin-left:auto;width:280px;font-size:10pt"><div style="display:flex;justify-content:space-between;padding:6px 0"><span>Subtotal</span><span id="subtotal">0.00</span></div><div style="display:flex;justify-content:space-between;padding:6px 0"><span>VAT (5%)</span><span id="vat">0.00</span></div><div style="display:flex;justify-content:space-between;padding:8px 0;border-top:2px solid var(--amber);font-weight:700"><span>Grand Total (AED)</span><span id="total">0.00</span></div></div>
+      <section class="terms"><h3>Payment Details</h3><textarea id="payment">Bank: [Enter bank name]\nAccount: [Enter account number]\nIBAN: [Enter IBAN]\nPlease quote invoice number on remittance.</textarea></section>
+  </main>
+  <script>
+const rows=document.getElementById('rows');
+function fmt(n){return Number(n||0).toLocaleString('en-AE',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function addRow(d={}){const i=rows.children.length+1;const tr=document.createElement('tr');tr.innerHTML=`<td>${i}</td><td><input value="${d.desc||''}"></td><td><input type="number" min="0" class="qty" value="${d.qty??''}"></td><td><input value="${d.unit||''}"></td><td><input type="number" min="0" step="0.01" class="rate" value="${d.rate??''}"></td><td><input type="number" min="0" class="days" value="${d.days??1}"></td><td class="amt">0.00</td>`;tr.querySelectorAll('input').forEach(el=>el.oninput=recalc);rows.appendChild(tr);recalc();}
+function recalc(){let s=0;[...rows.children].forEach(r=>{const q=parseFloat(r.querySelector('.qty').value)||0;const rate=parseFloat(r.querySelector('.rate').value)||0;const days=parseFloat(r.querySelector('.days').value)||1;const a=q*rate*days;r.querySelector('.amt').textContent=fmt(a);s+=a;});document.getElementById('subtotal').textContent=fmt(s);document.getElementById('vat').textContent=fmt(s*0.05);document.getElementById('total').textContent=fmt(s*1.05);}
+addRow({desc:'20T Crawler Excavator — rental (example)',qty:1,unit:'Unit',rate:950,days:1});for(let i=0;i<4;i++)addRow();
+const d=new Date();document.getElementById('invDate').value=d.toISOString().slice(0,10);const due=new Date(d);due.setDate(due.getDate()+30);document.getElementById('dueDate').value=due.toISOString().slice(0,10);
+</script>
+</body>
+</html>

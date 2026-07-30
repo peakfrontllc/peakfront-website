@@ -1,5 +1,8 @@
 import Image from "next/image";
-import { ABOUT_IMAGE } from "@/lib/content";
+import LicensedSection from "@/components/LicensedSection";
+import { ABOUT_IMAGE, ABOUT_IMAGE_ALT } from "@/lib/content";
+import { LEGAL_ENTITY_NAME } from "@/lib/license";
+import { companyStats, getProjectStats } from "@/lib/stats";
 
 function SectionKicker({ label }: { label: string }) {
   return (
@@ -13,6 +16,20 @@ function SectionKicker({ label }: { label: string }) {
 }
 
 export default function About() {
+  const { contractsDeliveredLabel, projectsRunningLabel } = getProjectStats();
+
+  const aboutStats = [
+    companyStats.unitsInNetwork,
+    {
+      value: contractsDeliveredLabel,
+      label: "Contracts delivered",
+    },
+    {
+      value: projectsRunningLabel,
+      label: "Projects running",
+    },
+  ];
+
   return (
     <section id="about" className="section-padding bg-white">
       <div className="mx-auto grid max-w-[1400px] items-center gap-14 px-5 lg:grid-cols-2 lg:gap-20 lg:px-10">
@@ -23,7 +40,7 @@ export default function About() {
               The foundational rental partner for UAE contractors
             </h2>
             <p className="mt-5 text-base leading-relaxed text-slate-600">
-              Peakfront Equipment Rental LLC provides heavy equipment, transport
+              {LEGAL_ENTITY_NAME} provides heavy equipment, transport
               vehicles, buses, generators, pumps and construction machinery
               across the UAE.
             </p>
@@ -35,24 +52,16 @@ export default function About() {
             responsiveness of a single accountable partner.
           </p>
           <div className="mt-10 grid gap-px border border-navy/10 bg-navy/10 sm:grid-cols-3">
-            <div className="bg-white p-6">
-              <div className="font-mono text-2xl font-bold text-blue">100+</div>
-              <div className="mt-1 text-xs uppercase tracking-wider text-slate-500">
-                Units in network
+            {aboutStats.map((stat) => (
+              <div key={stat.label} className="bg-white p-6">
+                <div className="font-mono text-2xl font-bold text-blue">
+                  {stat.value}
+                </div>
+                <div className="mt-1 text-xs uppercase tracking-wider text-slate-500">
+                  {stat.label}
+                </div>
               </div>
-            </div>
-            <div className="bg-white p-6">
-              <div className="font-mono text-2xl font-bold text-blue">7</div>
-              <div className="mt-1 text-xs uppercase tracking-wider text-slate-500">
-                Emirates covered
-              </div>
-            </div>
-            <div className="bg-white p-6">
-              <div className="font-mono text-2xl font-bold text-blue">24/7</div>
-              <div className="mt-1 text-xs uppercase tracking-wider text-slate-500">
-                Rental desk
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
@@ -61,13 +70,17 @@ export default function About() {
           <div className="relative aspect-[4/3] w-full">
             <Image
               src={ABOUT_IMAGE}
-              alt="Peakfront heavy equipment fleet"
+              alt={ABOUT_IMAGE_ALT}
               fill
               sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover"
             />
           </div>
         </div>
+      </div>
+
+      <div className="mx-auto mt-14 max-w-[1400px] px-5 lg:px-10">
+        <LicensedSection variant="light" />
       </div>
     </section>
   );

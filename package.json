@@ -12,7 +12,10 @@
     "generate:portfolio": "node scripts/generate-portfolio.mjs",
     "generate:pamphlet": "node scripts/generate-pamphlet.mjs",
     "generate:business-card": "node scripts/generate-business-card.mjs",
-    "generate:quotation": "node scripts/generate-quotation.mjs"
+    "generate:docs": "node scripts/generate-docs.mjs",
+    "optimize:images": "node scripts/optimize-images.mjs",
+    "generate:quotation": "node scripts/generate-docs.mjs",
+    "generate:rfq": "node scripts/generate-docs.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.27.0",

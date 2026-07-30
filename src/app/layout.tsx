@@ -73,7 +73,7 @@ export const metadata: Metadata = {
         url: siteConfig.ogImage,
         width: 1932,
         height: 788,
-        alt: "Peakfront heavy equipment rental fleet in Abu Dhabi, UAE",
+        alt: "Crawler excavator working on a construction site in Abu Dhabi at dawn",
       },
     ],
   },

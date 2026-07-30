@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Peakfront Business Card — Print Sheet</title>
+  <style>
+    :root {
+      --navy: #0b2545;
+      --amber: #f39c12;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      background: #e8edf2;
+      color: var(--navy);
+      padding: 2rem;
+    }
+
+    header {
+      max-width: 900px;
+      margin: 0 auto 2rem;
+    }
+
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+
+    p, li {
+      line-height: 1.6;
+      color: #475569;
+    }
+
+    ul { margin: 1rem 0 0 1.25rem; }
+
+    .actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    button, a.button {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      background: var(--navy);
+      color: white;
+      padding: 0.65rem 1.1rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    button.secondary, a.button.secondary {
+      background: white;
+      color: var(--navy);
+      border: 1px solid rgba(11, 37, 69, 0.15);
+    }
+
+    .sheet {
+      max-width: 900px;
+      margin: 0 auto;
+      display: grid;
+      gap: 2rem;
+    }
+
+    .card-wrap {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(11, 37, 69, 0.08);
+    }
+
+    .card-wrap h2 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #1565c0;
+      margin-bottom: 1rem;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 525px;
+      aspect-ratio: 3.5 / 2;
+      border: 1px solid rgba(11, 37, 69, 0.08);
+      border-radius: 8px;
+      overflow: hidden;
+      display: block;
+    }
+
+    @media print {
+      body { background: white; padding: 0; }
+      header, .actions, .card-wrap h2, .no-print { display: none !important; }
+      .sheet { max-width: none; gap: 0; }
+      .card-wrap { box-shadow: none; padding: 0; page-break-inside: avoid; }
+      .card {
+        width: 3.5in;
+        height: 2in;
+        max-width: none;
+        border: none;
+        border-radius: 0;
+        page-break-after: always;
+      }
+      @page { size: 3.5in 2in; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="no-print">
+    <h1>Peakfront Equipment Rental LLC SPC — Business Card</h1>
+    <p>
+      <strong>Irfan Dayan</strong> · Managing Director<br />
+      +971 527459432 · info@peakfront.ae · www.peakfront.ae<br />
+      Mussafah 17, Abu Dhabi, United Arab Emirates
+    </p>
+    <ul>
+      <li>Standard landscape format: 3.5&Prime; &times; 2&Prime; at 300 DPI.</li>
+      <li>Front: hero machine photo with a floating white contact card. Back: 2×2 machine photo mosaic.</li>
+      <li>Regenerate: <code>npm run generate:business-card</code></li>
+    </ul>
+    <div class="actions">
+      <button onclick="window.print()">Print cards</button>
+      <a class="button secondary" href="./front.png" download="peakfront-card-front.png">Download front (PNG)</a>
+      <a class="button secondary" href="./back.png" download="peakfront-card-back.png">Download back (PNG)</a>
+      <a class="button secondary" href="../">← All documents</a>
+    </div>
+  </header>
+
+  <main class="sheet">
+    <div class="card-wrap">
+      <h2>Front — Contact</h2>
+      <img class="card" src="./front.png" alt="Peakfront business card front" />
+    </div>
+    <div class="card-wrap">
+      <h2>Back — Services</h2>
+      <img class="card" src="./back.png" alt="Peakfront business card back" />
+    </div>
+  </main>
+</body>
+</html>

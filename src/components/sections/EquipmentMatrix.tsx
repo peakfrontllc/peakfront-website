@@ -1,7 +1,8 @@
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import QuoteButton from "@/components/QuoteButton";
-import { equipmentCategories } from "@/lib/content";
+import { equipmentCategories, getCategoryPath } from "@/lib/content";
 
 function SectionKicker({ label }: { label: string }) {
   return (
@@ -32,14 +33,17 @@ export default function EquipmentMatrix() {
         <div className="mt-16 grid gap-6 md:grid-cols-2">
           {equipmentCategories.map((cat) => (
             <article
-              key={cat.title}
+              key={cat.slug}
               className="group flex flex-col overflow-hidden border border-navy/10 bg-white transition-all duration-500 hover:border-blue/40 hover:shadow-[0_24px_60px_-30px_rgba(11,37,69,0.35)]"
             >
-              <div className="relative h-60 overflow-hidden bg-navy">
+              <Link
+                href={getCategoryPath(cat.slug)}
+                className="relative block h-60 overflow-hidden bg-navy"
+              >
                 <div className="relative h-full w-full transition-transform duration-[900ms] group-hover:scale-110">
                   <Image
                     src={cat.image}
-                    alt={`${cat.title} rental fleet in the UAE`}
+                    alt={cat.imageAlt}
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
@@ -49,7 +53,7 @@ export default function EquipmentMatrix() {
                 <h3 className="absolute bottom-5 left-6 text-2xl font-extrabold tracking-tight text-white">
                   {cat.title}
                 </h3>
-              </div>
+              </Link>
               <div className="flex flex-1 flex-col p-7">
                 <p className="text-sm leading-relaxed text-slate-600">
                   {cat.description}
@@ -64,13 +68,22 @@ export default function EquipmentMatrix() {
                     </li>
                   ))}
                 </ul>
-                <QuoteButton
-                  equipmentName={cat.title}
-                  className="mt-8 inline-flex items-center gap-2 self-start border-b-2 border-amber pb-1 text-sm font-bold text-navy transition-colors hover:text-blue"
-                >
-                  Request Quote
-                  <ArrowUpRight className="h-4 w-4" />
-                </QuoteButton>
+                <div className="mt-8 flex flex-wrap items-center gap-4">
+                  <Link
+                    href={getCategoryPath(cat.slug)}
+                    className="inline-flex items-center gap-2 border-b-2 border-navy/20 pb-1 text-sm font-bold text-navy transition-colors hover:border-blue hover:text-blue"
+                  >
+                    View {cat.title}
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Link>
+                  <QuoteButton
+                    equipmentName={cat.title}
+                    className="inline-flex items-center gap-2 border-b-2 border-amber pb-1 text-sm font-bold text-navy transition-colors hover:text-blue"
+                  >
+                    Request Quote
+                    <ArrowUpRight className="h-4 w-4" />
+                  </QuoteButton>
+                </div>
               </div>
             </article>
           ))}

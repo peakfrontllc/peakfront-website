@@ -3,83 +3,22 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
 import sharp from "sharp";
+import {
+  COMPANY,
+  CONTACT,
+  equipmentCategories,
+  esc,
+  heroStats,
+  industries,
+  licenseListHtml,
+  categoryUrl,
+  timelineSteps,
+  whyItems,
+} from "./shared/marketing-data.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const publicDir = join(root, "public");
-const outDir = join(publicDir, "pamphlet");
-
-const CONTACT = {
-  phone: "+971 527459432",
-  email: "info@peakfront.ae",
-  website: "https://peakfront.ae",
-  whatsapp: "wa.me/971527459432",
-  address: "Mussafah Industrial Area, M-17, Abu Dhabi, UAE",
-};
-
-const COMPANY = {
-  name: "Peakfront Equipment Rental LLC SPC",
-  shortName: "Peakfront",
-  tagline: "Heavy Equipment, Transport & Power Rental Across the UAE",
-  description:
-    "Reliable rental solutions for contractors, infrastructure projects, industrial facilities and commercial developments across all seven emirates.",
-};
-
-const heroStats = [
-  { value: "100+", label: "Equipment Available" },
-  { value: "24 hrs", label: "Fast UAE Delivery" },
-  { value: "Trusted", label: "Supplier Network" },
-  { value: "24/7", label: "Professional Support" },
-];
-
-const equipmentCategories = [
-  {
-    title: "Heavy Equipment",
-    image: "heavy-equipment.webp",
-    tags: ["Excavators", "Loaders", "Telehandlers", "Forklifts"],
-  },
-  {
-    title: "Transport",
-    image: "transport.webp",
-    tags: ["Flatbeds", "Low Beds", "Tankers", "Tippers"],
-  },
-  {
-    title: "Buses",
-    image: "buses.webp",
-    tags: ["Mini Buses", "Coasters", "Coaches", "Staff Transport"],
-  },
-  {
-    title: "Power Equipment",
-    image: "power-equipment.webp",
-    tags: ["Generators", "Pumps", "Compressors", "Lighting"],
-  },
-];
-
-const whyItems = [
-  { title: "Supplier Network", text: "Pre-qualified partners across the Emirates." },
-  { title: "Competitive Rates", text: "Transparent daily, weekly and monthly pricing." },
-  { title: "Fast Delivery", text: "Mobilisation in as little as four hours." },
-  { title: "24/7 Support", text: "Live desk for breakdowns and emergency dispatch." },
-  { title: "Reliable Fleet", text: "Serviced, inspected and certified machines." },
-  { title: "Flexible Terms", text: "Scale units up or down as your programme changes." },
-];
-
-const timelineSteps = [
-  { step: "01", title: "Send requirement", text: "Phone, WhatsApp or email." },
-  { step: "02", title: "Get quotation", text: "Rates and availability within the hour." },
-  { step: "03", title: "Equipment delivered", text: "Transport, permits and offloading handled." },
-  { step: "04", title: "Project completed", text: "Extend, swap or demobilise on your call." },
-];
-
-const industries = [
-  "Construction",
-  "Oil & Gas",
-  "Infrastructure",
-  "Events",
-  "Manufacturing",
-  "Government",
-  "Utilities",
-  "Logistics",
-];
+const outDir = join(publicDir, "docs", "pamphlet");
 
 async function imageDataUri(filename, width = 800) {
   const path = join(publicDir, "images", filename);
@@ -97,23 +36,16 @@ async function logoDataUri(light = false) {
   return `data:image/png;base64,${buffer.toString("base64")}`;
 }
 
-function esc(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
-
 function buildHtml(images) {
   const categoryCards = equipmentCategories
     .map(
       (cat) => `
       <article class="category">
-        <img src="${images[cat.image]}" alt="${esc(cat.title)}" />
+        <img src="${images[cat.image]}" alt="${esc(cat.imageAlt)}" />
         <div class="category-body">
           <h3>${esc(cat.title)}</h3>
-          <div class="tags">${cat.tags.map((tag) => `<span>${esc(tag)}</span>`).join("")}</div>
+          <p class="category-url">${esc(categoryUrl(cat))}</p>
+          <div class="tags">${cat.tags.slice(0, 4).map((tag) => `<span>${esc(tag)}</span>`).join("")}</div>
         </div>
       </article>`,
     )
@@ -185,7 +117,7 @@ function buildHtml(images) {
       margin: 0 auto;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      grid-template-rows: auto auto minmax(0, 1fr) auto auto;
       background: #fff;
     }
 
@@ -194,7 +126,7 @@ function buildHtml(images) {
       background: linear-gradient(135deg, #0b2545 0%, #14365f 100%);
       color: #fff;
       padding: 10mm 12mm 9mm;
-      min-height: 78mm;
+      min-height: 74mm;
     }
 
     .hero-bg {
@@ -226,13 +158,10 @@ function buildHtml(images) {
       align-items: start;
     }
 
-    .hero-logo {
-      width: 52mm;
-      margin-bottom: 4mm;
-    }
+    .hero-logo { width: 52mm; margin-bottom: 4mm; }
 
     .hero h1 {
-      font-size: 19pt;
+      font-size: 18pt;
       line-height: 1.12;
       font-weight: 800;
       max-width: 118mm;
@@ -299,7 +228,7 @@ function buildHtml(images) {
       justify-content: space-between;
       align-items: baseline;
       gap: 4mm;
-      margin-bottom: 4mm;
+      margin-bottom: 3.5mm;
       border-bottom: 1.5px solid #f39c12;
       padding-bottom: 2.5mm;
     }
@@ -312,10 +241,7 @@ function buildHtml(images) {
       margin-bottom: 1mm;
     }
 
-    .section-head h2 {
-      font-size: 13pt;
-      line-height: 1.1;
-    }
+    .section-head h2 { font-size: 12.5pt; line-height: 1.1; }
 
     .section-head p {
       font-size: 7.5pt;
@@ -352,16 +278,16 @@ function buildHtml(images) {
       justify-content: center;
     }
 
-    .category h3 {
-      font-size: 9pt;
-      margin-bottom: 1.5mm;
+    .category h3 { font-size: 9pt; margin-bottom: 0.8mm; }
+
+    .category-url {
+      font-size: 5.8pt;
+      color: #1565c0;
+      margin-bottom: 1.2mm;
+      line-height: 1.2;
     }
 
-    .tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1mm;
-    }
+    .tags { display: flex; flex-wrap: wrap; gap: 1mm; }
 
     .tags span {
       font-size: 5.8pt;
@@ -381,13 +307,10 @@ function buildHtml(images) {
       border-left: 2px solid #f39c12;
       padding: 2mm 2.5mm;
       background: #f8fafc;
-      min-height: 18mm;
+      min-height: 17mm;
     }
 
-    .why h4 {
-      font-size: 8pt;
-      margin-bottom: 1mm;
-    }
+    .why h4 { font-size: 8pt; margin-bottom: 1mm; }
 
     .why p {
       font-size: 6.8pt;
@@ -399,14 +322,14 @@ function buildHtml(images) {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 2.5mm;
-      margin-top: 4mm;
+      margin-top: 3.5mm;
     }
 
     .step {
       border: 1px solid #dbeafe;
       background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
       padding: 3mm;
-      min-height: 22mm;
+      min-height: 20mm;
     }
 
     .step-num {
@@ -416,10 +339,7 @@ function buildHtml(images) {
       margin-bottom: 1.5mm;
     }
 
-    .step h4 {
-      font-size: 8pt;
-      margin-bottom: 1mm;
-    }
+    .step h4 { font-size: 8pt; margin-bottom: 1mm; }
 
     .step p {
       font-size: 6.8pt;
@@ -428,7 +348,7 @@ function buildHtml(images) {
     }
 
     .industries {
-      margin-top: 4mm;
+      margin-top: 3.5mm;
       display: flex;
       flex-wrap: wrap;
       gap: 1.5mm;
@@ -443,6 +363,55 @@ function buildHtml(images) {
       color: #334155;
     }
 
+    .license-strip {
+      margin: 0 12mm;
+      padding: 3mm 0 3.5mm;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .license-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 4mm;
+      margin-bottom: 2mm;
+    }
+
+    .license-head strong {
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #0b2545;
+    }
+
+    .license-head span {
+      font-size: 6.5pt;
+      color: #64748b;
+      text-align: right;
+    }
+
+    .license-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.2mm 3mm;
+    }
+
+    .license-item-compact {
+      display: flex;
+      gap: 2mm;
+      font-size: 5.8pt;
+      line-height: 1.25;
+      color: #475569;
+    }
+
+    .license-code {
+      flex-shrink: 0;
+      font-weight: 700;
+      color: #1565c0;
+      font-family: "Courier New", monospace;
+    }
+
     .contact {
       flex-shrink: 0;
       background: #0b2545;
@@ -454,15 +423,9 @@ function buildHtml(images) {
       align-items: center;
     }
 
-    .contact-logo {
-      width: 36mm;
-      margin-bottom: 2mm;
-    }
+    .contact-logo { width: 36mm; margin-bottom: 2mm; }
 
-    .contact h3 {
-      font-size: 11pt;
-      margin-bottom: 1.5mm;
-    }
+    .contact h3 { font-size: 11pt; margin-bottom: 1.5mm; }
 
     .contact .cta {
       font-size: 7pt;
@@ -472,9 +435,7 @@ function buildHtml(images) {
       margin-bottom: 3mm;
     }
 
-    .contact-website {
-      margin-top: 1mm;
-    }
+    .contact-website { margin-top: 1mm; }
 
     .contact-website strong {
       display: block;
@@ -485,7 +446,6 @@ function buildHtml(images) {
       margin-bottom: 0.8mm;
     }
 
-    .contact-website span,
     .contact-website a {
       display: block;
       font-size: 11pt;
@@ -512,10 +472,7 @@ function buildHtml(images) {
       margin-bottom: 0.5mm;
     }
 
-    .contact-item span {
-      display: block;
-      color: #fff;
-    }
+    .contact-item span { display: block; color: #fff; }
 
     @media print {
       .screen-bar { display: none !important; }
@@ -533,7 +490,7 @@ function buildHtml(images) {
 
   <main class="pamphlet">
     <header class="hero">
-      <img class="hero-bg" src="${images.hero}" alt="" />
+      <img class="hero-bg" src="${images.hero}" alt="Crawler excavator working on a construction site in Abu Dhabi at dawn" />
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <div>
@@ -577,7 +534,7 @@ function buildHtml(images) {
       </div>
       <div class="why-grid">${whyCards}</div>
 
-      <div class="section-head" style="margin-top: 4mm;">
+      <div class="section-head" style="margin-top: 3.5mm;">
         <div>
           <div class="eyebrow">How It Works</div>
           <h2>From Enquiry to Site</h2>
@@ -594,6 +551,14 @@ function buildHtml(images) {
       <div class="industries">${industryTags}</div>
     </section>
 
+    <section class="license-strip">
+      <div class="license-head">
+        <strong>Licensed &amp; Regulated</strong>
+        <span>${esc(COMPANY.name)} · TAMM / ADDED</span>
+      </div>
+      <ul class="license-list">${licenseListHtml(true)}</ul>
+    </section>
+
     <footer class="contact">
       <div>
         <img class="contact-logo" src="${images.logoLight}" alt="${esc(COMPANY.shortName)}" />
@@ -601,7 +566,7 @@ function buildHtml(images) {
         <p class="cta">Call, email or WhatsApp our rental desk. We typically respond with availability and rates within the hour.</p>
         <p class="contact-website">
           <strong>Website</strong>
-          <a href="${esc(CONTACT.website)}">${esc(CONTACT.website)}</a>
+          <a href="${esc(CONTACT.website)}">${esc(CONTACT.websiteDisplay)}</a>
         </p>
       </div>
       <div class="contact-grid">
@@ -643,17 +608,23 @@ async function main() {
 
   writeFileSync(htmlPath, html);
 
-  const browser = await puppeteer.launch({ headless: true });
-  const page = await browser.newPage();
-  await page.setContent(html, { waitUntil: "domcontentloaded" });
-  await page.pdf({
-    path: pdfPath,
-    format: "A4",
-    printBackground: true,
-    preferCSSPageSize: true,
-    margin: { top: 0, right: 0, bottom: 0, left: 0 },
-  });
-  await browser.close();
+  try {
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
+    await page.pdf({
+      path: pdfPath,
+      format: "A4",
+      printBackground: true,
+      preferCSSPageSize: true,
+      margin: { top: 0, right: 0, bottom: 0, left: 0 },
+    });
+    await browser.close();
+    console.log(`Generated ${pdfPath}`);
+  } catch (error) {
+    console.warn("PDF generation skipped — open the HTML and Print → Save as PDF.");
+    console.warn(error.message);
+  }
 
   writeFileSync(
     join(outDir, "README.txt"),
@@ -661,11 +632,11 @@ async function main() {
 ===============================
 
 HTML preview:
-  Open public/pamphlet/index.html in your browser
+  Open public/docs/pamphlet/index.html in your browser
   Click "Print / Save as PDF"
 
 PDF (generated):
-  public/pamphlet/Peakfront-Pamphlet.pdf
+  public/docs/pamphlet/Peakfront-Pamphlet.pdf
 
 Regenerate:
   npm run generate:pamphlet
@@ -673,7 +644,6 @@ Regenerate:
   );
 
   console.log(`Generated ${htmlPath}`);
-  console.log(`Generated ${pdfPath}`);
 }
 
 main().catch((error) => {

@@ -2,9 +2,11 @@
 
 import { ArrowLeft, ArrowRight, Quote } from "lucide-react";
 import { useCallback, useState } from "react";
-import { testimonials } from "@/lib/content";
+import { publishedTestimonials } from "@/lib/content";
 
 export default function Testimonials() {
+  const testimonials = publishedTestimonials;
+
   const [index, setIndex] = useState(0);
   const [fade, setFade] = useState(true);
 
@@ -15,6 +17,10 @@ export default function Testimonials() {
       setFade(true);
     }, 250);
   }, []);
+
+  if (testimonials.length === 0) {
+    return null;
+  }
 
   const prev = () =>
     goTo((index - 1 + testimonials.length) % testimonials.length);
