@@ -18,12 +18,14 @@ Operations:
   inspection/         — Equipment inspection reports
 
 Marketing:
-  pamphlet/           — Company pamphlet (PDF)
-  business-card/      — Business card print files
+  pamphlet/               — Company pamphlet (PDF)
+  capability-statement/   — A4 capability statement for procurement
+  business-card/          — Business card print files
 
 Regenerate all templates:
   npm run generate:docs
 
 Individual generators still available:
   npm run generate:pamphlet
+  npm run generate:capability-statement
   npm run generate:business-card

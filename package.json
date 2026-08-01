@@ -11,6 +11,7 @@
     "generate:logos": "node scripts/generate-logos.mjs",
     "generate:portfolio": "node scripts/generate-portfolio.mjs",
     "generate:pamphlet": "node scripts/generate-pamphlet.mjs",
+    "generate:capability-statement": "node scripts/generate-capability-statement.mjs",
     "generate:business-card": "node scripts/generate-business-card.mjs",
     "generate:docs": "node scripts/generate-docs.mjs",
     "optimize:images": "node scripts/optimize-images.mjs",

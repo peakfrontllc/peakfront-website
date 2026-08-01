@@ -53,9 +53,92 @@ async function main() {
   }
 
   writeDocHtmlPages(docsDir, DOC_TYPES);
+  writeCapabilityStatementPage(docsDir);
   writeHubIndex(docsDir);
   writeReadme(docsDir);
   console.log(`Generated ${join(docsDir, "index.html")}`);
+}
+
+function writeCapabilityStatementPage(docsDir) {
+  const outDir = join(docsDir, "capability-statement");
+  mkdirSync(outDir, { recursive: true });
+
+  const pdfName = "Peakfront-Capability-Statement.pdf";
+
+  writeFileSync(
+    join(outDir, "index.html"),
+    `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Peakfront — Capability Statement</title>
+  <style>
+    :root { --navy:#0b2545; --amber:#f39c12; --line:#e2e8f0; --muted:#64748b; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Arial,Helvetica,sans-serif; background:#eef2f6; color:var(--navy); }
+    .toolbar { position:sticky; top:0; z-index:10; display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; padding:1rem 1.25rem; background:white; border-bottom:1px solid var(--line); }
+    .toolbar h1 { margin:0; font-size:1rem; flex:1; min-width:200px; }
+    a.btn { appearance:none; border:none; cursor:pointer; text-decoration:none; background:var(--navy); color:white; padding:.55rem .95rem; border-radius:6px; font-size:.9rem; font-weight:600; }
+    a.btn.secondary { background:white; color:var(--navy); border:1px solid var(--line); }
+    .wrap { max-width:720px; margin:0 auto; padding:2.5rem 1.25rem 3rem; }
+    .panel { background:white; border:1px solid var(--line); border-radius:10px; padding:1.75rem 1.5rem; box-shadow:0 8px 24px rgba(11,37,69,.06); }
+    .tag { display:inline-block; font-size:.7rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--amber); margin-bottom:.6rem; }
+    h2 { margin:0 0 .75rem; font-size:1.35rem; }
+    p, li { line-height:1.55; color:var(--muted); }
+    ul { margin:.75rem 0 0 1.2rem; padding:0; }
+    .actions { display:flex; flex-wrap:wrap; gap:.75rem; margin-top:1.25rem; }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <h1>Capability Statement</h1>
+    <a class="btn" href="./${pdfName}" download>Download PDF</a>
+    <a class="btn secondary" href="./print.html" target="_blank">HTML preview</a>
+    <a class="btn secondary" href="/capability-statement">Live document</a>
+    <a class="btn secondary" href="../">← All documents</a>
+  </div>
+  <div class="wrap">
+    <div class="panel">
+      <span class="tag">Marketing</span>
+      <h2>Peakfront Capability Statement</h2>
+      <p>Single-page A4 profile for procurement managers, project teams, and contractors. Covers equipment categories, industries served, and company strengths.</p>
+      <ul>
+        <li>Download the pre-generated PDF for email and procurement submissions.</li>
+        <li>Or open the live document and use <strong>Print / Save as PDF</strong>.</li>
+        <li>Enable <strong>Background graphics</strong> in print settings.</li>
+      </ul>
+      <div class="actions">
+        <a class="btn" href="./${pdfName}" download>Download PDF</a>
+        <a class="btn secondary" href="/capability-statement">Open live document</a>
+        <a class="btn secondary" href="../">Back to all documents</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`,
+  );
+
+  writeFileSync(
+    join(outDir, "README.txt"),
+    `Peakfront Capability Statement
+==============================
+
+PDF (generated):
+  public/docs/capability-statement/${pdfName}
+
+HTML preview:
+  public/docs/capability-statement/print.html
+
+Live document (Next.js):
+  /capability-statement
+
+Regenerate PDF + print HTML:
+  npm run generate:capability-statement
+`,
+  );
+
+  console.log(`Generated ${join(outDir, "index.html")}`);
 }
 
 function writeHubIndex(docsDir) {
@@ -69,6 +152,7 @@ function writeHubIndex(docsDir) {
     { href: "./inspection/", title: "Inspection Report", desc: "Pre/post rental equipment checklist", tag: "Operations" },
     { href: "./invoice/", title: "Invoice", desc: "Tax invoice for clients", tag: "Finance" },
     { href: "./pamphlet/", title: "Company Pamphlet", desc: "Single-page A4 marketing PDF", tag: "Marketing" },
+    { href: "./capability-statement/", title: "Capability Statement", desc: "A4 company profile for procurement teams", tag: "Marketing" },
     { href: "./business-card/", title: "Business Card", desc: "Print-ready business cards", tag: "Marketing" },
   ];
 
@@ -140,14 +224,16 @@ Operations:
   inspection/         — Equipment inspection reports
 
 Marketing:
-  pamphlet/           — Company pamphlet (PDF)
-  business-card/      — Business card print files
+  pamphlet/               — Company pamphlet (PDF)
+  capability-statement/   — A4 capability statement for procurement
+  business-card/          — Business card print files
 
 Regenerate all templates:
   npm run generate:docs
 
 Individual generators still available:
   npm run generate:pamphlet
+  npm run generate:capability-statement
   npm run generate:business-card
 `,
   );

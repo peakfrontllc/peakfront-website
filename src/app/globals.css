@@ -89,3 +89,55 @@ html.hydrated .hero-pulse {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Capability statement — standalone print document */
+body:has(.capability-statement-root) > a[href="#main-content"],
+body:has(.capability-statement-root) > header,
+body:has(.capability-statement-root) > footer,
+body:has(.capability-statement-root) > a[aria-label="Chat with Peakfront on WhatsApp"] {
+  display: none !important;
+}
+
+body:has(.capability-statement-root) > main {
+  padding-bottom: 0 !important;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body:has(.capability-statement-root) > a[href="#main-content"],
+  body:has(.capability-statement-root) > header,
+  body:has(.capability-statement-root) > footer,
+  body:has(.capability-statement-root) > a[aria-label="Chat with Peakfront on WhatsApp"],
+  body:has(.capability-statement-root) .fixed {
+    display: none !important;
+  }
+  .capability-print-toolbar {
+    display: none !important;
+  }
+
+  .capability-statement-root {
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .capability-statement-page {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+}
