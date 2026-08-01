@@ -6,10 +6,11 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { navLinks } from "@/lib/content";
 import { CONTACT } from "@/lib/constants";
-import { getEquipmentNavItems } from "@/lib/rental-pages";
+import { getEquipmentNavItems, getViewAllEquipmentNavItem } from "@/lib/rental-pages";
 import { useQuoteDrawer } from "./QuoteDrawerProvider";
 
 const equipmentNavItems = getEquipmentNavItems();
+const viewAllEquipmentItem = getViewAllEquipmentNavItem();
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
@@ -132,6 +133,15 @@ export default function Header() {
                     {item.label}
                   </Link>
                 ))}
+                <div className="mt-1 border-t border-white/10 pt-1">
+                  <Link
+                    href={viewAllEquipmentItem.href}
+                    onClick={() => setEquipmentOpen(false)}
+                    className="block px-4 py-2.5 text-sm font-semibold text-amber transition-colors hover:bg-white/5 hover:text-white"
+                  >
+                    {viewAllEquipmentItem.label}
+                  </Link>
+                </div>
               </div>
             ) : null}
           </div>
@@ -210,6 +220,13 @@ export default function Header() {
                     {item.label}
                   </Link>
                 ))}
+                <Link
+                  href={viewAllEquipmentItem.href}
+                  onClick={closeMobile}
+                  className="touch-target rounded-sm px-2 py-2.5 text-sm font-semibold text-amber transition-colors hover:bg-white/5 hover:text-white"
+                >
+                  {viewAllEquipmentItem.label}
+                </Link>
               </div>
             ) : null}
 

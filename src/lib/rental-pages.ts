@@ -1146,6 +1146,59 @@ export function getEquipmentBrowseCards(): EquipmentBrowseCard[] {
   ];
 }
 
+export const VIEW_ALL_EQUIPMENT_PATH = "/equipment-rental/all";
+
+export type EquipmentCatalogSection = {
+  id: string;
+  title: string;
+  shortTitle: string;
+  hubHref?: string;
+  cards: EquipmentBrowseCard[];
+};
+
+export function getAllEquipmentCatalogSections(): EquipmentCatalogSection[] {
+  const sections: EquipmentCatalogSection[] = rentalHubs
+    .map((hub) => {
+      const cards = rentalPages
+        .filter((page) => page.hubSlug === hub.slug || page.slug === hub.slug)
+        .map((page) => ({
+          href: getRentalPagePath(page.slug),
+          title: page.title,
+          image: page.image,
+          imageAlt: page.imageAlt,
+        }));
+
+      return {
+        id: hub.slug,
+        title: hub.title,
+        shortTitle: hub.cardTitle,
+        hubHref: getRentalHubPath(hub.slug),
+        cards,
+      };
+    })
+    .filter((section) => section.cards.length > 0);
+
+  sections.push({
+    id: "scaffolding",
+    title: "Scaffolding Services",
+    shortTitle: "Scaffolding",
+    cards: [SCAFFOLDING_BROWSE_CARD],
+  });
+
+  return sections;
+}
+
+export function getAllEquipmentMachineCards(): EquipmentBrowseCard[] {
+  return getAllEquipmentCatalogSections().flatMap((section) => section.cards);
+}
+
+export function getViewAllEquipmentNavItem(): EquipmentNavItem {
+  return {
+    href: VIEW_ALL_EQUIPMENT_PATH,
+    label: "View All Equipment",
+  };
+}
+
 export function getEquipmentNavItems(): EquipmentNavItem[] {
   return [
     { href: "/#equipment", label: "Fleet Overview" },
@@ -1155,5 +1208,35 @@ export function getEquipmentNavItems(): EquipmentNavItem[] {
       label: hub.cardTitle,
     })),
     { href: "/scaffolding-suppliers-abu-dhabi", label: "Scaffolding" },
+  ];
+}
+
+/** Popular rental pages for the footer — keep this list short and well-known. */
+const FOOTER_EQUIPMENT_SLUGS = [
+  "crawler-excavator-rental-abu-dhabi",
+  "mini-excavator-rental-abu-dhabi",
+  "telehandler-rental-abu-dhabi",
+  "wheel-loader-rental-abu-dhabi",
+  "skid-steer-rental-abu-dhabi",
+  "mobile-crane-rental-abu-dhabi",
+  "forklift-rental-abu-dhabi",
+  "backhoe-loader-rental-abu-dhabi",
+  "generator-rental-abu-dhabi",
+  "water-tanker-rental-abu-dhabi",
+] as const;
+
+export function getFooterEquipmentLinks(): EquipmentNavItem[] {
+  const pages = FOOTER_EQUIPMENT_SLUGS.map((slug) => {
+    const page = getRentalPage(slug);
+
+    return {
+      href: getRentalPagePath(slug),
+      label: page?.title ?? slug,
+    };
+  });
+
+  return [
+    ...pages,
+    { href: VIEW_ALL_EQUIPMENT_PATH, label: "View All Equipment" },
   ];
 }

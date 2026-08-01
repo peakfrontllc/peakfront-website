@@ -112,8 +112,12 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} scroll-smooth`}
+      data-scroll-behavior="smooth"
+      className={`${inter.variable} ${plusJakarta.variable} ${jetbrainsMono.variable}`}
     >
+      <head>
+        <script src="/scripts/strip-extension-attrs.js" />
+      </head>
       <body
         suppressHydrationWarning
         className="min-h-screen overflow-x-hidden bg-white font-sans text-navy antialiased"

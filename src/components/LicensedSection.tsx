@@ -15,6 +15,7 @@ export default function LicensedSection({
   return (
     <details
       open={defaultOpen || undefined}
+      suppressHydrationWarning
       className={`group ${isLight ? "border border-navy/10 bg-slate-50" : "border-t border-white/10 pt-8"}`}
     >
       <summary

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { EquipmentItem } from "@/lib/content";
 import { CONTACT } from "@/lib/constants";
 import { LEGAL_ENTITY_NAME } from "@/lib/license";
@@ -216,6 +217,84 @@ export function getRentalPageMetadata(
       title: seo.title,
       description: seo.description,
       url: path,
+    },
+  };
+}
+
+export function getViewAllEquipmentMetadata(): Metadata {
+  const title =
+    "View All Equipment for Rent | Abu Dhabi, Dubai & UAE | Peakfront";
+  const description = `${LEGAL_ENTITY_NAME} — browse our full rental fleet: excavators, telehandlers, cranes, forklifts, loaders, generators, buses, tankers, lifts and scaffolding. Daily, weekly and monthly hire across the UAE.`;
+
+  return {
+    title,
+    description,
+    keywords: [
+      "equipment rental UAE",
+      "heavy equipment rental Abu Dhabi",
+      "excavator rental Dubai",
+      "crane rental UAE",
+      "forklift rental Abu Dhabi",
+      "telehandler rental UAE",
+      "generator rental Abu Dhabi",
+      "bus rental UAE",
+      "water tanker rental Abu Dhabi",
+      "construction equipment hire UAE",
+      "Peakfront equipment rental",
+    ],
+    alternates: {
+      canonical: "/equipment-rental/all",
+    },
+    openGraph: {
+      title,
+      description,
+      url: "/equipment-rental/all",
+      type: "website",
+      images: [
+        {
+          url: siteConfig.ogImage,
+          width: 1932,
+          height: 788,
+          alt: "Peakfront heavy equipment rental fleet in Abu Dhabi",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [siteConfig.ogImage],
+    },
+  };
+}
+
+export function getEquipmentCatalogJsonLd(
+  items: readonly { href: string; title: string }[],
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "@id": `${SITE_URL}/equipment-rental/all#catalog`,
+    name: "View All Equipment for Rent",
+    description:
+      "Complete Peakfront rental fleet — excavators, cranes, loaders, generators, buses, tankers and access equipment across Abu Dhabi, Dubai and the UAE.",
+    url: `${SITE_URL}/equipment-rental/all`,
+    inLanguage: "en-AE",
+    isPartOf: {
+      "@id": `${SITE_URL}/#website`,
+    },
+    provider: {
+      "@id": `${SITE_URL}/#organization`,
+    },
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: items.length,
+      itemListElement: items.map((item, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: item.title,
+        url: `${SITE_URL}${item.href}`,
+      })),
     },
   };
 }

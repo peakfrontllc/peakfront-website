@@ -18,6 +18,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly" as const,
       priority: 0.95,
     },
+    {
+      url: `${SITE_URL}/equipment-rental/all`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.92,
+    },
     ...getAllRentalSlugs().map((slug) => ({
       url: `${SITE_URL}${getRentalPagePath(slug)}`,
       lastModified: new Date(),

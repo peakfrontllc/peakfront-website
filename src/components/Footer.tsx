@@ -6,6 +6,7 @@ import {
 import Link from "next/link";
 import LicensedSection from "@/components/LicensedSection";
 import { navLinks } from "@/lib/content";
+import { getFooterEquipmentLinks } from "@/lib/rental-pages";
 import { CONTACT } from "@/lib/constants";
 import { LEGAL_ENTITY_NAME } from "@/lib/license";
 
@@ -34,11 +35,13 @@ const socialLinks = [
   { href: "https://www.youtube.com/@peakfrontae", label: "YouTube", icon: Play },
 ] as const;
 
+const footerEquipmentLinks = getFooterEquipmentLinks();
+
 export default function Footer() {
   return (
     <footer className="overflow-hidden bg-navy pt-14 text-white sm:pt-20">
       <div className="mx-auto max-w-[1400px] px-4 sm:px-5 lg:px-10">
-        <div className="grid grid-cols-1 gap-10 pb-12 sm:grid-cols-2 sm:gap-12 sm:pb-16 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-10 pb-12 sm:grid-cols-2 sm:gap-12 sm:pb-16 lg:grid-cols-4">
           <div>
             <div className="text-2xl font-extrabold tracking-tight">
               PEAKFRONT
@@ -85,6 +88,19 @@ export default function Footer() {
               <Link href="/terms" className="hover:text-amber">
                 Terms
               </Link>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] text-amber">
+              Equipment
+            </h3>
+            <div className="mt-5 flex flex-col gap-3 text-sm leading-relaxed text-white/60">
+              {footerEquipmentLinks.map((link) => (
+                <Link key={link.href} href={link.href} className="hover:text-amber">
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </div>
 
