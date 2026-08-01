@@ -119,9 +119,9 @@ export const equipmentCategories: EquipmentCategory[] = [
   {
     slug: "transport",
     title: "Transport",
-    image: "/images/transport.webp",
+    image: "/images/rental/water-tanker-supply.webp",
     imageAlt:
-      "Low bed trailer and heavy haulage trucks for equipment transport across the UAE",
+      "Water tanker and haulage trucks for site logistics across the UAE",
     description:
       "Haulage and site logistics — from pickups to low bed trailers moving plant across all seven emirates.",
     tags: [
@@ -159,7 +159,7 @@ export const equipmentCategories: EquipmentCategory[] = [
   {
     slug: "power-equipment",
     title: "Power Equipment",
-    image: "/images/power-equipment.webp",
+    image: "/images/rental/power-equipment-banner.webp",
     imageAlt:
       "Industrial diesel generators and dewatering pumps for temporary site power in the UAE",
     description:
@@ -245,7 +245,7 @@ export const equipmentItems: EquipmentItem[] = [
     categorySlug: "transport",
     category: "Transport",
     name: "5,000 Gal Water Tanker",
-    image: "/images/water-tanker.webp",
+    image: "/images/rental/water-tanker-supply.webp",
     imageAlt:
       "5,000-gallon water tanker truck supplying dust suppression water on an Abu Dhabi site",
     specs: [
@@ -323,7 +323,7 @@ export const equipmentItems: EquipmentItem[] = [
     categorySlug: "power-equipment",
     category: "Power Equipment",
     name: '6" Diesel Dewatering Pump',
-    image: "/images/dewatering-pump.webp",
+    image: "/images/rental/equipment-dewatering-pump.webp",
     imageAlt:
       "6-inch diesel dewatering pump operating on a construction dewatering project in Abu Dhabi",
     specs: [
@@ -343,7 +343,7 @@ export const equipmentItems: EquipmentItem[] = [
     categorySlug: "power-equipment",
     category: "Power Equipment",
     name: "500 kVA Generator",
-    image: "/images/power-equipment.webp",
+    image: "/images/rental/equipment-generator.webp",
     imageAlt:
       "500 kVA diesel generator providing temporary power on an industrial site in the UAE",
     specs: [
@@ -548,7 +548,6 @@ export const publishedTestimonials = testimonials.filter(
 );
 
 export const navLinks = [
-  { href: "/#equipment", label: "Equipment" },
   { href: "/#featured", label: "Featured" },
   { href: "/#why", label: "Why Peakfront" },
   { href: "/#industries", label: "Industries" },

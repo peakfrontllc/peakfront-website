@@ -2,7 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import QuoteButton from "@/components/QuoteButton";
+import RentalEquipmentCard from "@/components/rental/RentalEquipmentCard";
 import { equipmentCategories, getCategoryPath } from "@/lib/content";
+import { getEquipmentBrowseCards } from "@/lib/rental-pages";
 
 function SectionKicker({ label }: { label: string }) {
   return (
@@ -30,7 +32,7 @@ export default function EquipmentMatrix() {
           </p>
         </div>
 
-        <div className="mt-16 grid gap-6 md:grid-cols-2">
+        <div className="mt-16 grid gap-6 sm:grid-cols-2">
           {equipmentCategories.map((cat) => (
             <article
               key={cat.slug}
@@ -68,17 +70,17 @@ export default function EquipmentMatrix() {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-8 flex flex-wrap items-center gap-4">
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                   <Link
                     href={getCategoryPath(cat.slug)}
-                    className="inline-flex items-center gap-2 border-b-2 border-navy/20 pb-1 text-sm font-bold text-navy transition-colors hover:border-blue hover:text-blue"
+                    className="touch-target inline-flex w-full items-center justify-center gap-2 border border-navy/15 bg-slate-50 px-5 py-3 text-sm font-bold text-navy transition-colors hover:border-blue hover:text-blue sm:w-auto sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:pb-1 sm:border-b-2 sm:border-navy/20"
                   >
                     View {cat.title}
                     <ArrowUpRight className="h-4 w-4" />
                   </Link>
                   <QuoteButton
                     equipmentName={cat.title}
-                    className="inline-flex items-center gap-2 border-b-2 border-amber pb-1 text-sm font-bold text-navy transition-colors hover:text-blue"
+                    className="touch-target inline-flex w-full items-center justify-center gap-2 bg-amber px-5 py-3 text-sm font-bold text-navy transition-colors hover:bg-navy hover:text-white sm:w-auto sm:bg-transparent sm:px-0 sm:py-0 sm:pb-1 sm:text-navy sm:hover:text-blue sm:border-b-2 sm:border-amber"
                   >
                     Request Quote
                     <ArrowUpRight className="h-4 w-4" />
@@ -87,6 +89,39 @@ export default function EquipmentMatrix() {
               </div>
             </article>
           ))}
+        </div>
+
+        <div id="equipment-list" className="mt-20 border-t border-navy/10 pt-16">
+          <div className="max-w-2xl">
+            <SectionKicker label="Equipment List for Rent" />
+            <h3 className="text-2xl font-extrabold tracking-tight text-navy sm:text-3xl">
+              Browse equipment categories
+            </h3>
+            <p className="mt-4 text-sm leading-relaxed text-slate-600">
+              Select a category to browse equipment — each links to a full list
+              with sub-types, variants and rental details. Scaffolding services
+              are also available across Abu Dhabi and the UAE.
+            </p>
+            <Link
+              href="/equipment-rental"
+              className="touch-target mt-5 inline-flex items-center gap-2 py-1 text-sm font-bold text-blue transition-colors hover:text-navy"
+            >
+              View full equipment list
+              <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {getEquipmentBrowseCards().map((card) => (
+              <RentalEquipmentCard
+                key={card.href}
+                href={card.href}
+                title={card.title}
+                image={card.image}
+                imageAlt={card.imageAlt}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>

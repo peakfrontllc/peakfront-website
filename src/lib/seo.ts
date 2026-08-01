@@ -20,6 +20,7 @@ export const siteConfig = {
     "transport rental Mussafah",
     "generator rental Abu Dhabi",
     "bus rental UAE",
+    "scaffolding rental Abu Dhabi",
     "Peakfront Equipment Rental",
   ],
   locale: "en_AE",
@@ -197,6 +198,24 @@ export function getCategoryPageMetadata(category: {
       title: category.seo.title,
       description: category.seo.description,
       url: `/equipment/${category.slug}`,
+    },
+  };
+}
+
+export function getRentalPageMetadata(
+  seo: { title: string; description: string },
+  path: string,
+) {
+  return {
+    title: seo.title,
+    description: seo.description,
+    alternates: {
+      canonical: path,
+    },
+    openGraph: {
+      title: seo.title,
+      description: seo.description,
+      url: path,
     },
   };
 }

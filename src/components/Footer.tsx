@@ -73,6 +73,9 @@ export default function Footer() {
                   {link.label}
                 </Link>
               ))}
+              <Link href="/scaffolding-suppliers-abu-dhabi" className="hover:text-amber">
+                Scaffolding
+              </Link>
               <Link href="#contact" className="hover:text-amber">
                 Contact
               </Link>

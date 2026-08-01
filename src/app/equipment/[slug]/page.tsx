@@ -16,6 +16,10 @@ import {
   getCategoryPageMetadata,
   getProductJsonLd,
 } from "@/lib/seo";
+import {
+  getRentalPagePath,
+  getRentalSlugForTag,
+} from "@/lib/rental-pages";
 
 type CategoryPageProps = {
   params: Promise<{ slug: string }>;
@@ -136,14 +140,29 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
             Also available in this category
           </h2>
           <ul className="mt-6 flex flex-wrap gap-2">
-            {category.tags.map((tag) => (
-              <li
-                key={tag}
-                className="border border-navy/10 bg-white px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-navy/75"
-              >
-                {tag}
-              </li>
-            ))}
+            {category.tags.map((tag) => {
+              const rentalSlug = getRentalSlugForTag(tag);
+              if (rentalSlug) {
+                return (
+                  <li key={tag}>
+                    <Link
+                      href={getRentalPagePath(rentalSlug)}
+                      className="block border border-navy/10 bg-white px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-navy/75 transition-colors hover:border-blue hover:text-blue"
+                    >
+                      {tag}
+                    </Link>
+                  </li>
+                );
+              }
+              return (
+                <li
+                  key={tag}
+                  className="border border-navy/10 bg-white px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-navy/75"
+                >
+                  {tag}
+                </li>
+              );
+            })}
           </ul>
         </div>
       </section>
