@@ -1,4 +1,6 @@
+import { ArrowRight, FileText } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import LicensedSection from "@/components/LicensedSection";
 import { ABOUT_IMAGE, ABOUT_IMAGE_ALT } from "@/lib/content";
 import { LEGAL_ENTITY_NAME } from "@/lib/license";
@@ -63,6 +65,14 @@ export default function About() {
               </div>
             ))}
           </div>
+          <Link
+            href="/portfolio"
+            className="group mt-8 inline-flex items-center gap-2 border border-navy/15 bg-navy px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue"
+          >
+            <FileText className="h-4 w-4" aria-hidden="true" />
+            Company Portfolio
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Link>
         </div>
 
         <div className="relative">
@@ -80,7 +90,7 @@ export default function About() {
       </div>
 
       <div className="mx-auto mt-14 max-w-[1400px] px-5 lg:px-10">
-        <LicensedSection variant="light" />
+        <LicensedSection variant="light" defaultOpen />
       </div>
     </section>
   );

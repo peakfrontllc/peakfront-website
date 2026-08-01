@@ -3,15 +3,18 @@ import { LEGAL_ENTITY_NAME, licensedActivities } from "@/lib/license";
 
 type LicensedSectionProps = {
   variant?: "dark" | "light";
+  defaultOpen?: boolean;
 };
 
 export default function LicensedSection({
   variant = "dark",
+  defaultOpen = false,
 }: LicensedSectionProps) {
   const isLight = variant === "light";
 
   return (
     <details
+      open={defaultOpen || undefined}
       className={`group ${isLight ? "border border-navy/10 bg-slate-50" : "border-t border-white/10 pt-8"}`}
     >
       <summary

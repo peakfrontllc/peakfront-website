@@ -122,17 +122,80 @@ function buildHtml(images) {
     body {
       font-family: Arial, Helvetica, sans-serif;
       color: #0b2545;
-      background: #fff;
+      background: #eef2f6;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+    }
+
+    .screen-bar {
+      max-width: 210mm;
+      margin: 1rem auto 0.75rem;
+      padding: 1rem 1.25rem;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: #475569;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(11, 37, 69, 0.08);
+    }
+
+    .screen-bar-copy {
+      margin: 0;
+    }
+
+    .screen-bar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-top: 1rem;
+    }
+
+    .screen-bar .btn {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      border: 1px solid transparent;
+      background: #0b2545;
+      color: #fff;
+      padding: 0.55rem 0.95rem;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      line-height: 1.25;
+      cursor: pointer;
+      text-decoration: none;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+
+    .screen-bar .btn.secondary {
+      background: #fff;
+      color: #0b2545;
+      border-color: #e2e8f0;
+    }
+
+    @media print {
+      .screen-bar { display: none !important; }
+      body { background: #fff; }
+      .page {
+        margin: 0;
+        box-shadow: none;
+      }
     }
 
     .page {
       width: 210mm;
       min-height: 297mm;
+      margin: 0 auto 1rem;
       page-break-after: always;
       position: relative;
       overflow: hidden;
+      background: #fff;
+      box-shadow: 0 2px 12px rgba(11, 37, 69, 0.12);
     }
     .page:last-child { page-break-after: auto; }
 
@@ -509,6 +572,17 @@ function buildHtml(images) {
   </style>
 </head>
 <body>
+  <div class="screen-bar">
+    <p class="screen-bar-copy">
+      <strong>${esc(COMPANY.name)}</strong> — 7-page company portfolio.
+      Open in your browser and use Print → Save as PDF, or download the HTML file.
+    </p>
+    <div class="screen-bar-actions">
+      <button type="button" class="btn" onclick="window.print()">Print / Save as PDF</button>
+      <a class="btn secondary" href="./portfolio.html" download="Peakfront-Company-Portfolio.html">Download HTML</a>
+    </div>
+  </div>
+
   <section class="page cover">
     <img class="cover-image" src="${hero}" alt="Crawler excavator working on a construction site in Abu Dhabi at dawn" />
     <div class="cover-overlay"></div>
