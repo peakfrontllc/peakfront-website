@@ -1,9 +1,16 @@
+export type DownloadFile = {
+  href: string;
+  label: string;
+  download?: string;
+};
+
 export type DownloadItem = {
   title: string;
   description: string;
   tag: string;
-  pdfHref: string;
-  pdfLabel: string;
+  pdfHref?: string;
+  pdfLabel?: string;
+  files?: DownloadFile[];
   viewHref: string;
   viewLabel: string;
 };
@@ -38,5 +45,25 @@ export const downloadItems: DownloadItem[] = [
     pdfLabel: "Download PDF",
     viewHref: "/portfolio",
     viewLabel: "View online",
+  },
+  {
+    title: "Business Card",
+    description:
+      "Print-ready business cards for Managing Director Irfan Dayan — standard 3.5\" × 2\" landscape format with front contact details and back service mosaic.",
+    tag: "Marketing",
+    files: [
+      {
+        href: "/docs/business-card/front.png",
+        label: "Download front (PNG)",
+        download: "peakfront-card-front.png",
+      },
+      {
+        href: "/docs/business-card/back.png",
+        label: "Download back (PNG)",
+        download: "peakfront-card-back.png",
+      },
+    ],
+    viewHref: "/docs/business-card/print.html",
+    viewLabel: "View print sheet",
   },
 ];

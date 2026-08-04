@@ -6,7 +6,7 @@ import { LEGAL_ENTITY_NAME } from "@/lib/license";
 
 export const metadata: Metadata = {
   title: "Downloads",
-  description: `Download the Peakfront company pamphlet, capability statement, and portfolio PDFs from ${LEGAL_ENTITY_NAME}.`,
+  description: `Download the Peakfront company pamphlet, capability statement, portfolio PDFs, and business card files from ${LEGAL_ENTITY_NAME}.`,
   alternates: {
     canonical: "/downloads",
   },
@@ -34,8 +34,8 @@ export default function DownloadsPage() {
             Company documents
           </h1>
           <p className="mt-4 text-base leading-relaxed text-slate-600">
-            Download Peakfront marketing and procurement documents as PDF, or
-            open the online version in your browser.
+            Download Peakfront marketing and procurement documents as PDF or PNG,
+            or open the online version in your browser.
           </p>
         </div>
 
@@ -53,15 +53,29 @@ export default function DownloadsPage() {
                 {item.description}
               </p>
 
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                <a
-                  href={item.pdfHref}
-                  download
-                  className="inline-flex items-center justify-center gap-2 bg-navy px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#14365f]"
-                >
-                  <Download className="h-4 w-4" aria-hidden="true" />
-                  {item.pdfLabel}
-                </a>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                {item.files ? (
+                  item.files.map((file) => (
+                    <a
+                      key={file.href}
+                      href={file.href}
+                      download={file.download}
+                      className="inline-flex items-center justify-center gap-2 bg-navy px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#14365f]"
+                    >
+                      <Download className="h-4 w-4" aria-hidden="true" />
+                      {file.label}
+                    </a>
+                  ))
+                ) : (
+                  <a
+                    href={item.pdfHref}
+                    download
+                    className="inline-flex items-center justify-center gap-2 bg-navy px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#14365f]"
+                  >
+                    <Download className="h-4 w-4" aria-hidden="true" />
+                    {item.pdfLabel}
+                  </a>
+                )}
                 <a
                   href={item.viewHref}
                   target="_blank"
