@@ -44,7 +44,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-10 pb-12 sm:grid-cols-2 sm:gap-12 sm:pb-16 lg:grid-cols-4">
           <div>
             <div className="text-2xl font-extrabold tracking-tight">
-              PEAKFRONT
+              <span className="text-white">PEAK</span>
+              <span className="text-amber">FRONT</span>
             </div>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/55">
               Heavy equipment, transport and site solutions for contractors

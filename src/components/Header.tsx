@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { navLinks } from "@/lib/content";
+import { logoAssets } from "@/lib/logo";
 import { CONTACT } from "@/lib/constants";
 import { getEquipmentNavItems, getViewAllEquipmentNavItem } from "@/lib/rental-pages";
 import { useQuoteDrawer } from "./QuoteDrawerProvider";
@@ -88,15 +89,18 @@ export default function Header() {
           aria-label="Peakfront Equipment Rental — home"
         >
           <Image
-            src="/logo-mark.svg"
+            src={logoAssets.markSvg}
             alt=""
             width={40}
             height={40}
             className="h-10 w-10 shrink-0"
             priority
           />
-          <span className="min-w-0 text-base font-extrabold leading-none tracking-tight text-white sm:text-lg">
-            <span className="block truncate">PEAKFRONT</span>
+          <span className="min-w-0 text-base font-extrabold leading-none tracking-tight sm:text-lg">
+            <span className="block truncate">
+              <span className="text-white">PEAK</span>
+              <span className="text-amber">FRONT</span>
+            </span>
             <span className="mt-1 block font-mono text-[9px] font-medium uppercase tracking-[0.14em] text-amber sm:text-[10px] sm:tracking-[0.18em]">
               Equipment Rental
             </span>

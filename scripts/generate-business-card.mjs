@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
+import { LOGO_FILES, logoFile } from "./shared/logo-paths.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const publicDir = join(root, "public");
@@ -95,7 +96,7 @@ async function buildFront() {
   const bg = await photo("hero.webp", W, H, "centre");
   const vignette = await sharp(frontVignetteSvg()).png().toBuffer();
   const card = await sharp(frontCardSvg()).png().toBuffer();
-  const logo = await logoPng("logo.svg", 230);
+  const logo = await logoPng(LOGO_FILES.svg, 230);
 
   return sharp(bg)
     .composite([
@@ -146,7 +147,7 @@ async function buildBack() {
   );
 
   const bar = await sharp(backCentreBarSvg()).png().toBuffer();
-  const logo = await logoPng("logo-light.svg", 180);
+  const logo = await logoPng(LOGO_FILES.lightSvg, 180);
 
   const barY = H / 2 - 56;
 
@@ -166,7 +167,7 @@ async function buildBack() {
 }
 
 async function logoPng(file, width) {
-  return sharp(readFileSync(join(publicDir, file))).resize({ width }).png().toBuffer();
+  return sharp(readFileSync(logoFile(publicDir, file))).resize({ width }).png().toBuffer();
 }
 
 async function photo(file, width, height, position) {

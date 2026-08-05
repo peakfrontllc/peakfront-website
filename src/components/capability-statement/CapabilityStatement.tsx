@@ -10,6 +10,7 @@ import {
   TAGLINE,
   whyPeakfront,
 } from "@/components/capability-statement/data";
+import { logoAssets } from "@/lib/logo";
 import { CONTACT } from "@/lib/constants";
 import { LEGAL_ENTITY_NAME } from "@/lib/license";
 import { SITE_URL } from "@/lib/seo";
@@ -37,7 +38,7 @@ export default function CapabilityStatement() {
         <div className="relative z-10 grid grid-cols-[1fr_auto] gap-[6mm] px-[10mm] pb-[6mm] pt-[9mm]">
           <div>
             <Image
-              src="/logo-light.svg"
+              src={logoAssets.lightSvg}
               alt="Peakfront"
               width={200}
               height={48}

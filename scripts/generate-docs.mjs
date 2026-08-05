@@ -186,7 +186,7 @@ function writeHubIndex(docsDir) {
 <body>
   <div class="wrap">
     <header>
-      <img src="/logo.svg" alt="Peakfront" />
+      <img src="/logo/logo.svg" alt="Peakfront" />
       <h1>Official Documents</h1>
       <p>Peakfront Equipment Rental LLC SPC — templates for sales, procurement, operations and finance.</p>
       <p>Regenerate all files: <code>npm run generate:docs</code></p>

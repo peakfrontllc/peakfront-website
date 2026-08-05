@@ -50,7 +50,7 @@ function shell(title, toolbarExtra, body, script = "") {
   </div>
   <main class="page">
     <header class="header">
-      <img src="/logo.svg" alt="Peakfront" />
+      <img src="/logo/logo.svg" alt="Peakfront" />
       <p><strong>Peakfront Equipment Rental LLC SPC</strong></p>
       <p>Heavy Equipment &amp; Transport Rental</p>
       <p>Mussafah 17, Abu Dhabi, United Arab Emirates · +971 527459432 · info@peakfront.ae · www.peakfront.ae</p>

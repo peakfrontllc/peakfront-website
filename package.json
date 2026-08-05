@@ -9,6 +9,7 @@
     "lint": "eslint",
     "generate:favicons": "node scripts/generate-favicons.mjs",
     "generate:logos": "node scripts/generate-logos.mjs",
+    "generate:brand": "npm run generate:logos && npm run generate:favicons",
     "generate:portfolio": "node scripts/generate-portfolio.mjs",
     "generate:pamphlet": "node scripts/generate-pamphlet.mjs",
     "generate:capability-statement": "node scripts/generate-capability-statement.mjs",

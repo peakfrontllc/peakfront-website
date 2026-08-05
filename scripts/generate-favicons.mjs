@@ -3,26 +3,33 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 import pngToIco from "png-to-ico";
+import {
+  LOGO_FILES,
+  logoFile,
+  logoPublicDir,
+} from "./shared/logo-paths.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const publicDir = join(root, "public");
-const markSvg = readFileSync(join(publicDir, "logo-mark.svg"));
+const logoDir = logoPublicDir(publicDir);
+
+const markSvg = readFileSync(logoFile(publicDir, LOGO_FILES.markSvg));
 
 const sizes = [
-  { name: "favicon-16x16.png", size: 16 },
-  { name: "favicon-32x32.png", size: 32 },
-  { name: "apple-touch-icon.png", size: 180 },
+  { name: LOGO_FILES.favicon16, size: 16 },
+  { name: LOGO_FILES.favicon32, size: 32 },
+  { name: LOGO_FILES.appleTouch, size: 180 },
 ];
 
 for (const { name, size } of sizes) {
-  await sharp(markSvg).resize(size, size).png().toFile(join(publicDir, name));
+  await sharp(markSvg).resize(size, size).png().toFile(logoFile(publicDir, name));
 }
 
 const icoBuffer = await pngToIco([
-  join(publicDir, "favicon-16x16.png"),
-  join(publicDir, "favicon-32x32.png"),
+  logoFile(publicDir, LOGO_FILES.favicon16),
+  logoFile(publicDir, LOGO_FILES.favicon32),
 ]);
 
-writeFileSync(join(publicDir, "favicon.ico"), icoBuffer);
+writeFileSync(logoFile(publicDir, LOGO_FILES.faviconIco), icoBuffer);
 
-console.log("Generated favicon.ico, PNG icons in public/");
+console.log(`Generated favicon assets in public/logo/`);

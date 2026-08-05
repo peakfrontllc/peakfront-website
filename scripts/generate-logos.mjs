@@ -2,22 +2,28 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
+import {
+  LOGO_FILES,
+  logoFile,
+  logoPublicDir,
+} from "./shared/logo-paths.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const publicDir = join(root, "public");
-const logoSvg = readFileSync(join(publicDir, "logo.svg"), "utf8");
+const logoDir = logoPublicDir(publicDir);
+const logoSvg = readFileSync(logoFile(publicDir, LOGO_FILES.svg), "utf8");
 
 const LOGO_ASPECT = 248 / 44;
 
 const horizontalSizes = [
-  { name: "logo-248.png", width: 248 },
-  { name: "logo.png", width: 496 },
-  { name: "logo@2x.png", width: 992 },
+  { name: LOGO_FILES.png248, width: 248 },
+  { name: LOGO_FILES.png, width: 496 },
+  { name: LOGO_FILES.png2x, width: 992 },
 ];
 
 const squareSizes = [
-  { name: "logo-square-250.png", size: 250 },
-  { name: "logo-square-720.png", size: 720 },
+  { name: LOGO_FILES.square250, size: 250 },
+  { name: LOGO_FILES.square720, size: 720 },
 ];
 
 function buildHorizontalHtml(width) {
@@ -29,7 +35,7 @@ function buildHorizontalHtml(width) {
     <meta charset="utf-8" />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Plus+Jakarta+Sans:wght@800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@800&family=JetBrains+Mono:wght@500&display=swap"
     />
     <style>
       * {
@@ -72,7 +78,7 @@ function buildSquareHtml(size) {
     <meta charset="utf-8" />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Plus+Jakarta+Sans:wght@800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@800&family=JetBrains+Mono:wght@500&display=swap"
     />
     <style>
       * {
@@ -122,6 +128,7 @@ async function preparePage(page, html) {
   });
   await new Promise((resolve) => setTimeout(resolve, 250));
 }
+
 async function screenshotElement(page, selector) {
   const element = await page.$(selector);
   if (!element) {
@@ -142,15 +149,17 @@ async function main() {
   for (const { name, width } of horizontalSizes) {
     await preparePage(page, buildHorizontalHtml(width));
     const png = await screenshotElement(page, "#logo");
-    writeFileSync(join(publicDir, name), png);
-    console.log(`Generated public/${name} (${width}x${Math.round(width / LOGO_ASPECT)})`);
+    writeFileSync(logoFile(publicDir, name), png);
+    console.log(
+      `Generated public/logo/${name} (${width}x${Math.round(width / LOGO_ASPECT)})`,
+    );
   }
 
   for (const { name, size } of squareSizes) {
     await preparePage(page, buildSquareHtml(size));
     const png = await screenshotElement(page, "#square");
-    writeFileSync(join(publicDir, name), png);
-    console.log(`Generated public/${name} (${size}x${size})`);
+    writeFileSync(logoFile(publicDir, name), png);
+    console.log(`Generated public/logo/${name} (${size}x${size})`);
   }
 
   await browser.close();

@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { LOGO_FILES, logoFile } from "../shared/logo-paths.mjs";
 import {
   AlignmentType,
   BorderStyle,
@@ -141,7 +142,7 @@ export function bodyCell(content, align = AlignmentType.LEFT, options = {}) {
 }
 
 export function companyHeader(publicDir) {
-  const logoBuffer = readFileSync(join(publicDir, "logo.png"));
+  const logoBuffer = readFileSync(logoFile(publicDir, LOGO_FILES.png));
   return [
     new Paragraph({
       alignment: AlignmentType.CENTER,

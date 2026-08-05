@@ -10,6 +10,7 @@ import Header from "@/components/Header";
 import QuoteDrawer from "@/components/QuoteDrawer";
 import { QuoteDrawerProvider } from "@/components/QuoteDrawerProvider";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import { logoAssets } from "@/lib/logo";
 import { SITE_URL, siteConfig } from "@/lib/seo";
 import "./globals.css";
 
@@ -96,10 +97,10 @@ export const metadata: Metadata = {
   category: "business",
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "48x48" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: logoAssets.faviconIco, sizes: "48x48" },
+      { url: logoAssets.faviconSvg, type: "image/svg+xml" },
     ],
-    apple: "/apple-touch-icon.png",
+    apple: logoAssets.appleTouch,
   },
 };
 

@@ -15,6 +15,7 @@ import {
   timelineSteps,
   whyItems,
 } from "./shared/marketing-data.mjs";
+import { LOGO_FILES, logoFile } from "./shared/logo-paths.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const publicDir = join(root, "public");
@@ -30,8 +31,8 @@ async function imageDataUri(filename, width = 800) {
 }
 
 async function logoDataUri(light = false) {
-  const file = light ? "logo-light.svg" : "logo.svg";
-  const svg = readFileSync(join(publicDir, file));
+  const file = light ? LOGO_FILES.lightSvg : LOGO_FILES.svg;
+  const svg = readFileSync(logoFile(publicDir, file));
   const buffer = await sharp(svg).resize({ width: 360 }).png().toBuffer();
   return `data:image/png;base64,${buffer.toString("base64")}`;
 }
