@@ -1,6 +1,6 @@
 import { mkdir, readdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { del, list, put } from "@vercel/blob";
+import { del, list, put, type PutBlobResult } from "@vercel/blob";
 import { imageBasename } from "@/lib/project-form";
 import {
   parseProjectsDocument,
@@ -23,7 +23,12 @@ export const PROJECTS_IMAGES_DIR = path.join(
 );
 
 const BLOB_JSON_PATHNAME = "projects/projects.json";
+const BLOB_JSON_PREFIX = "projects/data/";
 const BLOB_ACCESS = "public" as const;
+
+let inProcessCatalog: StoredProject[] | null = null;
+let catalogWrittenAt = 0;
+const CATALOG_TRUST_MS = 15_000;
 
 export const LIVE_BLOB_SETUP_MESSAGE =
   "The live server cannot save files to disk. In Vercel, open Storage → Create → Blob, connect this project, then redeploy.";
@@ -75,30 +80,71 @@ async function readDiskProjects(): Promise<StoredProject[]> {
   return parseProjectsDocument(JSON.parse(raw));
 }
 
-async function readBlobProjects(): Promise<StoredProject[] | null> {
-  const { blobs } = await list({ prefix: BLOB_JSON_PATHNAME, limit: 20 });
-  const match = blobs.find((blob) => blob.pathname === BLOB_JSON_PATHNAME);
-  if (!match) return null;
+function isWrittenBlob(
+  blob: { url: string; downloadUrl?: string; pathname: string },
+  written: PutBlobResult,
+) {
+  return (
+    blob.url === written.url ||
+    blob.downloadUrl === written.url ||
+    blob.pathname === written.pathname ||
+    Boolean(written.downloadUrl && blob.url === written.downloadUrl)
+  );
+}
 
+async function fetchBlobJson(url: string): Promise<StoredProject[] | null> {
   const headers: HeadersInit = {};
   const token = process.env.BLOB_READ_WRITE_TOKEN;
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(match.url, { cache: "no-store", headers });
+  const response = await fetch(url, {
+    cache: "no-store",
+    headers,
+  });
   if (!response.ok) return null;
   return parseProjectsDocument(await response.json());
 }
 
+async function readBlobProjects(): Promise<StoredProject[] | null> {
+  const { blobs } = await list({ prefix: BLOB_JSON_PREFIX, limit: 100 });
+  const newest = blobs
+    .slice()
+    .sort(
+      (a, b) =>
+        new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
+    )[0];
+  if (newest) {
+    return fetchBlobJson(newest.url);
+  }
+
+  const legacy = await list({ prefix: BLOB_JSON_PATHNAME, limit: 20 });
+  const match = legacy.blobs.find((blob) => blob.pathname === BLOB_JSON_PATHNAME);
+  if (!match) return null;
+  return fetchBlobJson(match.url);
+}
+
 export async function readStoredProjects() {
+  if (
+    usesBlobStore() &&
+    inProcessCatalog &&
+    Date.now() - catalogWrittenAt < CATALOG_TRUST_MS
+  ) {
+    return inProcessCatalog;
+  }
+
   if (usesBlobStore()) {
     try {
       const fromBlob = await readBlobProjects();
-      if (fromBlob) return fromBlob;
+      if (fromBlob) {
+        inProcessCatalog = fromBlob;
+        return fromBlob;
+      }
     } catch {
-      // Fall back to the deployed JSON if Blob is unavailable.
+      // Fall back to the in-memory catalog or the deployed JSON.
     }
+    if (inProcessCatalog) return inProcessCatalog;
   }
 
   return readDiskProjects();
@@ -106,15 +152,37 @@ export async function readStoredProjects() {
 
 export async function writeStoredProjects(projects: StoredProject[]) {
   const body = `${JSON.stringify({ projects }, null, 2)}\n`;
+  inProcessCatalog = projects;
+  catalogWrittenAt = Date.now();
 
   if (usesBlobStore()) {
-    await put(BLOB_JSON_PATHNAME, body, {
+    const written = await put(`${BLOB_JSON_PREFIX}${Date.now()}.json`, body, {
       access: BLOB_ACCESS,
-      allowOverwrite: true,
-      addRandomSuffix: false,
+      addRandomSuffix: true,
       contentType: "application/json; charset=utf-8",
       cacheControlMaxAge: 60,
     });
+
+    const current = await list({ prefix: BLOB_JSON_PREFIX, limit: 100 });
+    const keepNewest = current.blobs
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
+      )
+      .slice(0, 5)
+      .map((blob) => blob.url);
+
+    const stale = current.blobs.filter(
+      (blob) => !isWrittenBlob(blob, written) && !keepNewest.includes(blob.url),
+    );
+    const legacy = await list({ prefix: BLOB_JSON_PATHNAME, limit: 20 });
+    stale.push(
+      ...legacy.blobs.filter((blob) => blob.pathname === BLOB_JSON_PATHNAME),
+    );
+    if (stale.length > 0) {
+      await del(stale.map((blob) => blob.url)).catch(() => undefined);
+    }
     return;
   }
 

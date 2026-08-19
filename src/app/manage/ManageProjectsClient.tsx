@@ -3,7 +3,6 @@
 import { upload } from "@vercel/blob/client";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import type { Project } from "@/lib/projects";
 
@@ -39,7 +38,7 @@ function ProjectForm({
   project?: Project;
   blobEnabled: boolean;
   onCancel: () => void;
-  onSaved: () => void;
+  onSaved: (projects?: Project[]) => void;
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -92,13 +91,17 @@ function ProjectForm({
         method,
         body: formData,
       });
-      const data = (await response.json()) as { error?: string; id?: string };
+      const data = (await response.json()) as {
+        error?: string;
+        id?: string;
+        projects?: Project[];
+      };
 
       if (!response.ok || !data.id) {
         throw new Error(data.error ?? "Could not save the project.");
       }
 
-      onSaved();
+      onSaved(Array.isArray(data.projects) ? data.projects : undefined);
     } catch (err) {
       setError(fetchErrorMessage(err, "Could not save the project."));
     } finally {
@@ -342,18 +345,18 @@ export default function ManageProjectsClient({
   projects: Project[];
   blobEnabled: boolean;
 }) {
-  const router = useRouter();
+  const [items, setItems] = useState(projects);
   const [mode, setMode] = useState<"list" | "add" | "edit">("list");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  const editingProject = projects.find((project) => project.id === editingId);
+  const editingProject = items.find((project) => project.id === editingId);
 
-  function refreshList() {
+  function showList(nextProjects?: Project[]) {
+    if (nextProjects !== undefined) setItems(nextProjects);
     setMode("list");
     setEditingId(null);
-    router.refresh();
   }
 
   async function handleDelete(project: Project) {
@@ -369,15 +372,14 @@ export default function ManageProjectsClient({
       const response = await fetch(`/api/projects/${project.id}`, {
         method: "DELETE",
       });
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as {
+        error?: string;
+        projects?: Project[];
+      };
       if (!response.ok) {
         throw new Error(data.error ?? "Could not delete the project.");
       }
-      if (editingId === project.id) {
-        setMode("list");
-        setEditingId(null);
-      }
-      router.refresh();
+      showList(data.projects);
     } catch (err) {
       setError(fetchErrorMessage(err, "Could not delete the project."));
     } finally {
@@ -395,7 +397,7 @@ export default function ManageProjectsClient({
           setMode("list");
           setEditingId(null);
         }}
-        onSaved={refreshList}
+        onSaved={showList}
       />
     );
   }
@@ -404,9 +406,9 @@ export default function ManageProjectsClient({
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-slate-600">
-          {projects.length === 0
+          {items.length === 0
             ? "No projects yet."
-            : `${projects.length} project${projects.length === 1 ? "" : "s"}`}
+            : `${items.length} project${items.length === 1 ? "" : "s"}`}
         </p>
         <button
           type="button"
@@ -428,7 +430,7 @@ export default function ManageProjectsClient({
       )}
 
       <div className="grid gap-4">
-        {projects.map((project) => (
+        {items.map((project) => (
           <article
             key={project.id}
             className="flex flex-col gap-4 border border-navy/10 bg-white p-4 sm:flex-row sm:items-center"
@@ -485,7 +487,7 @@ export default function ManageProjectsClient({
         ))}
       </div>
 
-      {projects.length > 0 && (
+      {items.length > 0 && (
         <p className="text-center text-sm text-slate-500">
           Public list:{" "}
           <Link href="/our-project" className="font-semibold text-blue hover:underline">

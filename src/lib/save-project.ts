@@ -165,6 +165,7 @@ async function appendUploadedImages(
 export async function saveUploadedProject(input: ProjectInput): Promise<{
   id: string;
   imageCount: number;
+  stored: StoredProject[];
 }> {
   validateInput(input);
   const stored = await readStoredProjects();
@@ -173,17 +174,15 @@ export async function saveUploadedProject(input: ProjectInput): Promise<{
     new Set(stored.map((project) => project.id)),
   );
   const images = await appendUploadedImages(id, input, []);
-  await writeStoredProjects([
-    ...stored,
-    toStoredProject(id, input, images),
-  ]);
-  return { id, imageCount: images.length };
+  const next = [...stored, toStoredProject(id, input, images)];
+  await writeStoredProjects(next);
+  return { id, imageCount: images.length, stored: next };
 }
 
 export async function updateProject(
   id: string,
   input: ProjectInput,
-): Promise<{ id: string; imageCount: number }> {
+): Promise<{ id: string; imageCount: number; stored: StoredProject[] }> {
   const stored = await readStoredProjects();
   const index = stored.findIndex((project) => project.id === id);
   if (index === -1) {
@@ -215,10 +214,10 @@ export async function updateProject(
   next[index] = toStoredProject(id, input, images);
   await writeStoredProjects(next);
 
-  return { id, imageCount: images.length };
+  return { id, imageCount: images.length, stored: next };
 }
 
-export async function deleteProject(id: string): Promise<void> {
+export async function deleteProject(id: string): Promise<StoredProject[]> {
   const stored = await readStoredProjects();
   const current = stored.find((project) => project.id === id);
   if (!current) {
@@ -226,6 +225,8 @@ export async function deleteProject(id: string): Promise<void> {
   }
 
   const images = await readProjectImages(id, current.projectName, current.images);
-  await writeStoredProjects(stored.filter((project) => project.id !== id));
+  const next = stored.filter((project) => project.id !== id);
+  await writeStoredProjects(next);
   await deleteProjectFiles(id, images);
+  return next;
 }

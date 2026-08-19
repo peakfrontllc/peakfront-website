@@ -3,6 +3,7 @@ import { getProjects } from "@/lib/load-projects";
 import ProjectsPageClient from "./ProjectsPageClient";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 export const metadata: Metadata = {
   title: "Our Projects",

@@ -1,8 +1,11 @@
-import { NextResponse } from "next/server";
+import { hydrateProjects } from "@/lib/load-projects";
 import { filesFromForm, projectInputFromForm } from "@/lib/project-form";
 import { saveUploadedProject } from "@/lib/save-project";
+import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 export async function POST(request: Request) {
   let formData: FormData;
@@ -22,6 +25,7 @@ export async function POST(request: Request) {
       ok: true,
       id: saved.id,
       imageCount: saved.imageCount,
+      projects: await hydrateProjects(saved.stored),
     });
   } catch (error) {
     const message =

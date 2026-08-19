@@ -6,6 +6,7 @@ import {
   normalizeProject,
   type Project,
   type ProjectImage,
+  type StoredProject,
 } from "@/lib/projects";
 
 const IMAGE_EXTENSIONS = new Set([
@@ -58,8 +59,9 @@ export async function readProjectImages(
 
 export { readStoredProjects };
 
-export async function getProjects(): Promise<Project[]> {
-  const stored = await readStoredProjects();
+export async function hydrateProjects(
+  stored: StoredProject[],
+): Promise<Project[]> {
   const catalog = stored.map((entry) => normalizeProject(entry));
 
   return Promise.all(
@@ -72,4 +74,8 @@ export async function getProjects(): Promise<Project[]> {
       return { ...project, images };
     }),
   );
+}
+
+export async function getProjects(): Promise<Project[]> {
+  return hydrateProjects(await readStoredProjects());
 }

@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { hydrateProjects } from "@/lib/load-projects";
 import { filesFromForm, projectInputFromForm } from "@/lib/project-form";
 import { deleteProject, updateProject } from "@/lib/save-project";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -28,6 +31,7 @@ export async function PUT(request: Request, context: RouteContext) {
       ok: true,
       id: saved.id,
       imageCount: saved.imageCount,
+      projects: await hydrateProjects(saved.stored),
     });
   } catch (error) {
     const message =
@@ -41,8 +45,12 @@ export async function DELETE(_request: Request, context: RouteContext) {
   const { id } = await context.params;
 
   try {
-    await deleteProject(id);
-    return NextResponse.json({ ok: true, id });
+    const stored = await deleteProject(id);
+    return NextResponse.json({
+      ok: true,
+      id,
+      projects: await hydrateProjects(stored),
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Could not delete the project.";

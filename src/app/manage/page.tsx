@@ -4,6 +4,7 @@ import { getProjects } from "@/lib/load-projects";
 import ManageProjectsClient from "./ManageProjectsClient";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 export const metadata: Metadata = {
   title: "Manage Projects",
