@@ -17,8 +17,8 @@ function SectionKicker({ label }: { label: string }) {
   );
 }
 
-export default function About() {
-  const { contractsDeliveredLabel, projectsRunningLabel } = getProjectStats();
+export default async function About() {
+  const { contractsDeliveredLabel, projectsRunningLabel } = await getProjectStats();
 
   const aboutStats = [
     companyStats.unitsInNetwork,

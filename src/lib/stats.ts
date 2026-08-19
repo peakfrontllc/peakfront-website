@@ -1,4 +1,5 @@
-import { isProjectOngoing, projects } from "@/lib/projects";
+import { getProjects } from "@/lib/load-projects";
+import { isProjectOngoing } from "@/lib/projects";
 
 /** Single source of truth for company metrics shown across the site. */
 export const companyStats = {
@@ -26,9 +27,10 @@ export const companyStats = {
   },
 } as const;
 
-export function getProjectStats() {
-  const contractsDelivered = projects.length;
-  const projectsRunning = projects.filter(isProjectOngoing).length;
+export async function getProjectStats() {
+  const catalog = await getProjects();
+  const contractsDelivered = catalog.length;
+  const projectsRunning = catalog.filter(isProjectOngoing).length;
 
   return {
     contractsDelivered,

@@ -108,21 +108,21 @@ async function fetchBlobJson(url: string): Promise<StoredProject[] | null> {
 }
 
 async function readBlobProjects(): Promise<StoredProject[] | null> {
-  const { blobs } = await list({ prefix: BLOB_JSON_PREFIX, limit: 100 });
-  const newest = blobs
-    .slice()
-    .sort(
-      (a, b) =>
-        new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
-    )[0];
-  if (newest) {
-    return fetchBlobJson(newest.url);
+  const data = (await list({ prefix: BLOB_JSON_PREFIX, limit: 100 })).blobs;
+  const legacy = (await list({ prefix: BLOB_JSON_PATHNAME, limit: 20 })).blobs.filter(
+    (blob) => blob.pathname === BLOB_JSON_PATHNAME,
+  );
+  const catalogs = [...data, ...legacy].sort(
+    (a, b) =>
+      new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
+  );
+
+  for (const blob of catalogs) {
+    const parsed = await fetchBlobJson(blob.url);
+    if (parsed) return parsed;
   }
 
-  const legacy = await list({ prefix: BLOB_JSON_PATHNAME, limit: 20 });
-  const match = legacy.blobs.find((blob) => blob.pathname === BLOB_JSON_PATHNAME);
-  if (!match) return null;
-  return fetchBlobJson(match.url);
+  return null;
 }
 
 export async function readStoredProjects() {

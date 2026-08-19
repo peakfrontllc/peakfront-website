@@ -2,12 +2,12 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { getProjectStats } from "@/lib/stats";
 
-export default function ProjectsTeaser() {
+export default async function ProjectsTeaser() {
   const {
     contractsDeliveredLabel,
     projectsRunning,
     projectsRunningLabel,
-  } = getProjectStats();
+  } = await getProjectStats();
 
   return (
     <section className="border-t border-navy/10 bg-white py-16 sm:py-20">
