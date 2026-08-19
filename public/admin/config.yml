@@ -21,8 +21,8 @@ backend:
 # Uncomment for local editing with `npx decap-server`:
 # local_backend: true
 
-media_folder: public/images/projects
-public_folder: /images/projects
+media_folder: public/projects/images
+public_folder: /projects/images
 
 collections:
   - name: projects_list
@@ -30,7 +30,7 @@ collections:
     files:
       - name: projects
         label: All Projects
-        file: data/projects.json
+        file: public/projects/projects.json
         fields:
           - label: Projects
             name: projects
@@ -54,3 +54,12 @@ collections:
                 name: status
                 widget: select
                 options: [ongoing, completed]
+              - label: Project Photos
+                name: images
+                widget: list
+                required: false
+                hint: "Optional. Prefer dropping files in public/projects/images/{project-id}/ as 1.webp, 2.webp, etc."
+                summary: "{{fields.src}}"
+                fields:
+                  - { label: Photo, name: src, widget: image }
+                  - { label: Alt text, name: alt, widget: string, required: false }

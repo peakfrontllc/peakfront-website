@@ -1,0 +1,35 @@
+{
+  "projects": [
+    {
+      "id": "du-telecommunications-mobile-dg-deployment-mdg51-2026",
+      "projectName": "DU Telecommunications – Mobile DG Deployment (MDG51)",
+      "client": "du Telecommunications UAE",
+      "mainContractor": "Digitus Group",
+      "scopeOfWork": "Provision of a 3-ton boom truck for Mobile DG Deployment (MDG51), including transportation from ICAD II Abu Dhabi Industrial City to the DU telecommunications site at Masdar City.",
+      "equipment": [
+        "3-Ton Boom Truck"
+      ],
+      "startDate": "12-Aug-26",
+      "completionDate": "12-Aug-26",
+      "status": "completed",
+      "images": [],
+      "location": "ICAD II Abu Dhabi Industrial City (AUH2706) to DU Site AUH1717 – Masdar City, Abu Dhabi"
+    },
+    {
+      "id": "du-telecommunications-site-masdar-city-2026",
+      "projectName": "DU Telecommunications Site – Masdar City",
+      "client": "du Telecommunications UAE",
+      "mainContractor": "Digitus Group",
+      "scopeOfWork": "Supply of a 55m truck-mounted manlift with fuel and an IPAF-certified operator for telecommunications site works at the DU site in Masdar City.",
+      "equipment": [
+        "55m Truck Mounted Manlift",
+        "IPAF Certified Operator"
+      ],
+      "startDate": "18-Aug-26",
+      "completionDate": "18-Aug-26",
+      "status": "completed",
+      "images": [],
+      "location": "DU Site AUH1717 – Masdar City, Abu Dhabi"
+    }
+  ]
+}

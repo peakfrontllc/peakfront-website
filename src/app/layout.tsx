@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import {
   Inter,
   JetBrains_Mono,
@@ -116,13 +117,14 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       className={`${inter.variable} ${plusJakarta.variable} ${jetbrainsMono.variable}`}
     >
-      <head>
-        <script src="/scripts/strip-extension-attrs.js" />
-      </head>
       <body
         suppressHydrationWarning
         className="min-h-screen overflow-x-hidden bg-white font-sans text-navy antialiased"
       >
+        <Script
+          src="/scripts/strip-extension-attrs.js"
+          strategy="beforeInteractive"
+        />
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:bg-amber focus:px-4 focus:py-2 focus:font-bold focus:text-navy"

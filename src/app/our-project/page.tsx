@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { getProjects } from "@/lib/load-projects";
 import ProjectsPageClient from "./ProjectsPageClient";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Our Projects",
@@ -10,6 +13,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function OurProjectPage() {
-  return <ProjectsPageClient />;
+export default async function OurProjectPage() {
+  const projects = await getProjects();
+  return <ProjectsPageClient projects={projects} />;
 }

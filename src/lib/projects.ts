@@ -1,6 +1,11 @@
-import projectsData from "../../data/projects.json";
+import projectsData from "../../public/projects/projects.json";
 
 export type ProjectStatus = "completed" | "ongoing";
+
+export type ProjectImage = {
+  src: string;
+  alt: string;
+};
 
 export type Project = {
   id: string;
@@ -13,11 +18,27 @@ export type Project = {
   startDate: string;
   completionDate: string;
   status: ProjectStatus;
+  images: ProjectImage[];
 };
 
-type RawProject = Omit<Project, "equipment" | "status"> & {
+export type StoredProject = {
+  id: string;
+  projectName: string;
+  client: string;
+  mainContractor: string;
+  scopeOfWork: string;
+  equipment: string[];
+  location?: string;
+  startDate: string;
+  completionDate: string;
+  status: ProjectStatus;
+  images: unknown[];
+};
+
+type RawProject = Omit<Project, "equipment" | "status" | "images"> & {
   equipment?: unknown;
   status?: string;
+  images?: unknown;
 };
 
 function normalizeEquipment(equipment: unknown): string[] {
@@ -37,15 +58,67 @@ function normalizeEquipment(equipment: unknown): string[] {
 
 function normalizeStatus(status: unknown, completionDate: string): ProjectStatus {
   if (status === "ongoing" || status === "completed") return status;
-  return completionDate.toLowerCase() === "running" ? "ongoing" : "completed";
+  return (completionDate ?? "").trim().toLowerCase() === "running"
+    ? "ongoing"
+    : "completed";
 }
 
-function normalizeProject(raw: RawProject): Project {
+function normalizeImages(images: unknown, projectName: string): ProjectImage[] {
+  if (!Array.isArray(images)) return [];
+
+  return images
+    .map((entry, index) => {
+      const fallbackAlt = `${projectName} — photo ${index + 1}`;
+
+      if (typeof entry === "string") {
+        const src = entry.trim();
+        return src ? { src, alt: fallbackAlt } : null;
+      }
+
+      if (entry && typeof entry === "object") {
+        const record = entry as {
+          src?: unknown;
+          image?: unknown;
+          url?: unknown;
+          alt?: unknown;
+        };
+        const srcRaw = record.src ?? record.image ?? record.url;
+        const src = typeof srcRaw === "string" ? srcRaw.trim() : "";
+        if (!src) return null;
+
+        const alt =
+          typeof record.alt === "string" && record.alt.trim()
+            ? record.alt.trim()
+            : fallbackAlt;
+
+        return { src, alt };
+      }
+
+      return null;
+    })
+    .filter((image): image is ProjectImage => image !== null);
+}
+
+export function normalizeProject(raw: RawProject): Project {
   return {
     ...raw,
     equipment: normalizeEquipment(raw.equipment),
     status: normalizeStatus(raw.status, raw.completionDate),
+    images: normalizeImages(raw.images, raw.projectName),
   };
+}
+
+export function parseProjectsDocument(data: unknown): StoredProject[] {
+  if (!data || typeof data !== "object" || !("projects" in data)) return [];
+  const list = (data as { projects: unknown }).projects;
+  if (!Array.isArray(list)) return [];
+  return list.filter(
+    (entry): entry is StoredProject =>
+      Boolean(entry) &&
+      typeof entry === "object" &&
+      typeof (entry as StoredProject).id === "string" &&
+      typeof (entry as StoredProject).projectName === "string",
+  );
 }
 
 function dedupeProjects(items: Project[]): Project[] {
@@ -64,7 +137,7 @@ export const projects: Project[] = dedupeProjects(
 export function isProjectOngoing(project: Project): boolean {
   return (
     project.status === "ongoing" ||
-    project.completionDate.toLowerCase() === "running"
+    (project.completionDate ?? "").trim().toLowerCase() === "running"
   );
 }
 
