@@ -36,6 +36,7 @@ export async function POST(request: Request) {
         }
 
         return {
+          access: "public",
           allowedContentTypes: ALLOWED_TYPES,
           addRandomSuffix: true,
           maximumSizeInBytes: 8 * 1024 * 1024,

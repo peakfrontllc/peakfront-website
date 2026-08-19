@@ -23,6 +23,7 @@ export const PROJECTS_IMAGES_DIR = path.join(
 );
 
 const BLOB_JSON_PATHNAME = "projects/projects.json";
+const BLOB_ACCESS = "public" as const;
 
 export const LIVE_BLOB_SETUP_MESSAGE =
   "The live server cannot save files to disk. In Vercel, open Storage → Create → Blob, connect this project, then redeploy.";
@@ -108,7 +109,7 @@ export async function writeStoredProjects(projects: StoredProject[]) {
 
   if (usesBlobStore()) {
     await put(BLOB_JSON_PATHNAME, body, {
-      access: "private",
+      access: BLOB_ACCESS,
       allowOverwrite: true,
       addRandomSuffix: false,
       contentType: "application/json; charset=utf-8",
@@ -134,7 +135,7 @@ export async function saveImageFiles(
     return Promise.all(
       files.map(async (file) => {
         const blob = await put(file.filename.replace(/\\/g, "/"), file.buffer, {
-          access: "public",
+          access: BLOB_ACCESS,
           addRandomSuffix: true,
           contentType: contentTypeForExtension(path.extname(file.filename)),
         });
