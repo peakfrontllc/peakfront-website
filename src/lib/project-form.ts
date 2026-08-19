@@ -1,5 +1,16 @@
 import type { ProjectStatus } from "@/lib/projects";
 
+export function imageBasename(src: string) {
+  try {
+    const name = new URL(src, "https://www.peakfront.ae").pathname
+      .split("/")
+      .pop();
+    return name ? decodeURIComponent(name) : src;
+  } catch {
+    return src.split("/").pop() ?? src;
+  }
+}
+
 export function asFormString(value: FormDataEntryValue | null): string {
   return typeof value === "string" ? value : "";
 }
@@ -39,6 +50,9 @@ export function projectInputFromForm(formData: FormData) {
     startDate: asFormString(formData.get("startDate")),
     completionDate: asFormString(formData.get("completionDate")),
     status: parseStatus(asFormString(formData.get("status"))),
+    imageUrls: formData
+      .getAll("imageUrls")
+      .filter((entry): entry is string => typeof entry === "string" && entry.length > 0),
     removeImageFiles: formData
       .getAll("removeImages")
       .filter((entry): entry is string => typeof entry === "string" && entry.length > 0),

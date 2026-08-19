@@ -1,5 +1,6 @@
 "use client";
 
+import { upload } from "@vercel/blob/client";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,7 +14,12 @@ const labelClass =
   "font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-navy";
 
 function imageFilename(src: string): string {
-  return src.split("/").pop() ?? src;
+  const path = src.split("?")[0] ?? src;
+  try {
+    return decodeURIComponent(path.split("/").pop() ?? src);
+  } catch {
+    return path.split("/").pop() ?? src;
+  }
 }
 
 function fetchErrorMessage(error: unknown, fallback: string) {
@@ -26,10 +32,12 @@ function fetchErrorMessage(error: unknown, fallback: string) {
 
 function ProjectForm({
   project,
+  blobEnabled,
   onCancel,
   onSaved,
 }: {
   project?: Project;
+  blobEnabled: boolean;
   onCancel: () => void;
   onSaved: () => void;
 }) {
@@ -62,11 +70,27 @@ function ProjectForm({
 
     const path = project ? `/api/projects/${project.id}` : "/api/projects";
     const method = project ? "PUT" : "POST";
+    const formData = new FormData(form);
 
     try {
+      if (blobEnabled) {
+        const files = formData
+          .getAll("images")
+          .filter((entry): entry is File => entry instanceof File && entry.size > 0);
+        formData.delete("images");
+
+        for (const file of files) {
+          const blob = await upload(`projects/images/${file.name}`, file, {
+            access: "public",
+            handleUploadUrl: "/api/projects/blob",
+          });
+          formData.append("imageUrls", blob.url);
+        }
+      }
+
       const response = await fetch(path, {
         method,
-        body: new FormData(form),
+        body: formData,
       });
       const data = (await response.json()) as { error?: string; id?: string };
 
@@ -313,8 +337,10 @@ function ProjectForm({
 
 export default function ManageProjectsClient({
   projects,
+  blobEnabled,
 }: {
   projects: Project[];
+  blobEnabled: boolean;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<"list" | "add" | "edit">("list");
@@ -364,6 +390,7 @@ export default function ManageProjectsClient({
       <ProjectForm
         key={editingProject?.id ?? "new"}
         project={editingProject}
+        blobEnabled={blobEnabled}
         onCancel={() => {
           setMode("list");
           setEditingId(null);

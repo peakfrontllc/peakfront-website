@@ -63,7 +63,7 @@ function normalizeStatus(status: unknown, completionDate: string): ProjectStatus
     : "completed";
 }
 
-function normalizeImages(images: unknown, projectName: string): ProjectImage[] {
+export function normalizeImages(images: unknown, projectName: string): ProjectImage[] {
   if (!Array.isArray(images)) return [];
 
   return images

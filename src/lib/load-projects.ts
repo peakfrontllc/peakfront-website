@@ -1,25 +1,12 @@
-import { readdir, readFile } from "node:fs/promises";
+import { readdir } from "node:fs/promises";
 import path from "node:path";
+import { PROJECTS_IMAGES_DIR, readStoredProjects } from "@/lib/project-store";
 import {
+  normalizeImages,
   normalizeProject,
-  parseProjectsDocument,
   type Project,
   type ProjectImage,
 } from "@/lib/projects";
-
-export const PROJECTS_JSON_PATH = path.join(
-  process.cwd(),
-  "public",
-  "projects",
-  "projects.json",
-);
-
-export const PROJECTS_IMAGES_DIR = path.join(
-  process.cwd(),
-  "public",
-  "projects",
-  "images",
-);
 
 const IMAGE_EXTENSIONS = new Set([
   ".webp",
@@ -58,10 +45,18 @@ async function readFolderImages(
   }
 }
 
-export async function readStoredProjects() {
-  const raw = await readFile(PROJECTS_JSON_PATH, "utf8");
-  return parseProjectsDocument(JSON.parse(raw));
+export async function readProjectImages(
+  projectId: string,
+  projectName: string,
+  storedImages: unknown[],
+): Promise<ProjectImage[]> {
+  const fromJson = normalizeImages(storedImages, projectName);
+  const folderImages = await readFolderImages(projectId, projectName);
+  const seen = new Set(folderImages.map((image) => image.src));
+  return [...folderImages, ...fromJson.filter((image) => !seen.has(image.src))];
 }
+
+export { readStoredProjects };
 
 export async function getProjects(): Promise<Project[]> {
   const stored = await readStoredProjects();
@@ -69,14 +64,12 @@ export async function getProjects(): Promise<Project[]> {
 
   return Promise.all(
     catalog.map(async (project) => {
-      const folderImages = await readFolderImages(project.id, project.projectName);
-      const seen = new Set(folderImages.map((image) => image.src));
-      const extra = project.images.filter((image) => !seen.has(image.src));
-
-      return {
-        ...project,
-        images: [...folderImages, ...extra],
-      };
+      const images = await readProjectImages(
+        project.id,
+        project.projectName,
+        project.images,
+      );
+      return { ...project, images };
     }),
   );
 }

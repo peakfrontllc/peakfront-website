@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { needsLiveBlobSetup, usesBlobStore } from "@/lib/project-store";
 import { getProjects } from "@/lib/load-projects";
 import ManageProjectsClient from "./ManageProjectsClient";
 
@@ -36,7 +37,16 @@ export default async function ManageProjectsPage() {
 
       <section className="section-padding bg-slate-50">
         <div className="mx-auto max-w-3xl px-4 sm:px-5 lg:px-10">
-          <ManageProjectsClient projects={projects} />
+          {needsLiveBlobSetup() && (
+            <p className="mb-6 border border-amber/40 bg-amber/15 px-4 py-3 text-sm text-navy">
+              Saving is not set up on the live server yet. In Vercel, open
+              Storage → Create → Blob, connect this project, then redeploy.
+            </p>
+          )}
+          <ManageProjectsClient
+            projects={projects}
+            blobEnabled={usesBlobStore()}
+          />
         </div>
       </section>
     </>
