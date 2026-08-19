@@ -1,3 +1,5 @@
+import "server-only";
+
 import { mkdir, readdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { del, list, put, type PutBlobResult } from "@vercel/blob";

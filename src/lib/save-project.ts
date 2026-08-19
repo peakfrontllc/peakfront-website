@@ -1,3 +1,5 @@
+import "server-only";
+
 import path from "node:path";
 import { readProjectImages } from "@/lib/load-projects";
 import { imageBasename } from "@/lib/project-form";

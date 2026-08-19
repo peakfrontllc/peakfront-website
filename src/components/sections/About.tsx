@@ -4,7 +4,8 @@ import Link from "next/link";
 import LicensedSection from "@/components/LicensedSection";
 import { ABOUT_IMAGE, ABOUT_IMAGE_ALT } from "@/lib/content";
 import { LEGAL_ENTITY_NAME } from "@/lib/license";
-import { companyStats, getProjectStats } from "@/lib/stats";
+import { getProjectStats } from "@/lib/project-stats";
+import { companyStats } from "@/lib/stats";
 
 function SectionKicker({ label }: { label: string }) {
   return (

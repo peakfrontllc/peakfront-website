@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { getProjectStats } from "@/lib/stats";
+import { getProjectStats } from "@/lib/project-stats";
 
 export default async function ProjectsTeaser() {
   const {
