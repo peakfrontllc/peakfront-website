@@ -130,8 +130,74 @@ function dedupeProjects(items: Project[]): Project[] {
   });
 }
 
-export const projects: Project[] = dedupeProjects(
-  (projectsData.projects as RawProject[]).map(normalizeProject),
+const MONTH_INDEX: Record<string, number> = {
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
+};
+
+export function parseProjectDate(value: string | undefined): number | null {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed || trimmed.toLowerCase() === "running") return null;
+
+  const named = trimmed.match(
+    /^(\d{1,2})[-\s/]([A-Za-z]{3,9})[-\s/](\d{2,4})$/,
+  );
+  if (named) {
+    const day = Number.parseInt(named[1], 10);
+    const month = MONTH_INDEX[named[2].slice(0, 3).toLowerCase()];
+    let year = Number.parseInt(named[3], 10);
+    if (year < 100) year += 2000;
+    if (month === undefined || day < 1 || day > 31) return null;
+    return Date.UTC(year, month, day);
+  }
+
+  const numeric = trimmed.match(/^(\d{1,2})[-\s/](\d{1,2})[-\s/](\d{2,4})$/);
+  if (numeric) {
+    const day = Number.parseInt(numeric[1], 10);
+    const month = Number.parseInt(numeric[2], 10) - 1;
+    let year = Number.parseInt(numeric[3], 10);
+    if (year < 100) year += 2000;
+    if (month < 0 || month > 11 || day < 1 || day > 31) return null;
+    return Date.UTC(year, month, day);
+  }
+
+  const timestamp = Date.parse(trimmed);
+  return Number.isNaN(timestamp) ? null : timestamp;
+}
+
+function projectRecency(project: Pick<Project, "startDate" | "completionDate">) {
+  return (
+    parseProjectDate(project.startDate) ??
+    parseProjectDate(project.completionDate) ??
+    0
+  );
+}
+
+export function sortProjectsNewestFirst<
+  T extends Pick<Project, "startDate" | "completionDate">,
+>(items: T[]): T[] {
+  return items
+    .map((project, index) => ({ project, index }))
+    .sort((a, b) => {
+      const recency = projectRecency(b.project) - projectRecency(a.project);
+      if (recency !== 0) return recency;
+      return b.index - a.index;
+    })
+    .map(({ project }) => project);
+}
+
+export const projects: Project[] = sortProjectsNewestFirst(
+  dedupeProjects((projectsData.projects as RawProject[]).map(normalizeProject)),
 );
 
 export function isProjectOngoing(project: Project): boolean {

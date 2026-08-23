@@ -6,6 +6,7 @@ import { PROJECTS_IMAGES_DIR, readStoredProjects } from "@/lib/project-store";
 import {
   normalizeImages,
   normalizeProject,
+  sortProjectsNewestFirst,
   type Project,
   type ProjectImage,
   type StoredProject,
@@ -66,7 +67,7 @@ export async function hydrateProjects(
 ): Promise<Project[]> {
   const catalog = stored.map((entry) => normalizeProject(entry));
 
-  return Promise.all(
+  const hydrated = await Promise.all(
     catalog.map(async (project) => {
       const images = await readProjectImages(
         project.id,
@@ -76,6 +77,8 @@ export async function hydrateProjects(
       return { ...project, images };
     }),
   );
+
+  return sortProjectsNewestFirst(hydrated);
 }
 
 export async function getProjects(): Promise<Project[]> {

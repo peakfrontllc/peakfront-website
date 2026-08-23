@@ -6,6 +6,7 @@ import { del, list, put, type PutBlobResult } from "@vercel/blob";
 import { imageBasename } from "@/lib/project-form";
 import {
   parseProjectsDocument,
+  sortProjectsNewestFirst,
   type ProjectImage,
   type StoredProject,
 } from "@/lib/projects";
@@ -153,8 +154,9 @@ export async function readStoredProjects() {
 }
 
 export async function writeStoredProjects(projects: StoredProject[]) {
-  const body = `${JSON.stringify({ projects }, null, 2)}\n`;
-  inProcessCatalog = projects;
+  const ordered = sortProjectsNewestFirst(projects);
+  const body = `${JSON.stringify({ projects: ordered }, null, 2)}\n`;
+  inProcessCatalog = ordered;
   catalogWrittenAt = Date.now();
 
   if (usesBlobStore()) {
