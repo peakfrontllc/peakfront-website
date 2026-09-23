@@ -15,11 +15,11 @@
       "status": "completed",
       "images": [
         {
-          "src": "/projects/images/du-telecommunications-site-masdar-city-2026/1.jpg",
-          "alt": "DU Telecommunications Site – Masdar City — photo 1"
+          "src": "/api/project-media/du-telecommunications-site-masdar-city-2026/2.jpg",
+          "alt": "DU Telecommunications Site – Masdar City — photo 2"
         },
         {
-          "src": "/projects/images/du-telecommunications-site-masdar-city-2026/2.jpg",
+          "src": "/projects/images/du-telecommunications-site-masdar-city-2026/3.jpg",
           "alt": "DU Telecommunications Site – Masdar City — photo 2"
         }
       ],
