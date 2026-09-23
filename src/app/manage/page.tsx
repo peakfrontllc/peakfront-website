@@ -31,7 +31,7 @@ export default async function ManageProjectsPage() {
             Add, edit and delete projects
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/70">
-            Changes are saved to GitHub and then appear on Our Projects.
+            Changes are saved to Supabase and then appear on Our Projects.
           </p>
         </div>
       </section>
@@ -41,8 +41,7 @@ export default async function ManageProjectsPage() {
           {needsLiveStoreSetup() && (
             <p className="mb-6 border border-amber/40 bg-amber/15 px-4 py-3 text-sm text-navy">
               Saving is not set up on the live server yet. In Vercel, add
-              PROJECTS_GITHUB_TOKEN (a GitHub token with Contents read/write
-              on this repo), then redeploy.
+              SUPABASE_URL and SUPABASE_SECRET_KEY, then redeploy.
             </p>
           )}
           <ManageProjectsClient projects={projects} />

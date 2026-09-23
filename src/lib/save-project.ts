@@ -9,6 +9,7 @@ import {
   removeImageFiles,
   saveImageFiles,
   usesGitHubStore,
+  usesSupabaseStore,
   writeStoredProjects,
   readStoredProjectsForWrite,
 } from "@/lib/project-store";
@@ -79,7 +80,10 @@ async function nextImageNumber(projectId: string, images: ProjectImage[]) {
   const fromSrc = images
     .map((image) => imageNumberFromSrc(image.src))
     .filter((value): value is number => value !== null);
-  const fromDisk = usesGitHubStore() ? 1 : await nextDiskImageNumber(projectId);
+  const fromDisk =
+    usesGitHubStore() || usesSupabaseStore()
+      ? 1
+      : await nextDiskImageNumber(projectId);
   const highest = Math.max(0, ...fromSrc, fromDisk - 1);
   return highest + 1;
 }

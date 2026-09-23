@@ -8,6 +8,14 @@ import {
   usesGitHubStore,
   type GitHubFileChange,
 } from "@/lib/github-projects";
+import {
+  readSupabaseProjects,
+  removeSupabaseImages,
+  saveSupabaseImages,
+  seedSupabaseProjects,
+  usesSupabaseStore,
+  writeSupabaseProjects,
+} from "@/lib/supabase-projects";
 import { imageBasename } from "@/lib/project-form";
 import {
   assertProjectRepoPath,
@@ -43,12 +51,14 @@ let inFlightRead: Promise<StoredProject[]> | null = null;
 const CATALOG_TRUST_MS = 60_000;
 
 export const LIVE_STORE_SETUP_MESSAGE =
-  "The live server cannot save files to disk. Add PROJECTS_GITHUB_TOKEN in Vercel (Contents read/write on this repo), then redeploy.";
+  "The live server cannot save files to disk. Add SUPABASE_URL and SUPABASE_SECRET_KEY in Vercel, then redeploy.";
 
-export { usesGitHubStore };
+export { usesGitHubStore, usesSupabaseStore };
 
 export function needsLiveStoreSetup() {
-  return Boolean(process.env.VERCEL) && !usesGitHubStore();
+  return (
+    Boolean(process.env.VERCEL) && !usesSupabaseStore() && !usesGitHubStore()
+  );
 }
 
 function isReadOnlyFsError(error: unknown) {
@@ -102,12 +112,31 @@ async function loadStoredProjects() {
     return inProcessCatalog;
   }
 
+  if (usesSupabaseStore()) {
+    const fromSupabase = await readSupabaseProjects();
+    if (fromSupabase && fromSupabase.length > 0) {
+      const catalog = withStoredImagePaths(fromSupabase);
+      rememberCatalog(catalog);
+      return catalog;
+    }
+
+    const seeded = withStoredImagePaths(
+      await seedSupabaseProjects(await readDiskProjects()),
+    );
+    rememberCatalog(seeded);
+    return seeded;
+  }
+
   const fromDisk = withStoredImagePaths(await readDiskProjects());
   rememberCatalog(fromDisk);
   return fromDisk;
 }
 
 export async function readStoredProjectsForWrite() {
+  if (usesSupabaseStore()) {
+    return readStoredProjects();
+  }
+
   if (usesGitHubStore()) {
     const raw = await readGitHubTextFile(PROJECTS_JSON_REPO_PATH);
     if (raw) {
@@ -152,6 +181,12 @@ export async function writeStoredProjects(
   const ordered = withStoredImagePaths(sortProjectsNewestFirst(projects));
   const body = `${JSON.stringify({ projects: ordered }, null, 2)}\n`;
 
+  if (usesSupabaseStore()) {
+    await writeSupabaseProjects(ordered);
+    rememberCatalog(ordered);
+    return;
+  }
+
   if (usesGitHubStore()) {
     const files = [
       ...(extras.files ?? []),
@@ -187,6 +222,13 @@ export async function saveImageFiles(
   commitFiles: GitHubFileChange[];
 }> {
   if (files.length === 0) return { images: [], commitFiles: [] };
+
+  if (usesSupabaseStore()) {
+    return {
+      images: await saveSupabaseImages(projectId, files),
+      commitFiles: [],
+    };
+  }
 
   if (usesGitHubStore()) {
     return {
@@ -226,6 +268,11 @@ export async function removeImageFiles(
     .map((image) => repoPathFromImageSrc(image.src, projectId))
     .filter((value): value is string => Boolean(value));
 
+  if (usesSupabaseStore()) {
+    await removeSupabaseImages(projectId, images);
+    return { commitDeletes: [] };
+  }
+
   if (usesGitHubStore()) {
     return { commitDeletes };
   }
@@ -247,7 +294,7 @@ export async function deleteProjectFiles(
 ): Promise<{ commitDeletes: string[] }> {
   const removed = await removeImageFiles(projectId, images);
 
-  if (!usesGitHubStore()) {
+  if (!usesGitHubStore() && !usesSupabaseStore()) {
     await rm(path.join(PROJECTS_IMAGES_DIR, projectId), {
       recursive: true,
       force: true,

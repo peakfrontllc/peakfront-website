@@ -18,6 +18,13 @@ function githubToken() {
 }
 
 export function usesGitHubStore() {
+  if (
+    process.env.SUPABASE_URL?.trim() &&
+    (process.env.SUPABASE_SECRET_KEY?.trim() ||
+      process.env.SUPABASE_SERVICE_ROLE_KEY?.trim())
+  ) {
+    return false;
+  }
   return Boolean(process.env.VERCEL) && Boolean(githubToken());
 }
 
