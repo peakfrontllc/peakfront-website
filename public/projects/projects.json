@@ -37,7 +37,16 @@
       "startDate": "12-Aug-26",
       "completionDate": "12-Aug-26",
       "status": "completed",
-      "images": [],
+      "images": [
+        {
+          "src": "/projects/images/du-telecommunications-mobile-dg-deployment-mdg51-2026/1.jpg",
+          "alt": "DU Telecommunications – Mobile DG Deployment (MDG51) — photo 1"
+        },
+        {
+          "src": "/projects/images/du-telecommunications-mobile-dg-deployment-mdg51-2026/2.jpg",
+          "alt": "DU Telecommunications – Mobile DG Deployment (MDG51) — photo 2"
+        }
+      ],
       "location": "ICAD II Abu Dhabi Industrial City (AUH2706) to DU Site AUH1717 – Masdar City, Abu Dhabi"
     }
   ]
