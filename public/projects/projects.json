@@ -48,26 +48,6 @@
         }
       ],
       "location": "ICAD II Abu Dhabi Industrial City (AUH2706) to DU Site AUH1717 – Masdar City, Abu Dhabi"
-    },
-    {
-      "id": "teste-2026",
-      "projectName": "teste222",
-      "client": "du Telecommunications UAE",
-      "mainContractor": "werewr",
-      "scopeOfWork": "dssdsa222",
-      "equipment": [
-        "adsadsa222"
-      ],
-      "startDate": "12-Aug-26",
-      "completionDate": "18-Aug-26",
-      "status": "completed",
-      "images": [
-        {
-          "src": "/api/project-media/teste-2026/1.jpg",
-          "alt": "teste — photo 1"
-        }
-      ],
-      "location": "asdsad222"
     }
   ]
 }
