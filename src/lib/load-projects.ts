@@ -53,19 +53,30 @@ async function readFolderImages(
   }
 }
 
+function uniqueImages(images: ProjectImage[]) {
+  const seen = new Set<string>();
+  return images.filter((image) => {
+    const src = toStoredImageSrc(image.src);
+    if (seen.has(src)) return false;
+    seen.add(src);
+    return true;
+  });
+}
+
 export async function readProjectImages(
   projectId: string,
   projectName: string,
   storedImages: unknown[],
 ): Promise<ProjectImage[]> {
-  const fromJson = normalizeImages(storedImages, projectName).map((image) => ({
-    ...image,
-    src: toStoredImageSrc(image.src),
-  }));
+  const fromJson = uniqueImages(
+    normalizeImages(storedImages, projectName).map((image) => ({
+      ...image,
+      src: toStoredImageSrc(image.src),
+    })),
+  );
+  if (fromJson.length > 0) return fromJson;
 
-  const folderImages = await readFolderImages(projectId, projectName);
-  const seen = new Set(folderImages.map((image) => image.src));
-  return [...folderImages, ...fromJson.filter((image) => !seen.has(image.src))];
+  return uniqueImages(await readFolderImages(projectId, projectName));
 }
 
 export { readStoredProjects };
