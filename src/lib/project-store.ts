@@ -10,6 +10,11 @@ import {
 } from "@/lib/github-projects";
 import { imageBasename } from "@/lib/project-form";
 import {
+  assertProjectRepoPath,
+  repoPathFromImageSrc,
+  toStoredImageSrc,
+} from "@/lib/project-paths";
+import {
   parseProjectsDocument,
   sortProjectsNewestFirst,
   type ProjectImage,
@@ -71,6 +76,24 @@ async function readDiskProjects(): Promise<StoredProject[]> {
   return parseProjectsDocument(JSON.parse(raw));
 }
 
+function withStoredImagePaths(projects: StoredProject[]) {
+  return projects.map((project) => ({
+    ...project,
+    images: Array.isArray(project.images)
+      ? project.images.map((image) => {
+          if (typeof image === "string") return toStoredImageSrc(image);
+          if (image && typeof image === "object" && "src" in image) {
+            const src = (image as { src?: unknown }).src;
+            if (typeof src === "string") {
+              return { ...image, src: toStoredImageSrc(src) };
+            }
+          }
+          return image;
+        })
+      : project.images,
+  }));
+}
+
 async function loadStoredProjects() {
   if (
     inProcessCatalog &&
@@ -79,22 +102,24 @@ async function loadStoredProjects() {
     return inProcessCatalog;
   }
 
+  const fromDisk = withStoredImagePaths(await readDiskProjects());
+  rememberCatalog(fromDisk);
+  return fromDisk;
+}
+
+export async function readStoredProjectsForWrite() {
   if (usesGitHubStore()) {
-    try {
-      const raw = await readGitHubTextFile(PROJECTS_JSON_REPO_PATH);
-      if (raw) {
-        const fromGitHub = parseProjectsDocument(JSON.parse(raw));
-        rememberCatalog(fromGitHub);
-        return fromGitHub;
-      }
-    } catch {
-      if (inProcessCatalog) return inProcessCatalog;
+    const raw = await readGitHubTextFile(PROJECTS_JSON_REPO_PATH);
+    if (raw) {
+      const fromGitHub = withStoredImagePaths(
+        parseProjectsDocument(JSON.parse(raw)),
+      );
+      rememberCatalog(fromGitHub);
+      return fromGitHub;
     }
   }
 
-  const fromDisk = await readDiskProjects();
-  rememberCatalog(fromDisk);
-  return fromDisk;
+  return readStoredProjects();
 }
 
 export async function readStoredProjects() {
@@ -124,22 +149,25 @@ export async function writeStoredProjects(
   projects: StoredProject[],
   extras: ProjectWriteExtras = {},
 ) {
-  const ordered = sortProjectsNewestFirst(projects);
+  const ordered = withStoredImagePaths(sortProjectsNewestFirst(projects));
   const body = `${JSON.stringify({ projects: ordered }, null, 2)}\n`;
-  rememberCatalog(ordered);
 
   if (usesGitHubStore()) {
+    const files = [
+      ...(extras.files ?? []),
+      {
+        path: PROJECTS_JSON_REPO_PATH,
+        content: Buffer.from(body, "utf8"),
+      },
+    ];
+    files.forEach((file) => assertProjectRepoPath(file.path));
+    (extras.deletes ?? []).forEach(assertProjectRepoPath);
     await commitGitHubFiles(
       extras.message ?? "Update projects",
-      [
-        ...(extras.files ?? []),
-        {
-          path: PROJECTS_JSON_REPO_PATH,
-          content: Buffer.from(body, "utf8"),
-        },
-      ],
+      files,
       extras.deletes ?? [],
     );
+    rememberCatalog(ordered);
     return;
   }
 
@@ -148,6 +176,7 @@ export async function writeStoredProjects(
   } catch (error) {
     throwIfReadOnly(error);
   }
+  rememberCatalog(ordered);
 }
 
 export async function saveImageFiles(
@@ -187,17 +216,14 @@ export async function saveImageFiles(
   return { images, commitFiles: [] };
 }
 
-export function repoPathFromImageSrc(src: string) {
-  const match = src.match(/^\/projects\/images\/(.+)$/);
-  return match ? `public/projects/images/${match[1]}` : null;
-}
+export { repoPathFromImageSrc };
 
 export async function removeImageFiles(
   projectId: string,
   images: ProjectImage[],
 ): Promise<{ commitDeletes: string[] }> {
   const commitDeletes = images
-    .map((image) => repoPathFromImageSrc(image.src))
+    .map((image) => repoPathFromImageSrc(image.src, projectId))
     .filter((value): value is string => Boolean(value));
 
   if (usesGitHubStore()) {

@@ -1,8 +1,8 @@
 import "server-only";
 
 import path from "node:path";
-import { readProjectImages } from "@/lib/load-projects";
 import { imageBasename } from "@/lib/project-form";
+import { toStoredImageSrc } from "@/lib/project-paths";
 import {
   deleteProjectFiles,
   nextDiskImageNumber,
@@ -10,8 +10,9 @@ import {
   saveImageFiles,
   usesGitHubStore,
   writeStoredProjects,
-  readStoredProjects,
+  readStoredProjectsForWrite,
 } from "@/lib/project-store";
+import { normalizeImages } from "@/lib/projects";
 import type { GitHubFileChange } from "@/lib/github-projects";
 import type { ProjectImage, ProjectStatus, StoredProject } from "@/lib/projects";
 
@@ -29,7 +30,6 @@ export type ProjectInput = {
   completionDate: string;
   status: ProjectStatus;
   images: { buffer: Buffer; filename: string }[];
-  imageUrls?: string[];
   removeImageFiles?: string[];
 };
 
@@ -109,7 +109,10 @@ function toStoredProject(
         ? "Running"
         : input.completionDate.trim(),
     status: input.status,
-    images: withAlts(input.projectName.trim(), images),
+    images: withAlts(
+      input.projectName.trim(),
+      images.map((image) => ({ ...image, src: toStoredImageSrc(image.src) })),
+    ),
   };
 
   if (input.location.trim()) {
@@ -126,7 +129,7 @@ function validateInput(input: ProjectInput, existingImageCount = 0) {
   if (input.status === "completed" && !input.completionDate.trim()) {
     throw new Error("Completion date is required for completed projects.");
   }
-  const incoming = input.images.length + (input.imageUrls?.length ?? 0);
+  const incoming = input.images.length;
   if (existingImageCount + incoming > MAX_IMAGES) {
     throw new Error(`You can keep up to ${MAX_IMAGES} photos per project.`);
   }
@@ -135,13 +138,6 @@ function validateInput(input: ProjectInput, existingImageCount = 0) {
       throw new Error("Each photo must be 3.5 MB or smaller.");
     }
   }
-}
-
-function urlsToImages(projectName: string, urls: string[]): ProjectImage[] {
-  return urls
-    .map((src) => src.trim())
-    .filter(Boolean)
-    .map((src) => ({ src, alt: `${projectName} — photo` }));
 }
 
 async function appendUploadedImages(
@@ -159,9 +155,8 @@ async function appendUploadedImages(
   });
 
   const saved = await saveImageFiles(id, prepared);
-  const fromUrls = urlsToImages(input.projectName, input.imageUrls ?? []);
   return {
-    images: [...existing, ...saved.images, ...fromUrls],
+    images: [...existing, ...saved.images],
     commitFiles: saved.commitFiles,
   };
 }
@@ -172,7 +167,7 @@ export async function saveUploadedProject(input: ProjectInput): Promise<{
   stored: StoredProject[];
 }> {
   validateInput(input);
-  const stored = await readStoredProjects();
+  const stored = await readStoredProjectsForWrite();
   const id = uniqueId(
     `${slugify(input.projectName)}-${yearSuffix(input.startDate)}`,
     new Set(stored.map((project) => project.id)),
@@ -190,18 +185,17 @@ export async function updateProject(
   id: string,
   input: ProjectInput,
 ): Promise<{ id: string; imageCount: number; stored: StoredProject[] }> {
-  const stored = await readStoredProjects();
+  const stored = await readStoredProjectsForWrite();
   const index = stored.findIndex((project) => project.id === id);
   if (index === -1) {
     throw new Error("Project not found.");
   }
 
   const current = stored[index];
-  const existingImages = await readProjectImages(
-    id,
-    current.projectName,
+  const existingImages = normalizeImages(
     current.images,
-  );
+    current.projectName,
+  ).map((image) => ({ ...image, src: toStoredImageSrc(image.src) }));
   const removeNames = new Set(input.removeImageFiles ?? []);
   const remaining = existingImages.filter(
     (image) => !removeNames.has(imageBasename(image.src)),
@@ -229,13 +223,15 @@ export async function updateProject(
 }
 
 export async function deleteProject(id: string): Promise<StoredProject[]> {
-  const stored = await readStoredProjects();
+  const stored = await readStoredProjectsForWrite();
   const current = stored.find((project) => project.id === id);
   if (!current) {
     throw new Error("Project not found.");
   }
 
-  const images = await readProjectImages(id, current.projectName, current.images);
+  const images = normalizeImages(current.images, current.projectName).map(
+    (image) => ({ ...image, src: toStoredImageSrc(image.src) }),
+  );
   const next = stored.filter((project) => project.id !== id);
   const deleted = await deleteProjectFiles(id, images);
   await writeStoredProjects(next, {

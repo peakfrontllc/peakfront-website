@@ -1,5 +1,7 @@
 import "server-only";
 
+import { assertProjectRepoPath } from "@/lib/project-paths";
+
 const GITHUB_API = "https://api.github.com";
 
 export type GitHubFileChange = {
@@ -95,6 +97,8 @@ export async function commitGitHubFiles(
   deletes: string[] = [],
 ) {
   if (files.length === 0 && deletes.length === 0) return;
+  files.forEach((file) => assertProjectRepoPath(file.path));
+  deletes.forEach(assertProjectRepoPath);
 
   const [owner, repo] = githubRepo().split("/");
   const branch = githubBranch();

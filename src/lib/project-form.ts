@@ -50,9 +50,6 @@ export function projectInputFromForm(formData: FormData) {
     startDate: asFormString(formData.get("startDate")),
     completionDate: asFormString(formData.get("completionDate")),
     status: parseStatus(asFormString(formData.get("status"))),
-    imageUrls: formData
-      .getAll("imageUrls")
-      .filter((entry): entry is string => typeof entry === "string" && entry.length > 0),
     removeImageFiles: formData
       .getAll("removeImages")
       .filter((entry): entry is string => typeof entry === "string" && entry.length > 0),
