@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { needsLiveBlobSetup, usesBlobStore } from "@/lib/project-store";
+import { needsLiveStoreSetup } from "@/lib/project-store";
 import { getProjects } from "@/lib/load-projects";
 import ManageProjectsClient from "./ManageProjectsClient";
 
@@ -31,23 +31,21 @@ export default async function ManageProjectsPage() {
             Add, edit and delete projects
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/70">
-            Changes appear on the Our Projects table, including photos.
+            Changes are saved to GitHub and then appear on Our Projects.
           </p>
         </div>
       </section>
 
       <section className="section-padding bg-slate-50">
         <div className="mx-auto max-w-3xl px-4 sm:px-5 lg:px-10">
-          {needsLiveBlobSetup() && (
+          {needsLiveStoreSetup() && (
             <p className="mb-6 border border-amber/40 bg-amber/15 px-4 py-3 text-sm text-navy">
-              Saving is not set up on the live server yet. In Vercel, open
-              Storage → Create → Blob, connect this project, then redeploy.
+              Saving is not set up on the live server yet. In Vercel, add
+              PROJECTS_GITHUB_TOKEN (a GitHub token with Contents read/write
+              on this repo), then redeploy.
             </p>
           )}
-          <ManageProjectsClient
-            projects={projects}
-            blobEnabled={usesBlobStore()}
-          />
+          <ManageProjectsClient projects={projects} />
         </div>
       </section>
     </>

@@ -2,7 +2,12 @@ import "server-only";
 
 import { mkdir, readdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { del, list, put, type PutBlobResult } from "@vercel/blob";
+import {
+  commitGitHubFiles,
+  readGitHubTextFile,
+  usesGitHubStore,
+  type GitHubFileChange,
+} from "@/lib/github-projects";
 import { imageBasename } from "@/lib/project-form";
 import {
   parseProjectsDocument,
@@ -25,23 +30,20 @@ export const PROJECTS_IMAGES_DIR = path.join(
   "images",
 );
 
-const BLOB_JSON_PATHNAME = "projects/projects.json";
-const BLOB_JSON_PREFIX = "projects/data/";
-const BLOB_ACCESS = "public" as const;
+const PROJECTS_JSON_REPO_PATH = "public/projects/projects.json";
 
 let inProcessCatalog: StoredProject[] | null = null;
 let catalogWrittenAt = 0;
-const CATALOG_TRUST_MS = 15_000;
+let inFlightRead: Promise<StoredProject[]> | null = null;
+const CATALOG_TRUST_MS = 60_000;
 
-export const LIVE_BLOB_SETUP_MESSAGE =
-  "The live server cannot save files to disk. In Vercel, open Storage → Create → Blob, connect this project, then redeploy.";
+export const LIVE_STORE_SETUP_MESSAGE =
+  "The live server cannot save files to disk. Add PROJECTS_GITHUB_TOKEN in Vercel (Contents read/write on this repo), then redeploy.";
 
-export function usesBlobStore() {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
-}
+export { usesGitHubStore };
 
-export function needsLiveBlobSetup() {
-  return Boolean(process.env.VERCEL) && !usesBlobStore();
+export function needsLiveStoreSetup() {
+  return Boolean(process.env.VERCEL) && !usesGitHubStore();
 }
 
 function isReadOnlyFsError(error: unknown) {
@@ -54,28 +56,14 @@ function isReadOnlyFsError(error: unknown) {
 
 function throwIfReadOnly(error: unknown): never {
   if (isReadOnlyFsError(error)) {
-    throw new Error(LIVE_BLOB_SETUP_MESSAGE);
+    throw new Error(LIVE_STORE_SETUP_MESSAGE);
   }
   throw error;
 }
 
-function isRemoteSrc(src: string) {
-  return /^https?:\/\//i.test(src);
-}
-
-function contentTypeForExtension(ext: string) {
-  switch (ext) {
-    case ".png":
-      return "image/png";
-    case ".webp":
-      return "image/webp";
-    case ".gif":
-      return "image/gif";
-    case ".avif":
-      return "image/avif";
-    default:
-      return "image/jpeg";
-  }
+function rememberCatalog(projects: StoredProject[]) {
+  inProcessCatalog = projects;
+  catalogWrittenAt = Date.now();
 }
 
 async function readDiskProjects(): Promise<StoredProject[]> {
@@ -83,110 +71,75 @@ async function readDiskProjects(): Promise<StoredProject[]> {
   return parseProjectsDocument(JSON.parse(raw));
 }
 
-function isWrittenBlob(
-  blob: { url: string; downloadUrl?: string; pathname: string },
-  written: PutBlobResult,
-) {
-  return (
-    blob.url === written.url ||
-    blob.downloadUrl === written.url ||
-    blob.pathname === written.pathname ||
-    Boolean(written.downloadUrl && blob.url === written.downloadUrl)
-  );
-}
-
-async function fetchBlobJson(url: string): Promise<StoredProject[] | null> {
-  const headers: HeadersInit = {};
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  const response = await fetch(url, {
-    cache: "no-store",
-    headers,
-  });
-  if (!response.ok) return null;
-  return parseProjectsDocument(await response.json());
-}
-
-async function readBlobProjects(): Promise<StoredProject[] | null> {
-  const data = (await list({ prefix: BLOB_JSON_PREFIX, limit: 100 })).blobs;
-  const legacy = (await list({ prefix: BLOB_JSON_PATHNAME, limit: 20 })).blobs.filter(
-    (blob) => blob.pathname === BLOB_JSON_PATHNAME,
-  );
-  const catalogs = [...data, ...legacy].sort(
-    (a, b) =>
-      new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
-  );
-
-  for (const blob of catalogs) {
-    const parsed = await fetchBlobJson(blob.url);
-    if (parsed) return parsed;
-  }
-
-  return null;
-}
-
-export async function readStoredProjects() {
+async function loadStoredProjects() {
   if (
-    usesBlobStore() &&
     inProcessCatalog &&
     Date.now() - catalogWrittenAt < CATALOG_TRUST_MS
   ) {
     return inProcessCatalog;
   }
 
-  if (usesBlobStore()) {
+  if (usesGitHubStore()) {
     try {
-      const fromBlob = await readBlobProjects();
-      if (fromBlob) {
-        inProcessCatalog = fromBlob;
-        return fromBlob;
+      const raw = await readGitHubTextFile(PROJECTS_JSON_REPO_PATH);
+      if (raw) {
+        const fromGitHub = parseProjectsDocument(JSON.parse(raw));
+        rememberCatalog(fromGitHub);
+        return fromGitHub;
       }
     } catch {
-      // Fall back to the in-memory catalog or the deployed JSON.
+      if (inProcessCatalog) return inProcessCatalog;
     }
-    if (inProcessCatalog) return inProcessCatalog;
   }
 
-  return readDiskProjects();
+  const fromDisk = await readDiskProjects();
+  rememberCatalog(fromDisk);
+  return fromDisk;
 }
 
-export async function writeStoredProjects(projects: StoredProject[]) {
+export async function readStoredProjects() {
+  if (
+    inProcessCatalog &&
+    Date.now() - catalogWrittenAt < CATALOG_TRUST_MS
+  ) {
+    return inProcessCatalog;
+  }
+
+  if (!inFlightRead) {
+    inFlightRead = loadStoredProjects().finally(() => {
+      inFlightRead = null;
+    });
+  }
+
+  return inFlightRead;
+}
+
+export type ProjectWriteExtras = {
+  files?: GitHubFileChange[];
+  deletes?: string[];
+  message?: string;
+};
+
+export async function writeStoredProjects(
+  projects: StoredProject[],
+  extras: ProjectWriteExtras = {},
+) {
   const ordered = sortProjectsNewestFirst(projects);
   const body = `${JSON.stringify({ projects: ordered }, null, 2)}\n`;
-  inProcessCatalog = ordered;
-  catalogWrittenAt = Date.now();
+  rememberCatalog(ordered);
 
-  if (usesBlobStore()) {
-    const written = await put(`${BLOB_JSON_PREFIX}${Date.now()}.json`, body, {
-      access: BLOB_ACCESS,
-      addRandomSuffix: true,
-      contentType: "application/json; charset=utf-8",
-      cacheControlMaxAge: 60,
-    });
-
-    const current = await list({ prefix: BLOB_JSON_PREFIX, limit: 100 });
-    const keepNewest = current.blobs
-      .slice()
-      .sort(
-        (a, b) =>
-          new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
-      )
-      .slice(0, 5)
-      .map((blob) => blob.url);
-
-    const stale = current.blobs.filter(
-      (blob) => !isWrittenBlob(blob, written) && !keepNewest.includes(blob.url),
+  if (usesGitHubStore()) {
+    await commitGitHubFiles(
+      extras.message ?? "Update projects",
+      [
+        ...(extras.files ?? []),
+        {
+          path: PROJECTS_JSON_REPO_PATH,
+          content: Buffer.from(body, "utf8"),
+        },
+      ],
+      extras.deletes ?? [],
     );
-    const legacy = await list({ prefix: BLOB_JSON_PATHNAME, limit: 20 });
-    stale.push(
-      ...legacy.blobs.filter((blob) => blob.pathname === BLOB_JSON_PATHNAME),
-    );
-    if (stale.length > 0) {
-      await del(stale.map((blob) => blob.url)).catch(() => undefined);
-    }
     return;
   }
 
@@ -200,20 +153,20 @@ export async function writeStoredProjects(projects: StoredProject[]) {
 export async function saveImageFiles(
   projectId: string,
   files: { buffer: Buffer; filename: string; src: string }[],
-): Promise<ProjectImage[]> {
-  if (files.length === 0) return [];
+): Promise<{
+  images: ProjectImage[];
+  commitFiles: GitHubFileChange[];
+}> {
+  if (files.length === 0) return { images: [], commitFiles: [] };
 
-  if (usesBlobStore()) {
-    return Promise.all(
-      files.map(async (file) => {
-        const blob = await put(file.filename.replace(/\\/g, "/"), file.buffer, {
-          access: BLOB_ACCESS,
-          addRandomSuffix: true,
-          contentType: contentTypeForExtension(path.extname(file.filename)),
-        });
-        return { src: blob.url, alt: "" };
-      }),
-    );
+  if (usesGitHubStore()) {
+    return {
+      images: files.map((file) => ({ src: file.src, alt: "" })),
+      commitFiles: files.map((file) => ({
+        path: `public/projects/images/${projectId}/${path.basename(file.filename)}`,
+        content: file.buffer,
+      })),
+    };
   }
 
   const imageDir = path.join(PROJECTS_IMAGES_DIR, projectId);
@@ -221,7 +174,7 @@ export async function saveImageFiles(
     throwIfReadOnly(error);
   });
 
-  const saved: ProjectImage[] = [];
+  const images: ProjectImage[] = [];
   for (const file of files) {
     const dest = path.join(imageDir, path.basename(file.filename));
     try {
@@ -229,54 +182,53 @@ export async function saveImageFiles(
     } catch (error) {
       throwIfReadOnly(error);
     }
-    saved.push({ src: file.src, alt: "" });
+    images.push({ src: file.src, alt: "" });
   }
-  return saved;
+  return { images, commitFiles: [] };
+}
+
+export function repoPathFromImageSrc(src: string) {
+  const match = src.match(/^\/projects\/images\/(.+)$/);
+  return match ? `public/projects/images/${match[1]}` : null;
 }
 
 export async function removeImageFiles(
   projectId: string,
   images: ProjectImage[],
-) {
-  const remote = images
-    .map((image) => image.src)
-    .filter((src) => isRemoteSrc(src));
-  if (remote.length > 0) {
-    await del(remote).catch(() => undefined);
+): Promise<{ commitDeletes: string[] }> {
+  const commitDeletes = images
+    .map((image) => repoPathFromImageSrc(image.src))
+    .filter((value): value is string => Boolean(value));
+
+  if (usesGitHubStore()) {
+    return { commitDeletes };
   }
 
   const imageDir = path.join(PROJECTS_IMAGES_DIR, projectId);
   await Promise.all(
-    images
-      .filter((image) => !isRemoteSrc(image.src))
-      .map((image) =>
-        unlink(path.join(imageDir, imageBasename(image.src))).catch(
-          () => undefined,
-        ),
+    images.map((image) =>
+      unlink(path.join(imageDir, imageBasename(image.src))).catch(
+        () => undefined,
       ),
+    ),
   );
+  return { commitDeletes: [] };
 }
 
 export async function deleteProjectFiles(
   projectId: string,
   images: ProjectImage[],
-) {
-  await removeImageFiles(projectId, images);
+): Promise<{ commitDeletes: string[] }> {
+  const removed = await removeImageFiles(projectId, images);
 
-  if (usesBlobStore()) {
-    const { blobs } = await list({
-      prefix: `projects/images/${projectId}/`,
-      limit: 100,
-    });
-    if (blobs.length > 0) {
-      await del(blobs.map((blob) => blob.url)).catch(() => undefined);
-    }
+  if (!usesGitHubStore()) {
+    await rm(path.join(PROJECTS_IMAGES_DIR, projectId), {
+      recursive: true,
+      force: true,
+    }).catch(() => undefined);
   }
 
-  await rm(path.join(PROJECTS_IMAGES_DIR, projectId), {
-    recursive: true,
-    force: true,
-  }).catch(() => undefined);
+  return removed;
 }
 
 export async function nextDiskImageNumber(projectId: string) {

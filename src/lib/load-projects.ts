@@ -2,7 +2,11 @@ import "server-only";
 
 import { readdir } from "node:fs/promises";
 import path from "node:path";
-import { PROJECTS_IMAGES_DIR, readStoredProjects } from "@/lib/project-store";
+import {
+  PROJECTS_IMAGES_DIR,
+  readStoredProjects,
+  usesGitHubStore,
+} from "@/lib/project-store";
 import {
   normalizeImages,
   normalizeProject,
@@ -41,7 +45,7 @@ async function readFolderImages(
       );
 
     return files.map((file, index) => ({
-      src: `/projects/images/${projectId}/${file}`,
+      src: publicImageSrc(`/projects/images/${projectId}/${file}`),
       alt: `${projectName} — photo ${index + 1}`,
     }));
   } catch {
@@ -54,10 +58,23 @@ export async function readProjectImages(
   projectName: string,
   storedImages: unknown[],
 ): Promise<ProjectImage[]> {
-  const fromJson = normalizeImages(storedImages, projectName);
+  const fromJson = normalizeImages(storedImages, projectName).map((image) => ({
+    ...image,
+    src: publicImageSrc(image.src),
+  }));
+
+  // On Vercel the deploy snapshot can be older than GitHub. JSON is the source of truth.
+  if (usesGitHubStore()) return fromJson;
+
   const folderImages = await readFolderImages(projectId, projectName);
   const seen = new Set(folderImages.map((image) => image.src));
   return [...folderImages, ...fromJson.filter((image) => !seen.has(image.src))];
+}
+
+function publicImageSrc(src: string) {
+  if (!usesGitHubStore()) return src;
+  const match = src.match(/^\/projects\/images\/(.+)$/);
+  return match ? `/api/project-media/${match[1]}` : src;
 }
 
 export { readStoredProjects };

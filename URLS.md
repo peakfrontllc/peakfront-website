@@ -6,7 +6,7 @@ Base: https://www.peakfront.ae
 
 | Path | URL | Notes |
 | --- | --- | --- |
-| `/manage` | https://www.peakfront.ae/manage | Add, edit, and delete projects and photos. Live site needs a Vercel Blob store. |
+| `/manage` | https://www.peakfront.ae/manage | Add, edit, and delete projects. Live site saves to GitHub via PROJECTS_GITHUB_TOKEN. |
 | `/admin` | https://www.peakfront.ae/admin | Decap CMS (GitHub login) |
 
 ## Downloads and documents

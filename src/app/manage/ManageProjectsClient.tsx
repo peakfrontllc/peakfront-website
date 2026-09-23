@@ -1,6 +1,5 @@
 "use client";
 
-import { upload } from "@vercel/blob/client";
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -31,12 +30,10 @@ function fetchErrorMessage(error: unknown, fallback: string) {
 
 function ProjectForm({
   project,
-  blobEnabled,
   onCancel,
   onSaved,
 }: {
   project?: Project;
-  blobEnabled: boolean;
   onCancel: () => void;
   onSaved: (projects?: Project[]) => void;
 }) {
@@ -70,23 +67,17 @@ function ProjectForm({
     const path = project ? `/api/projects/${project.id}` : "/api/projects";
     const method = project ? "PUT" : "POST";
     const formData = new FormData(form);
+    const selected = formData.getAll("images").filter(
+      (value): value is File => value instanceof File && value.size > 0,
+    );
+    const oversized = selected.find((file) => file.size > 3.5 * 1024 * 1024);
+    if (oversized) {
+      setError("Each photo must be 3.5 MB or smaller.");
+      setSubmitting(false);
+      return;
+    }
 
     try {
-      if (blobEnabled) {
-        const files = formData
-          .getAll("images")
-          .filter((entry): entry is File => entry instanceof File && entry.size > 0);
-        formData.delete("images");
-
-        for (const file of files) {
-          const blob = await upload(`projects/images/${file.name}`, file, {
-            access: "public",
-            handleUploadUrl: "/api/projects/blob",
-          });
-          formData.append("imageUrls", blob.url);
-        }
-      }
-
       const response = await fetch(path, {
         method,
         body: formData,
@@ -266,7 +257,8 @@ function ProjectForm({
               ? `${fileCount} new photo${fileCount === 1 ? "" : "s"} selected`
               : project
                 ? "New photos are added to the existing gallery."
-                : "You can select multiple photos."}
+                : "You can select multiple photos."}{" "}
+            Keep each photo under 3.5 MB.
           </p>
         </div>
       </div>
@@ -340,10 +332,8 @@ function ProjectForm({
 
 export default function ManageProjectsClient({
   projects,
-  blobEnabled,
 }: {
   projects: Project[];
-  blobEnabled: boolean;
 }) {
   const [items, setItems] = useState(projects);
   const [mode, setMode] = useState<"list" | "add" | "edit">("list");
@@ -392,7 +382,6 @@ export default function ManageProjectsClient({
       <ProjectForm
         key={editingProject?.id ?? "new"}
         project={editingProject}
-        blobEnabled={blobEnabled}
         onCancel={() => {
           setMode("list");
           setEditingId(null);

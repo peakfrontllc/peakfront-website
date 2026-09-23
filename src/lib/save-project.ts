@@ -8,14 +8,15 @@ import {
   nextDiskImageNumber,
   removeImageFiles,
   saveImageFiles,
-  usesBlobStore,
+  usesGitHubStore,
   writeStoredProjects,
   readStoredProjects,
 } from "@/lib/project-store";
+import type { GitHubFileChange } from "@/lib/github-projects";
 import type { ProjectImage, ProjectStatus, StoredProject } from "@/lib/projects";
 
 const MAX_IMAGES = 12;
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 3.5 * 1024 * 1024;
 
 export type ProjectInput = {
   projectName: string;
@@ -78,7 +79,7 @@ async function nextImageNumber(projectId: string, images: ProjectImage[]) {
   const fromSrc = images
     .map((image) => imageNumberFromSrc(image.src))
     .filter((value): value is number => value !== null);
-  const fromDisk = usesBlobStore() ? 1 : await nextDiskImageNumber(projectId);
+  const fromDisk = usesGitHubStore() ? 1 : await nextDiskImageNumber(projectId);
   const highest = Math.max(0, ...fromSrc, fromDisk - 1);
   return highest + 1;
 }
@@ -131,7 +132,7 @@ function validateInput(input: ProjectInput, existingImageCount = 0) {
   }
   for (const image of input.images) {
     if (image.buffer.byteLength > MAX_IMAGE_BYTES) {
-      throw new Error("Each photo must be 8 MB or smaller.");
+      throw new Error("Each photo must be 3.5 MB or smaller.");
     }
   }
 }
@@ -147,21 +148,22 @@ async function appendUploadedImages(
   id: string,
   input: ProjectInput,
   existing: ProjectImage[],
-): Promise<ProjectImage[]> {
+): Promise<{ images: ProjectImage[]; commitFiles: GitHubFileChange[] }> {
   let imageNumber = await nextImageNumber(id, existing);
   const prepared = input.images.map((image) => {
     const ext = imageExtension(image.filename);
-    const filename = usesBlobStore()
-      ? `projects/images/${id}/${imageNumber}${ext}`
-      : `${imageNumber}${ext}`;
-    const src = `/projects/images/${id}/${imageNumber}${ext}`;
+    const filename = `${imageNumber}${ext}`;
+    const src = `/projects/images/${id}/${filename}`;
     imageNumber += 1;
     return { buffer: image.buffer, filename, src };
   });
 
-  const savedFiles = await saveImageFiles(id, prepared);
+  const saved = await saveImageFiles(id, prepared);
   const fromUrls = urlsToImages(input.projectName, input.imageUrls ?? []);
-  return [...existing, ...savedFiles, ...fromUrls];
+  return {
+    images: [...existing, ...saved.images, ...fromUrls],
+    commitFiles: saved.commitFiles,
+  };
 }
 
 export async function saveUploadedProject(input: ProjectInput): Promise<{
@@ -175,10 +177,13 @@ export async function saveUploadedProject(input: ProjectInput): Promise<{
     `${slugify(input.projectName)}-${yearSuffix(input.startDate)}`,
     new Set(stored.map((project) => project.id)),
   );
-  const images = await appendUploadedImages(id, input, []);
-  const next = [...stored, toStoredProject(id, input, images)];
-  await writeStoredProjects(next);
-  return { id, imageCount: images.length, stored: next };
+  const uploaded = await appendUploadedImages(id, input, []);
+  const next = [...stored, toStoredProject(id, input, uploaded.images)];
+  await writeStoredProjects(next, {
+    files: uploaded.commitFiles,
+    message: `Add project ${id}`,
+  });
+  return { id, imageCount: uploaded.images.length, stored: next };
 }
 
 export async function updateProject(
@@ -207,16 +212,20 @@ export async function updateProject(
 
   validateInput(input, remaining.length);
 
-  if (removed.length > 0) {
-    await removeImageFiles(id, removed);
-  }
-
-  const images = await appendUploadedImages(id, input, remaining);
+  const deleted =
+    removed.length > 0
+      ? await removeImageFiles(id, removed)
+      : { commitDeletes: [] };
+  const uploaded = await appendUploadedImages(id, input, remaining);
   const next = [...stored];
-  next[index] = toStoredProject(id, input, images);
-  await writeStoredProjects(next);
+  next[index] = toStoredProject(id, input, uploaded.images);
+  await writeStoredProjects(next, {
+    files: uploaded.commitFiles,
+    deletes: deleted.commitDeletes,
+    message: `Update project ${id}`,
+  });
 
-  return { id, imageCount: images.length, stored: next };
+  return { id, imageCount: uploaded.images.length, stored: next };
 }
 
 export async function deleteProject(id: string): Promise<StoredProject[]> {
@@ -228,7 +237,10 @@ export async function deleteProject(id: string): Promise<StoredProject[]> {
 
   const images = await readProjectImages(id, current.projectName, current.images);
   const next = stored.filter((project) => project.id !== id);
-  await writeStoredProjects(next);
-  await deleteProjectFiles(id, images);
+  const deleted = await deleteProjectFiles(id, images);
+  await writeStoredProjects(next, {
+    deletes: deleted.commitDeletes,
+    message: `Delete project ${id}`,
+  });
   return next;
 }
