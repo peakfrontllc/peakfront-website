@@ -106,6 +106,7 @@ function withStoredImagePaths(projects: StoredProject[]) {
 
 async function loadStoredProjects() {
   if (
+    !usesSupabaseStore() &&
     inProcessCatalog &&
     Date.now() - catalogWrittenAt < CATALOG_TRUST_MS
   ) {
@@ -153,6 +154,7 @@ export async function readStoredProjectsForWrite() {
 
 export async function readStoredProjects() {
   if (
+    !usesSupabaseStore() &&
     inProcessCatalog &&
     Date.now() - catalogWrittenAt < CATALOG_TRUST_MS
   ) {
