@@ -26,6 +26,26 @@
       "location": "DU Site AUH1717 – Masdar City, Abu Dhabi"
     },
     {
+      "id": "teste-2026",
+      "projectName": "teste",
+      "client": "du Telecommunications UAE",
+      "mainContractor": "werewr",
+      "scopeOfWork": "dssdsa",
+      "equipment": [
+        "adsadsa"
+      ],
+      "startDate": "12-Aug-26",
+      "completionDate": "18-Aug-26",
+      "status": "completed",
+      "images": [
+        {
+          "src": "/projects/images/teste-2026/1.jpg",
+          "alt": "teste — photo 1"
+        }
+      ],
+      "location": "asdsad"
+    },
+    {
       "id": "du-telecommunications-mobile-dg-deployment-mdg51-2026",
       "projectName": "DU Telecommunications – Mobile DG Deployment (MDG51)",
       "client": "du Telecommunications UAE",
