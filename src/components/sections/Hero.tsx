@@ -3,69 +3,29 @@
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
 import QuoteButton from "@/components/QuoteButton";
 import { heroStats, HERO_IMAGE, HERO_IMAGE_ALT } from "@/lib/content";
 
 export default function Hero() {
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const [transform, setTransform] = useState("scale(1.01) translate(0%, 0%)");
-  const reducedMotion = useRef(true);
-
-  useEffect(() => {
-    reducedMotion.current = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-  }, []);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    if (reducedMotion.current) return;
-
-    const section = sectionRef.current;
-    if (!section) return;
-
-    const rect = section.getBoundingClientRect();
-    const px = (e.clientX - rect.left) / rect.width;
-    const py = (e.clientY - rect.top) / rect.height;
-    const maxShiftX = 0.4;
-    const maxShiftY = 0.15;
-    const shiftX = (px - 0.5) * -2 * maxShiftX;
-    const shiftY = (py - 0.5) * -2 * maxShiftY;
-
-    setTransform(`scale(1.01) translate(${shiftX}%, ${shiftY}%)`);
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    if (reducedMotion.current) return;
-    setTransform("scale(1.01) translate(0%, 0%)");
-  }, []);
-
   return (
     <section
       id="hero"
-      ref={sectionRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
       aria-label="Heavy equipment rental hero"
       className="relative flex min-h-[88dvh] items-end overflow-hidden bg-navy sm:min-h-[92vh]"
     >
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0">
         <Image
           src={HERO_IMAGE}
           alt={HERO_IMAGE_ALT}
           fill
           priority
+          quality={90}
           fetchPriority="high"
           sizes="100vw"
-          className="object-cover"
-          style={{
-            transform,
-            transition: "transform 1.4s cubic-bezier(0.22, 1, 0.36, 1)",
-            willChange: "transform",
-          }}
+          className="object-cover object-center"
         />
       </div>
-      <div className="absolute inset-0 bg-gradient-to-r from-navy/95 via-navy/75 to-navy/40 sm:via-navy/70 sm:to-navy/25" />
+      <div className="absolute inset-0 bg-gradient-to-r from-navy/80 via-navy/45 to-navy/10" />
 
       <div className="relative mx-auto w-full max-w-[1400px] px-4 pb-12 pt-24 sm:px-5 sm:pb-16 sm:pt-32 lg:px-10 lg:pb-20">
         <div className="max-w-3xl">

@@ -1207,6 +1207,8 @@ export function getEquipmentNavItems(): EquipmentNavItem[] {
       href: getRentalHubPath(hub.slug),
       label: hub.cardTitle,
     })),
+    { href: "/manlift", label: "Manlift" },
+    { href: "/boomtruck", label: "Boom Truck" },
     { href: "/scaffolding-suppliers-abu-dhabi", label: "Scaffolding" },
   ];
 }

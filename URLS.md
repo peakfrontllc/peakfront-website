@@ -30,6 +30,8 @@ Base: https://www.peakfront.ae
 | `/our-project` | https://www.peakfront.ae/our-project | Projects table |
 | `/equipment-rental` | https://www.peakfront.ae/equipment-rental | Equipment rental hub |
 | `/equipment-rental/all` | https://www.peakfront.ae/equipment-rental/all | Full equipment list |
+| `/manlift` | https://www.peakfront.ae/manlift | Manlift, boom lift and scissor lift rental |
+| `/boomtruck` | https://www.peakfront.ae/boomtruck | Boom truck rental |
 | `/scaffolding-suppliers-abu-dhabi` | https://www.peakfront.ae/scaffolding-suppliers-abu-dhabi | Scaffolding |
 | `/privacy` | https://www.peakfront.ae/privacy | Privacy policy |
 | `/terms` | https://www.peakfront.ae/terms | Terms of use |

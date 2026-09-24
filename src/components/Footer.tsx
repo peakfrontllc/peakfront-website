@@ -77,6 +77,12 @@ export default function Footer() {
                   {link.label}
                 </Link>
               ))}
+              <Link href="/manlift" className="hover:text-amber">
+                Manlift Rental
+              </Link>
+              <Link href="/boomtruck" className="hover:text-amber">
+                Boom Truck Rental
+              </Link>
               <Link href="/scaffolding-suppliers-abu-dhabi" className="hover:text-amber">
                 Scaffolding
               </Link>
