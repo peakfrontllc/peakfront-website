@@ -268,7 +268,7 @@ export default function BoomtruckPage() {
                     alt={service.imageAlt}
                     fill
                     sizes="(max-width: 640px) 100vw, 33vw"
-                    className={service.fit === "contain" ? "object-contain p-4" : "object-cover object-center"}
+                    className="object-cover object-center"
                   />
                 </Link>
                 <div className="flex flex-1 flex-col px-5 py-6 text-center">
@@ -389,7 +389,7 @@ export default function BoomtruckPage() {
                 alt={spotlight.imageAlt}
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                className={spotlight.fit === "contain" ? "object-contain p-8" : "object-cover object-center"}
+                className="object-cover object-center"
               />
             </div>
             <div className={index % 2 === 1 ? "lg:order-1" : ""}>
