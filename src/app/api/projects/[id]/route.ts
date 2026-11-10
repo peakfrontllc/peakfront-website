@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/auth/activity";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { authorize } from "@/lib/auth/session";
 import { hydrateProjects } from "@/lib/load-projects";
 import { filesFromForm, projectInputFromForm } from "@/lib/project-form";
 import { deleteProject, updateProject } from "@/lib/save-project";
@@ -14,6 +17,10 @@ type RouteContext = {
 
 export async function PUT(request: Request, context: RouteContext) {
   const { id } = await context.params;
+  const gate = await authorize(PERMISSIONS.websiteProjectsWrite);
+  if (!gate.session) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
 
   let formData: FormData;
   try {
@@ -27,6 +34,8 @@ export async function PUT(request: Request, context: RouteContext) {
       ...projectInputFromForm(formData),
       images: await filesFromForm(formData),
     });
+
+    await logActivity(gate.session, "website_project.updated", "website_project", saved.id);
 
     return NextResponse.json({
       ok: true,
@@ -44,9 +53,14 @@ export async function PUT(request: Request, context: RouteContext) {
 
 export async function DELETE(_request: Request, context: RouteContext) {
   const { id } = await context.params;
+  const gate = await authorize(PERMISSIONS.websiteProjectsWrite);
+  if (!gate.session) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
 
   try {
     const stored = await deleteProject(id);
+    await logActivity(gate.session, "website_project.deleted", "website_project", id);
     return NextResponse.json({
       ok: true,
       id,

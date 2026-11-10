@@ -1,25 +1,26 @@
 import type { Metadata } from "next";
 import { needsLiveStoreSetup } from "@/lib/project-store";
 import { getProjects } from "@/lib/load-projects";
-import ManageProjectsClient from "./ManageProjectsClient";
+import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
+import { requirePermission } from "@/lib/auth/session";
+import ManageProjectsClient from "../ManageProjectsClient";
 
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
 export const metadata: Metadata = {
   title: "Manage Projects",
-  robots: {
-    index: false,
-    follow: false,
-  },
+  robots: { index: false, follow: false },
 };
 
 export default async function ManageProjectsPage() {
+  const session = await requirePermission(PERMISSIONS.websiteProjectsRead);
   const projects = await getProjects();
+  const canWrite = hasPermission(session.permissions, PERMISSIONS.websiteProjectsWrite);
 
   return (
     <>
-      <section className="bg-navy pt-28 pb-14 text-white sm:pt-32 sm:pb-16">
+      <section className="bg-navy py-14 text-white sm:py-16">
         <div className="mx-auto max-w-[1400px] px-4 sm:px-5 lg:px-10">
           <div className="mb-4 flex items-center gap-3">
             <span className="h-[2px] w-8 bg-amber" />
@@ -44,7 +45,7 @@ export default async function ManageProjectsPage() {
               SUPABASE_URL and SUPABASE_SECRET_KEY, then redeploy.
             </p>
           )}
-          <ManageProjectsClient projects={projects} />
+          <ManageProjectsClient projects={projects} canWrite={canWrite} />
         </div>
       </section>
     </>

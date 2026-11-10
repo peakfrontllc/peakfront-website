@@ -2,9 +2,9 @@ import "server-only";
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { imageBasename } from "@/lib/project-form";
 import type { ProjectImage, StoredProject } from "@/lib/projects";
+import { getServiceClient, usesServiceRole } from "@/lib/supabase/service";
 
 const BUCKET = "project-images";
 
@@ -22,42 +22,12 @@ type ProjectRow = {
   images: unknown;
 };
 
-function supabaseUrl() {
-  const raw = process.env.SUPABASE_URL?.trim() || "";
-  if (!raw) return "";
-  try {
-    const url = new URL(raw);
-    url.pathname = "/";
-    url.search = "";
-    url.hash = "";
-    return url.origin;
-  } catch {
-    return raw.replace(/\/rest\/v1\/?$/i, "").replace(/\/+$/, "");
-  }
-}
-
-function supabaseServiceKey() {
-  return (
-    process.env.SUPABASE_SECRET_KEY?.trim() ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
-    ""
-  );
-}
-
 export function usesSupabaseStore() {
-  return Boolean(supabaseUrl() && supabaseServiceKey());
+  return usesServiceRole();
 }
 
-export function getSupabase(): SupabaseClient {
-  if (!usesSupabaseStore()) {
-    throw new Error(
-      "Add SUPABASE_URL and SUPABASE_SECRET_KEY, then redeploy.",
-    );
-  }
-
-  return createClient(supabaseUrl(), supabaseServiceKey(), {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+export function getSupabase() {
+  return getServiceClient();
 }
 
 function imageContentType(filename: string) {

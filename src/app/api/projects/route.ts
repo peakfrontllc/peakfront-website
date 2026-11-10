@@ -1,3 +1,6 @@
+import { logActivity } from "@/lib/auth/activity";
+import { PERMISSIONS } from "@/lib/auth/permissions";
+import { authorize } from "@/lib/auth/session";
 import { hydrateProjects } from "@/lib/load-projects";
 import { filesFromForm, projectInputFromForm } from "@/lib/project-form";
 import { saveUploadedProject } from "@/lib/save-project";
@@ -16,11 +19,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid form data." }, { status: 400 });
   }
 
+  const gate = await authorize(PERMISSIONS.websiteProjectsWrite);
+  if (!gate.session) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+
   try {
     const saved = await saveUploadedProject({
       ...projectInputFromForm(formData),
       images: await filesFromForm(formData),
     });
+
+    await logActivity(
+      gate.session,
+      "website_project.created",
+      "website_project",
+      saved.id,
+    );
 
     return NextResponse.json({
       ok: true,

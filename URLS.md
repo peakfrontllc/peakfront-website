@@ -6,7 +6,10 @@ Base: https://www.peakfront.ae
 
 | Path | URL | Notes |
 | --- | --- | --- |
-| `/manage` | https://www.peakfront.ae/manage | Add, edit, and delete projects. Live site saves to Supabase. |
+| `/manage/login` | https://www.peakfront.ae/manage/login | Staff sign-in. Invite only. |
+| `/manage` | https://www.peakfront.ae/manage | Website project portfolio. Requires a staff account. |
+| `/manage/staff` | https://www.peakfront.ae/manage/staff | Staff invitations, roles, and activity. |
+| `/manage/account` | https://www.peakfront.ae/manage/account | Own name and password. |
 | `/admin` | https://www.peakfront.ae/admin | Decap CMS (GitHub login) |
 
 ## Downloads and documents

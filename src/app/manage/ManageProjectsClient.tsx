@@ -81,6 +81,7 @@ function ProjectForm({
       const response = await fetch(path, {
         method,
         body: formData,
+        credentials: "same-origin",
       });
       const data = (await response.json()) as {
         error?: string;
@@ -332,8 +333,10 @@ function ProjectForm({
 
 export default function ManageProjectsClient({
   projects,
+  canWrite = false,
 }: {
   projects: Project[];
+  canWrite?: boolean;
 }) {
   const [items, setItems] = useState(projects);
   const [mode, setMode] = useState<"list" | "add" | "edit">("list");
@@ -361,6 +364,7 @@ export default function ManageProjectsClient({
     try {
       const response = await fetch(`/api/projects/${project.id}`, {
         method: "DELETE",
+        credentials: "same-origin",
       });
       const data = (await response.json()) as {
         error?: string;
@@ -377,7 +381,7 @@ export default function ManageProjectsClient({
     }
   }
 
-  if (mode === "add" || (mode === "edit" && editingProject)) {
+  if (canWrite && (mode === "add" || (mode === "edit" && editingProject))) {
     return (
       <ProjectForm
         key={editingProject?.id ?? "new"}
@@ -399,17 +403,19 @@ export default function ManageProjectsClient({
             ? "No projects yet."
             : `${items.length} project${items.length === 1 ? "" : "s"}`}
         </p>
-        <button
-          type="button"
-          onClick={() => {
-            setError("");
-            setEditingId(null);
-            setMode("add");
-          }}
-          className="cursor-pointer bg-navy px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-blue"
-        >
-          Add project
-        </button>
+        {canWrite && (
+          <button
+            type="button"
+            onClick={() => {
+              setError("");
+              setEditingId(null);
+              setMode("add");
+            }}
+            className="cursor-pointer bg-navy px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-blue"
+          >
+            Add project
+          </button>
+        )}
       </div>
 
       {error && (
@@ -451,27 +457,29 @@ export default function ManageProjectsClient({
               </p>
             </div>
 
-            <div className="flex shrink-0 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setError("");
-                  setEditingId(project.id);
-                  setMode("edit");
-                }}
-                className="cursor-pointer border border-navy/15 px-4 py-2 text-sm font-bold text-navy hover:border-amber"
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                disabled={busyId === project.id}
-                onClick={() => handleDelete(project)}
-                className="cursor-pointer border border-red-200 px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-50 disabled:opacity-60"
-              >
-                {busyId === project.id ? "Deleting…" : "Delete"}
-              </button>
-            </div>
+            {canWrite && (
+              <div className="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError("");
+                    setEditingId(project.id);
+                    setMode("edit");
+                  }}
+                  className="cursor-pointer border border-navy/15 px-4 py-2 text-sm font-bold text-navy hover:border-amber"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  disabled={busyId === project.id}
+                  onClick={() => handleDelete(project)}
+                  className="cursor-pointer border border-red-200 px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                >
+                  {busyId === project.id ? "Deleting…" : "Delete"}
+                </button>
+              </div>
+            )}
           </article>
         ))}
       </div>
