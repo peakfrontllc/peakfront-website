@@ -131,7 +131,8 @@ export async function listSuppliers(filters: { q?: string; archived?: boolean; p
   const region = filters.region ?? "";
   return (data ?? []).flatMap((row) => {
     const emirates = emiratesFromRow(row.emirates, row.emirate as string);
-    if (region && !emirates.includes(region) && !(row.emirate as string).includes(region)) return [];
+    const storedRegion = row.emirate as string;
+    if (region && !(emirates as readonly string[]).includes(region) && !storedRegion.includes(region)) return [];
     const contacts = (Array.isArray(row.supplier_contacts) ? row.supplier_contacts : []) as { name: string; phone: string; is_primary: boolean }[];
     const primary = contacts.find((contact) => contact.is_primary) ?? contacts[0];
     const equipment = Array.isArray(row.supplier_equipment) ? row.supplier_equipment : [];
