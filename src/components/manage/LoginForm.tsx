@@ -12,7 +12,7 @@ export function LoginForm({ next }: { next: string }) {
   );
 
   return (
-    <form action={action} className="border border-navy/10 bg-white p-6 sm:p-10">
+    <form action={action}>
       <input type="hidden" name="next" value={next} />
       <div>
         <label className={labelClass} htmlFor="email">

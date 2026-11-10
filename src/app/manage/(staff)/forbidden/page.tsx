@@ -14,9 +14,8 @@ export default async function ForbiddenPage() {
   await requireStaff();
 
   return (
-    <section className="section-padding bg-slate-50">
-      <div className="mx-auto max-w-xl px-4 sm:px-5 lg:px-10">
-        <h1 className="text-3xl font-extrabold text-navy">You do not have access</h1>
+    <div className="mx-auto max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h1 className="text-xl font-semibold text-navy">You do not have access</h1>
         <p className="mt-4 text-base leading-relaxed text-slate-600">
           Your role does not include this part of the staff area. Ask a Super Admin if you need it.
         </p>
@@ -25,7 +24,6 @@ export default async function ForbiddenPage() {
             Go to your account
           </Link>
         </p>
-      </div>
-    </section>
+    </div>
   );
 }

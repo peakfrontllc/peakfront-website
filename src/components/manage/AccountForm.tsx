@@ -17,7 +17,7 @@ export function AccountForm({
   );
 
   return (
-    <form action={action} className="border border-navy/10 bg-white p-6 sm:p-10">
+    <form action={action} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
       <div>
         <label className={labelClass} htmlFor="email">
           Email

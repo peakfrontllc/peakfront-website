@@ -12,7 +12,7 @@ export function ForgotPasswordForm() {
   );
 
   return (
-    <form action={action} className="border border-navy/10 bg-white p-6 sm:p-10">
+    <form action={action}>
       <div>
         <label className={labelClass} htmlFor="email">
           Email
@@ -55,7 +55,7 @@ export function ResetPasswordForm() {
   );
 
   return (
-    <form action={action} className="border border-navy/10 bg-white p-6 sm:p-10">
+    <form action={action}>
       <div>
         <label className={labelClass} htmlFor="password">
           New password

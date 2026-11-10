@@ -104,7 +104,7 @@ function ProjectForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="border border-navy/10 bg-white p-6 sm:p-10"
+      className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
     >
       <div className="mb-6 flex items-center justify-between gap-4">
         <h2 className="text-xl font-extrabold text-navy">
@@ -428,7 +428,7 @@ export default function ManageProjectsClient({
         {items.map((project) => (
           <article
             key={project.id}
-            className="flex flex-col gap-4 border border-navy/10 bg-white p-4 sm:flex-row sm:items-center"
+            className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center"
           >
             {project.images[0] ? (
               <div className="relative h-24 w-full shrink-0 overflow-hidden bg-slate-100 sm:h-20 sm:w-28">

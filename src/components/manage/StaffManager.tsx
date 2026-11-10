@@ -50,8 +50,8 @@ export function StaffManager({
   return (
     <div className="space-y-8">
       {canInvite && (
-        <form action={inviteAction} className="border border-navy/10 bg-white p-6 sm:p-8">
-          <h2 className="text-xl font-extrabold text-navy">Invite staff</h2>
+        <form action={inviteAction} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <h2 className="text-sm font-semibold text-navy">Invite staff</h2>
           <div className="mt-5 grid gap-5 sm:grid-cols-2">
             <div>
               <label className={labelClass} htmlFor="fullName">
@@ -125,7 +125,7 @@ function StaffRow({
   const nextStatus = member.status === "disabled" ? "active" : "disabled";
 
   return (
-    <article className="border border-navy/10 bg-white p-4 sm:p-5">
+    <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h2 className="text-base font-bold text-navy">{member.fullName}</h2>
@@ -167,7 +167,7 @@ function StaffRow({
               <button
                 type="submit"
                 disabled={statusPending}
-                className="cursor-pointer border border-navy/15 px-4 py-3 text-sm font-bold text-navy hover:border-amber disabled:opacity-60"
+                className="cursor-pointer rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-navy hover:border-slate-300 disabled:opacity-60"
               >
                 {statusPending
                   ? "Saving…"

@@ -8,6 +8,10 @@ Base: https://www.peakfront.ae
 | --- | --- | --- |
 | `/manage/login` | https://www.peakfront.ae/manage/login | Staff sign-in. Invite only. |
 | `/manage` | https://www.peakfront.ae/manage | Website project portfolio. Requires a staff account. |
+| `/manage/equipment` | https://www.peakfront.ae/manage/equipment | Equipment catalogue, assets, and documents. |
+| `/manage/suppliers` | https://www.peakfront.ae/manage/suppliers | Supplier profiles, contacts, and rates. |
+| `/manage/rates` | https://www.peakfront.ae/manage/rates | Current supplier rates and comparisons. |
+| `/manage/clients` | https://www.peakfront.ae/manage/clients | Client profiles, contacts, and equipment interests. |
 | `/manage/staff` | https://www.peakfront.ae/manage/staff | Staff invitations, roles, and activity. |
 | `/manage/account` | https://www.peakfront.ae/manage/account | Own name and password. |
 | `/admin` | https://www.peakfront.ae/admin | Decap CMS (GitHub login) |

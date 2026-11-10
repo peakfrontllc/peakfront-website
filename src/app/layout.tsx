@@ -10,6 +10,7 @@ import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import QuoteDrawer from "@/components/QuoteDrawer";
 import { QuoteDrawerProvider } from "@/components/QuoteDrawerProvider";
+import { SiteFrame } from "@/components/SiteFrame";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { logoAssets } from "@/lib/logo";
 import { SITE_URL, siteConfig } from "@/lib/seo";
@@ -133,11 +134,18 @@ export default function RootLayout({
         </a>
         <HydrationMarker />
         <QuoteDrawerProvider>
-          <Header />
-          <main id="main-content" className="pb-20 sm:pb-0">{children}</main>
-          <Footer />
-          <WhatsAppButton />
-          <QuoteDrawer />
+          <SiteFrame
+            header={<Header />}
+            footer={<Footer />}
+            extras={
+              <>
+                <WhatsAppButton />
+                <QuoteDrawer />
+              </>
+            }
+          >
+            {children}
+          </SiteFrame>
         </QuoteDrawerProvider>
       </body>
     </html>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MasterHero } from "@/components/manage/erp/ui";
 import { StaffManager } from "@/components/manage/StaffManager";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
@@ -24,21 +25,9 @@ export default async function StaffPage() {
 
   return (
     <>
-      <section className="bg-navy py-14 text-white sm:py-16">
-        <div className="mx-auto max-w-[1400px] px-4 sm:px-5 lg:px-10">
-          <div className="mb-4 flex items-center gap-3">
-            <span className="h-[2px] w-8 bg-amber" />
-            <span className="font-mono text-xs uppercase tracking-[0.22em] text-blue">
-              Access
-            </span>
-          </div>
-          <h1 className="max-w-3xl text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
-            Staff and permissions
-          </h1>
-        </div>
-      </section>
-      <section className="section-padding bg-slate-50">
-        <div className="mx-auto max-w-5xl space-y-10 px-4 sm:px-5 lg:px-10">
+      <MasterHero kicker="Access" title="Staff" />
+      <div>
+        <div className="space-y-8">
           <StaffManager
             members={members}
             roles={roles}
@@ -49,10 +38,10 @@ export default async function StaffPage() {
           />
           {hasPermission(session.permissions, PERMISSIONS.activityRead) && (
             <div>
-              <h2 className="text-xl font-extrabold text-navy">Recent activity</h2>
-              <div className="mt-4 overflow-x-auto border border-navy/10 bg-white">
+              <h2 className="text-sm font-semibold text-navy">Recent activity</h2>
+              <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
                 <table className="min-w-full text-left text-sm">
-                  <thead className="border-b border-navy/10 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+                  <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     <tr>
                       <th className="px-4 py-3 font-bold">When</th>
                       <th className="px-4 py-3 font-bold">Who</th>
@@ -85,7 +74,7 @@ export default async function StaffPage() {
             </div>
           )}
         </div>
-      </section>
+      </div>
     </>
   );
 }
