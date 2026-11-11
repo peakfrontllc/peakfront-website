@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Building2, Search } from "lucide-react";
 import { SupplierCatalogue, SupplierViewSwitch, supplierView, type SupplierView } from "@/components/manage/erp/SupplierCatalogue";
-import { Flash, MasterHero } from "@/components/manage/erp/ui";
+import { ExportLink, Flash, MasterHero } from "@/components/manage/erp/ui";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
 import { equipmentGroups, listEquipmentOptions } from "@/lib/erp/equipment";
@@ -43,6 +43,15 @@ export default async function SuppliersPage({
   };
   const hrefFor = (next: SupplierView) => supplierHref(next, archived);
   const archiveHref = supplierHref(view, !archived);
+  const supplierExport = () => {
+    const query = new URLSearchParams({ kind: "suppliers" });
+    if (params.q) query.set("q", params.q);
+    if (partyType) query.set("type", partyType);
+    if (region) query.set("region", region);
+    if (equipmentId) query.set("equipment", equipmentId);
+    if (archived) query.set("archived", "1");
+    return `/api/erp/export?${query}`;
+  };
 
   return (
     <>
@@ -84,6 +93,7 @@ export default async function SuppliersPage({
             </select>
             <button className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg bg-amber px-3 text-sm font-semibold text-navy hover:bg-amber/90 sm:col-span-2 xl:col-span-1" type="submit">Search</button>
           </form>
+          <ExportLink href={supplierExport()} />
           <Link href={archiveHref} className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-white/25 px-3 text-sm font-medium text-white hover:bg-white/10">
             {archived ? "Active" : "Archived"}
           </Link>

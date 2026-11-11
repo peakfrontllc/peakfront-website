@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Handshake, Search } from "lucide-react";
 import { ClientCatalogue, ClientViewSwitch, clientView, type ClientView } from "@/components/manage/erp/ClientCatalogue";
-import { Flash, MasterHero } from "@/components/manage/erp/ui";
+import { ExportLink, Flash, MasterHero } from "@/components/manage/erp/ui";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
 import { listClients } from "@/lib/erp/clients";
@@ -31,7 +31,7 @@ export default async function ClientsPage({
   const clients = loaded.filter((client) => {
     if (region && client.emirate && client.emirate !== region) return false;
     if (industry && client.industry !== industry) return false;
-    return matchesSearch(params.q ?? "", [client.companyName, client.industry, client.phone, client.email, client.emirate, client.contactName, client.contactTitle]);
+    return matchesSearch(params.q ?? "", [client.companyName, client.industry, client.phone, client.email, client.website, client.emirate, client.contactName, client.contactTitle]);
   });
   const canWrite = hasPermission(session.permissions, PERMISSIONS.clientsWrite);
   const clientHref = (nextView: ClientView, nextArchived: boolean) => {
@@ -43,6 +43,14 @@ export default async function ClientsPage({
     if (nextView !== "cards") query.set("view", nextView);
     const text = query.toString();
     return text ? `/dashboard/clients?${text}` : "/dashboard/clients";
+  };
+  const clientExport = () => {
+    const query = new URLSearchParams({ kind: "clients" });
+    if (params.q) query.set("q", params.q);
+    if (region) query.set("region", region);
+    if (industry) query.set("industry", industry);
+    if (archived) query.set("archived", "1");
+    return `/api/erp/export?${query}`;
   };
 
   return (
@@ -76,6 +84,7 @@ export default async function ClientsPage({
             </select>
             <button className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg bg-amber px-3 text-sm font-semibold text-navy hover:bg-amber/90 sm:col-span-2 xl:col-span-1" type="submit">Search</button>
           </form>
+          <ExportLink href={clientExport()} />
           <Link href={clientHref(view, !archived)} className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-white/25 px-3 text-sm font-medium text-white hover:bg-white/10">
             {archived ? "Active" : "Archived"}
           </Link>

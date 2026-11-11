@@ -161,6 +161,14 @@ export function TextField({
   );
 }
 
+export function ExportLink({ href }: { href: string }) {
+  return (
+    <a href={href} className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-white/25 px-3 text-sm font-medium text-white hover:bg-white/10">
+      Export
+    </a>
+  );
+}
+
 export function fileHref(bucket: string, path: string) {
   return `/api/erp/files?bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}`;
 }

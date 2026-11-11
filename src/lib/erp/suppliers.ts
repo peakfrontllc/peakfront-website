@@ -156,7 +156,7 @@ export async function listSuppliers(filters: { q?: string; archived?: boolean; p
       contactName: primary?.name ?? "",
       contactTitle: (primary?.job_title ?? "").trim(),
       equipmentCount: equipment.length,
-      equipmentNames: [...new Set(equipmentNames)].slice(0, 4),
+      equipmentNames: [...new Set(equipmentNames)],
       archivedAt: (row.archived_at as string | null) ?? null,
     }];
   });

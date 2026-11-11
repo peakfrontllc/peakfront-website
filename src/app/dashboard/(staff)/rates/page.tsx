@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Receipt, Search } from "lucide-react";
 import { RatesCatalogue, RatesViewSwitch } from "@/components/manage/erp/RatesTable";
-import { Flash, MasterHero } from "@/components/manage/erp/ui";
+import { ExportLink, Flash, MasterHero } from "@/components/manage/erp/ui";
 import { labelClass } from "@/components/manage/form-styles";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
@@ -68,6 +68,15 @@ export default async function RatesPage({
     list: hrefFor("list"),
     table: hrefFor("table"),
   };
+  const ratesExport = () => {
+    const query = new URLSearchParams({ kind: "rates" });
+    if (params.q) query.set("q", params.q);
+    if (supplierId) query.set("supplier", supplierId);
+    if (purpose) query.set("purpose", purpose);
+    if (region) query.set("region", region);
+    if (status) query.set("status", status);
+    return `/api/erp/export?${query}`;
+  };
   const filtered = Boolean(params.q || supplierId || purpose || region || status);
   const clearHref = view === "cards" ? "/dashboard/rates" : `/dashboard/rates?view=${view}`;
 
@@ -84,7 +93,10 @@ export default async function RatesPage({
             <span className="font-semibold text-white">{visible.length}</span>{" "}
             {visible.length === 1 ? "rate" : "rates"}
           </p>
-          <RatesViewSwitch view={view} hrefs={viewHrefs} />
+          <div className="flex items-center gap-2">
+            <RatesViewSwitch view={view} hrefs={viewHrefs} />
+            <ExportLink href={ratesExport()} />
+          </div>
         </div>
         <form action="/dashboard/rates" className="border-b border-navy/10 bg-[#f4f7fa] px-4 py-3">
           {view !== "cards" && <input type="hidden" name="view" value={view} />}

@@ -10,6 +10,7 @@ export type ClientListItem = {
   industry: string;
   phone: string;
   email: string;
+  website: string;
   emirate: string;
   contactName: string;
   contactTitle: string;
@@ -67,7 +68,7 @@ export async function listClients(filters: { q?: string; archived?: boolean; reg
   let query = getServiceClient()
     .from("clients")
     .select(`
-      id, company_name, industry, phone, email, emirate, archived_at,
+      id, company_name, industry, phone, email, website, emirate, archived_at,
       client_contacts(name, job_title, is_primary),
       client_equipment_interests(id)
     `)
@@ -88,6 +89,7 @@ export async function listClients(filters: { q?: string; archived?: boolean; reg
       industry: (row.industry as string) ?? "",
       phone: (row.phone as string) ?? "",
       email: (row.email as string) ?? "",
+      website: (row.website as string) ?? "",
       emirate: (row.emirate as string) ?? "",
       contactName: contactName.toLowerCase() === companyName.toLowerCase() ? "" : contactName,
       contactTitle: (contact?.job_title ?? "").trim(),
@@ -95,7 +97,7 @@ export async function listClients(filters: { q?: string; archived?: boolean; reg
       archivedAt: (row.archived_at as string | null) ?? null,
     };
     if (region && item.emirate !== region) return [];
-    if (!matchesSearch(term, [item.companyName, item.industry, item.phone, item.email, item.emirate, item.contactName, item.contactTitle])) return [];
+    if (!matchesSearch(term, [item.companyName, item.industry, item.phone, item.email, item.website, item.emirate, item.contactName, item.contactTitle])) return [];
     return [item];
   });
 }

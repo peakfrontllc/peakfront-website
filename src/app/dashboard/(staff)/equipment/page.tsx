@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Boxes, Search } from "lucide-react";
 import { EquipmentCatalogue, EquipmentViewSwitch, equipmentView, type EquipmentView } from "@/components/manage/erp/EquipmentCatalogue";
-import { Flash, MasterHero } from "@/components/manage/erp/ui";
+import { ExportLink, Flash, MasterHero } from "@/components/manage/erp/ui";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
 import { listCategories, listEquipment } from "@/lib/erp/equipment";
@@ -46,6 +46,14 @@ export default async function EquipmentPage({
   if (region) archiveQuery.set("region", region);
   if (view !== "cards") archiveQuery.set("view", view);
   const archiveHref = archiveQuery.size ? `/dashboard/equipment?${archiveQuery}` : "/dashboard/equipment";
+  const exportQuery = () => {
+    const query = new URLSearchParams({ kind: "equipment" });
+    if (params.q) query.set("q", params.q);
+    if (params.category) query.set("category", params.category);
+    if (region) query.set("region", region);
+    if (archived) query.set("archived", "1");
+    return `/api/erp/export?${query}`;
+  };
 
   return (
     <>
@@ -93,6 +101,7 @@ export default async function EquipmentPage({
             </select>
             <button className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg bg-amber px-3 text-sm font-semibold text-navy hover:bg-amber/90" type="submit">Search</button>
           </form>
+          <ExportLink href={exportQuery()} />
           <Link href={archiveHref} className="inline-flex h-9 items-center justify-center rounded-lg border border-white/25 px-3 text-sm font-medium text-white hover:bg-white/10">
             {archived ? "Active" : "Archived"}
           </Link>
