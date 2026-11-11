@@ -2,12 +2,10 @@
 # Access at: https://yourdomain.com/admin
 #
 # SETUP (one-time):
-# 1. GitHub → Settings → Developer settings → OAuth Apps → New OAuth App
-#    - Homepage URL: https://peakfront.ae (or your Vercel URL)
-#    - Callback URL: https://api.netlify.com/auth/done
-# 2. In Netlify (or use Decap's GitHub backend directly):
-#    For Vercel-only hosting, use GitHub backend below with a Personal Access Token
-#    OR deploy admin via Netlify Identity (recommended in Decap docs)
+# GitHub → Settings → Developer settings → OAuth Apps → New OAuth App
+#   Homepage URL: https://www.peakfront.ae
+#   Callback URL: https://www.peakfront.ae/api/auth/callback
+# Then add GITHUB_OAUTH_CLIENT_ID and GITHUB_OAUTH_CLIENT_SECRET on Vercel and redeploy.
 #
 # SIMPLE LOCAL EDITING (no OAuth):
 #   npx decap-server
@@ -17,6 +15,8 @@ backend:
   name: github
   repo: peakfrontllc/peakfront-website
   branch: main
+  base_url: https://www.peakfront.ae
+  auth_endpoint: api/auth
 
 # Uncomment for local editing with `npx decap-server`:
 # local_backend: true
