@@ -72,7 +72,8 @@ export function EquipmentCategoryFields({
   const lengthValue = measure === "boom" ? boomValue : bedValue;
   const lengthChoices = lengthValue && !lengths.includes(lengthValue) ? [lengthValue, ...lengths] : lengths;
   const units = categoryUnits(purpose?.name ?? "", type?.name ?? "");
-  const customCapacity = Boolean(size) && capacityValue.trim().toLowerCase() !== size.name.trim().toLowerCase() && capacityValue.trim() !== "";
+  const capacityText = capacityValue.trim();
+  const customCapacity = size !== undefined && capacityText !== "" && capacityText.toLowerCase() !== size.name.trim().toLowerCase();
   const showCapacity = Boolean(type) && (sizes.length === 0 || customCapacity);
   const submittedCapacity = sizes.length > 0 && !customCapacity ? (size?.name ?? "") : capacityValue;
 

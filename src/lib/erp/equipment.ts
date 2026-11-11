@@ -143,9 +143,14 @@ async function loadCategoryRows(includeArchived: boolean) {
   return (data ?? []) as CategoryRow[];
 }
 
+function categoryKind(value: string): CategoryOption["kind"] {
+  if (value === "boom" || value === "length") return value;
+  return "capacity";
+}
+
 function toCategoryOptions(rows: CategoryRow[]): CategoryOption[] {
   const names = new Map(rows.map((row) => [row.id, row.name]));
-  const options = rows.map((row) => ({
+  const options: CategoryOption[] = rows.map((row) => ({
     id: row.id,
     name: row.name,
     slug: row.slug,
@@ -153,7 +158,7 @@ function toCategoryOptions(rows: CategoryRow[]): CategoryOption[] {
     parentId: row.parent_id,
     parentName: row.parent_id ? names.get(row.parent_id) ?? "" : "",
     tonnage: row.tonnage ?? "",
-    kind: row.kind === "boom" ? "boom" : row.kind === "length" ? "length" : "capacity",
+    kind: categoryKind(row.kind),
     imagePath: row.image_path ?? "",
     archivedAt: row.archived_at,
   }));
