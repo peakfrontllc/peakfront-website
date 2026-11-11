@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { Resend } from "resend";
 import { logActivity } from "@/lib/auth/activity";
 import {
   hasPermission,
@@ -16,6 +17,7 @@ import { getServiceClient } from "@/lib/supabase/service";
 export type FormState = {
   error?: string;
   message?: string;
+  link?: string;
 };
 
 function text(formData: FormData, key: string) {
@@ -24,9 +26,9 @@ function text(formData: FormData, key: string) {
 }
 
 function safeNext(value: string) {
-  if (!value.startsWith("/manage") || value.startsWith("//")) return "/manage";
-  if (value.startsWith("/manage/login")) return "/manage";
-  if (value.includes("://") || value.includes("\\")) return "/manage";
+  if (!value.startsWith("/dashboard") || value.startsWith("//")) return "/dashboard";
+  if (value.startsWith("/dashboard/login")) return "/dashboard";
+  if (value.includes("://") || value.includes("\\")) return "/dashboard";
   return value;
 }
 
@@ -36,6 +38,44 @@ async function requestOrigin() {
   const proto = headerStore.get("x-forwarded-proto") ?? "http";
   if (!host) return process.env.NEXT_PUBLIC_SITE_URL?.trim() || "http://localhost:3000";
   return `${proto}://${host}`;
+}
+
+async function createStaffLink(email: string, type: "invite" | "recovery", fullName?: string) {
+  const origin = await requestOrigin();
+  const service = getServiceClient();
+  const redirectTo = `${origin}/dashboard/reset-password`;
+  const { data, error } = type === "invite"
+    ? await service.auth.admin.generateLink({
+      type,
+      email,
+      options: { redirectTo, data: fullName ? { full_name: fullName } : undefined },
+    })
+    : await service.auth.admin.generateLink({
+      type,
+      email,
+      options: { redirectTo },
+    });
+  const token = data?.properties?.hashed_token;
+  if (error || !token || !data.user) return { link: "", userId: "" };
+  const url = new URL("/dashboard/auth/confirm", origin);
+  url.searchParams.set("token_hash", token);
+  url.searchParams.set("type", data.properties.verification_type || type);
+  url.searchParams.set("next", "/dashboard/reset-password");
+  return { link: url.toString(), userId: data.user.id };
+}
+
+async function sendStaffLink(email: string, link: string) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !from) return false;
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from,
+    to: email,
+    subject: "Peakfront staff sign-in",
+    text: `Open this link on the computer where the Peakfront staff page is running, then choose a password:\n\n${link}\n`,
+  });
+  return !error;
 }
 
 function passwordError(password: string) {
@@ -48,7 +88,7 @@ function passwordError(password: string) {
 
 async function requireActionPermission(key: (typeof PERMISSIONS)[keyof typeof PERMISSIONS]) {
   const session = await getStaffSession();
-  if (!session) redirect("/manage/login");
+  if (!session) redirect("/dashboard/login");
   if (!hasPermission(session.permissions, key)) {
     return { session: null, error: "You do not have permission to do that." };
   }
@@ -117,7 +157,7 @@ export async function logout() {
   }
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
-  redirect("/manage/login");
+  redirect("/dashboard/login");
 }
 
 export async function requestPasswordReset(
@@ -127,18 +167,11 @@ export async function requestPasswordReset(
   const email = text(formData, "email").toLowerCase();
   if (!email) return { error: "Enter your email address." };
 
-  const origin = await requestOrigin();
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/manage/auth/callback?next=/manage/reset-password`,
-  });
-
-  if (error) {
-    return { error: "The reset email could not be sent. Try again shortly." };
-  }
+  const created = await createStaffLink(email, "recovery");
+  if (created.link) await sendStaffLink(email, created.link);
 
   return {
-    message: "If that email belongs to a staff account, a reset link is on its way.",
+    message: "If that email belongs to a staff account, a sign-in link is on its way. Open it on this computer.",
   };
 }
 
@@ -161,13 +194,19 @@ export async function updatePassword(
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: "The password could not be updated. Request a new link." };
 
+  await getServiceClient()
+    .from("staff_profiles")
+    .update({ status: "active", last_login_at: new Date().toISOString() })
+    .eq("id", data.user.id)
+    .eq("status", "invited");
+
   await logActivity(
     { userId: data.user.id },
     "auth.password_updated",
     "staff_profile",
     data.user.id,
   );
-  redirect("/manage");
+  redirect("/dashboard");
 }
 
 export async function updateAccount(
@@ -233,20 +272,13 @@ export async function inviteStaff(
     .maybeSingle();
   if (roleError || !role) return { error: "That role is not available." };
 
-  const origin = await requestOrigin();
-  const { data, error } = await service.auth.admin.inviteUserByEmail(email, {
-    data: { full_name: fullName },
-    redirectTo: `${origin}/manage/auth/callback?next=/manage/reset-password`,
-  });
-
-  if (error || !data.user) {
-    return {
-      error: "The invitation email could not be sent. Check Supabase Auth email settings.",
-    };
+  const created = await createStaffLink(email, "invite", fullName);
+  if (!created.userId || !created.link) {
+    return { error: "The invitation could not be created." };
   }
 
   const { error: profileError } = await service.from("staff_profiles").insert({
-    id: data.user.id,
+    id: created.userId,
     full_name: fullName,
     email,
     role_id: role.id,
@@ -258,12 +290,48 @@ export async function inviteStaff(
     return { error: "The user was invited, but the staff profile could not be saved." };
   }
 
-  await logActivity(gate.session, "staff.invited", "staff_profile", data.user.id, {
+  await sendStaffLink(email, created.link);
+  await logActivity(gate.session, "staff.invited", "staff_profile", created.userId, {
     email,
     role: roleKey,
   });
 
-  return { message: `Invitation sent to ${email}.` };
+  return {
+    message: `Invitation ready for ${email}. Open the link on this computer. The public website cannot sign staff in.`,
+    link: created.link,
+  };
+}
+
+export async function resendStaffAccess(
+  _state: FormState | undefined,
+  formData: FormData,
+): Promise<FormState> {
+  const gate = await requireActionPermission(PERMISSIONS.staffInvite);
+  if (!gate.session) return { error: gate.error };
+
+  const staffId = text(formData, "staffId");
+  if (!staffId) return { error: "Choose a staff member." };
+
+  const service = getServiceClient();
+  const { data: profile } = await service
+    .from("staff_profiles")
+    .select("id, email, status")
+    .eq("id", staffId)
+    .maybeSingle();
+  if (!profile) return { error: "Staff member not found." };
+  if (profile.status === "disabled") {
+    return { error: "Enable this person before sending a sign-in link." };
+  }
+
+  const created = await createStaffLink(profile.email as string, "recovery");
+  if (!created.link) return { error: "The sign-in link could not be created. Try again shortly." };
+
+  await sendStaffLink(profile.email as string, created.link);
+  await logActivity(gate.session, "staff.invite_resent", "staff_profile", profile.id as string);
+  return {
+    message: `Sign-in link ready for ${profile.email}. Open it on this computer, choose a password, then sign in.`,
+    link: created.link,
+  };
 }
 
 export async function changeStaffRole(

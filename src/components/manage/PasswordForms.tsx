@@ -40,7 +40,7 @@ export function ForgotPasswordForm() {
         {pending ? "Sending…" : "Send reset link"}
       </button>
       <p className="mt-6 text-sm text-slate-600">
-        <Link href="/manage/login" className="font-semibold text-blue hover:underline">
+        <Link href="/dashboard/login" className="font-semibold text-blue hover:underline">
           Back to sign in
         </Link>
       </p>

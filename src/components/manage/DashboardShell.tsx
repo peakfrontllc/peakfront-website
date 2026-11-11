@@ -7,6 +7,7 @@ import {
   Building2,
   FolderKanban,
   FolderTree,
+  LayoutDashboard,
   Handshake,
   Menu,
   Receipt,
@@ -20,26 +21,32 @@ import { useState, type ReactNode } from "react";
 import { logout } from "@/lib/auth/actions";
 
 const ICONS: Record<string, LucideIcon> = {
-  "/manage": FolderKanban,
-  "/manage/categories": FolderTree,
-  "/manage/suppliers": Building2,
-  "/manage/equipment": Boxes,
-  "/manage/rates": Receipt,
-  "/manage/clients": Handshake,
-  "/manage/staff": Users,
-  "/manage/account": UserRound,
+  "/dashboard": LayoutDashboard,
+  "/dashboard/projects": FolderKanban,
+  "/dashboard/categories": FolderTree,
+  "/dashboard/suppliers": Building2,
+  "/dashboard/equipment": Boxes,
+  "/dashboard/rates": Receipt,
+  "/dashboard/clients": Handshake,
+  "/dashboard/staff": Users,
+  "/dashboard/account": UserRound,
 };
 
 function backTarget(pathname: string) {
+  const equipmentSuppliers = pathname.match(/^\/dashboard\/equipment\/([^/]+)\/suppliers$/);
+  if (equipmentSuppliers) return { href: `/dashboard/equipment/${equipmentSuppliers[1]}`, label: "Equipment" };
+  const supplierEquipment = pathname.match(/^\/dashboard\/suppliers\/([^/]+)\/equipment$/);
+  if (supplierEquipment) return { href: `/dashboard/suppliers/${supplierEquipment[1]}`, label: "Supplier" };
   const sections = [
-    ["/manage/categories", "categories"],
-    ["/manage/suppliers", "suppliers"],
-    ["/manage/equipment", "equipment"],
-    ["/manage/clients", "clients"],
-    ["/manage/rates", "rates"],
+    ["/dashboard/projects", "Projects"],
+    ["/dashboard/categories", "Categories"],
+    ["/dashboard/suppliers", "Suppliers"],
+    ["/dashboard/equipment", "Equipment"],
+    ["/dashboard/clients", "Clients"],
+    ["/dashboard/rates", "Rates"],
   ] as const;
-  for (const [href] of sections) {
-    if (pathname !== href && pathname.startsWith(`${href}/`)) return href;
+  for (const [href, label] of sections) {
+    if (pathname !== href && pathname.startsWith(`${href}/`)) return { href, label };
   }
   return null;
 }
@@ -70,8 +77,8 @@ export function DashboardShell({
   const displayName = fullName || "Staff";
   const backHref = backTarget(pathname);
   const current = items.find((item) => (
-    item.href === "/manage"
-      ? pathname === "/manage"
+    item.href === "/dashboard"
+      ? pathname === "/dashboard"
       : pathname === item.href || pathname.startsWith(`${item.href}/`)
   ));
   const CurrentIcon = current ? ICONS[current.href] ?? FolderKanban : null;
@@ -111,8 +118,8 @@ export function DashboardShell({
           <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/40">{group.name}</p>
           <div className="flex flex-col gap-0.5">
             {group.entries.map((item) => {
-              const active = item.href === "/manage"
-                ? pathname === "/manage"
+              const active = item.href === "/dashboard"
+                ? pathname === "/dashboard"
                 : pathname === item.href || pathname.startsWith(`${item.href}/`);
               const Icon = ICONS[item.href] ?? FolderKanban;
               return (
@@ -185,11 +192,11 @@ export function DashboardShell({
             </button>
             {backHref ? (
               <Link
-                href={backHref}
+                href={backHref.href}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-navy shadow-sm hover:bg-slate-50"
               >
                 <ArrowLeft className="h-4 w-4" aria-hidden />
-                Back
+                {backHref.label}
               </Link>
             ) : null}
             {current && CurrentIcon && (

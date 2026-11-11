@@ -21,8 +21,8 @@ export function StaffNav({
         <nav className="flex flex-wrap gap-2">
           {items.map((item) => {
             const active =
-              item.href === "/manage"
-                ? pathname === "/manage"
+              item.href === "/dashboard"
+                ? pathname === "/dashboard"
                 : pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <Link

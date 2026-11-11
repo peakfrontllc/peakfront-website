@@ -35,7 +35,7 @@ Before development:
 1. Inspect the entire existing repository.
 2. Inspect the existing Supabase database scripts.
 3. Inspect existing API routes and server-side Supabase clients.
-4. Inspect the existing `/manage` interface.
+4. Inspect the existing `/dashboard` interface.
 5. Inspect the existing `/admin` Decap CMS.
 6. Identify all existing website functionality.
 
@@ -55,7 +55,7 @@ Do not automatically import, modify or delete existing website records.
 
 # 3. APPLICATION STRUCTURE
 
-Build the ERP under `/manage`.
+Build the ERP under `/dashboard`.
 
 Required modules:
 
@@ -178,7 +178,7 @@ Implement:
 - Staff profiles.
 - Role-based access control.
 - Server-side permission verification.
-- Protected `/manage` pages.
+- Protected `/dashboard` pages.
 - Protected API routes.
 - Secure session cookies.
 - Activity logging.
@@ -576,6 +576,6 @@ Create database backups and a rollback plan before production migrations.
 
 # 16. FINAL DELIVERABLE
 
-A fully integrated Peakfront Business Management System inside the existing `/manage` area, with secure multi-user access, connected business records, complete project history, operational finance, document management and reporting.
+A fully integrated Peakfront Business Management System inside the existing `/dashboard` area, with secure multi-user access, connected business records, complete project history, operational finance, document management and reporting.
 
 The system must be maintainable, scalable and safe for real business use.

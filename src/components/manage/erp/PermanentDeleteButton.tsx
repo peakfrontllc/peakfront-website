@@ -1,7 +1,6 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
-import { iconButtonDangerClass } from "@/components/manage/form-styles";
 
 export function PermanentDeleteButton({
   action,
@@ -10,6 +9,7 @@ export function PermanentDeleteButton({
   label = "Delete",
   hidden = [],
   compact = false,
+  className = "",
 }: {
   action: (formData: FormData) => Promise<void>;
   id: string;
@@ -17,9 +17,11 @@ export function PermanentDeleteButton({
   label?: string;
   hidden?: { name: string; value: string }[];
   compact?: boolean;
+  className?: string;
 }) {
   return (
     <form
+      className="inline-flex"
       action={action}
       onSubmit={(event) => {
         if (!window.confirm(message)) event.preventDefault();
@@ -34,8 +36,8 @@ export function PermanentDeleteButton({
         aria-label={label}
         title={label}
         className={compact
-          ? iconButtonDangerClass
-          : "inline-flex cursor-pointer items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 shadow-sm hover:bg-red-50"}
+          ? `inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 ${className}`
+          : `inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 text-sm font-medium text-red-600 transition hover:bg-red-50 ${className}`}
       >
         <Trash2 className="h-4 w-4" aria-hidden />
         {compact ? <span className="sr-only">{label}</span> : label}

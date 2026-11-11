@@ -4,19 +4,19 @@ import { Plus, X } from "lucide-react";
 import { useState } from "react";
 import { fieldClass, labelClass } from "@/components/manage/form-styles";
 
-export function ExtraFields() {
+export function ExtraFields({ heading = true }: { heading?: boolean }) {
   const [rows, setRows] = useState<string[]>([]);
 
   return (
-    <div className="sm:col-span-2 rounded-lg border border-dashed border-slate-300 p-4">
+    <div className="sm:col-span-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-navy">Extra fields</p>
-          <p className="mt-0.5 text-xs text-slate-500">Add any detail this form does not already ask for.</p>
+          {heading && <p className="text-sm font-semibold text-navy">Extra fields</p>}
+          <p className={`text-xs text-slate-500 ${heading ? "mt-0.5" : ""}`}>Add any detail this form does not already ask for.</p>
         </div>
         <button
           type="button"
-          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-navy shadow-sm hover:bg-slate-50"
+          className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
           onClick={() => setRows((current) => [...current, crypto.randomUUID()])}
         >
           <Plus className="h-4 w-4" aria-hidden />
@@ -35,7 +35,7 @@ export function ExtraFields() {
           </div>
           <button
             type="button"
-            className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
             onClick={() => setRows((current) => current.filter((row) => row !== id))}
           >
             <X className="h-4 w-4" aria-hidden />

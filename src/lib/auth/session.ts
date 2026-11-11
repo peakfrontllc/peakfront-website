@@ -97,18 +97,18 @@ export const getStaffSession = cache(async (): Promise<StaffSession | null> => {
 export async function requireStaff() {
   const session = await getStaffSession();
   if (session) return session;
-  if (!usesPublicSupabaseAuth()) redirect("/manage/login");
+  if (!usesPublicSupabaseAuth()) redirect("/dashboard/login");
 
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getUser();
-  if (data.user) redirect("/manage/auth/sign-out");
-  redirect("/manage/login");
+  if (data.user) redirect("/dashboard/auth/sign-out");
+  redirect("/dashboard/login");
 }
 
 export async function requirePermission(key: PermissionKey) {
   const session = await requireStaff();
   if (!hasPermission(session.permissions, key)) {
-    redirect(`/manage/forbidden?need=${encodeURIComponent(key)}`);
+    redirect(`/dashboard/forbidden?need=${encodeURIComponent(key)}`);
   }
   return session;
 }

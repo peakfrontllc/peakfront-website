@@ -12,7 +12,9 @@ export type SupplierListItem = {
   emirate: string;
   emirates: string[];
   contactName: string;
+  contactTitle: string;
   equipmentCount: number;
+  equipmentNames: string[];
   archivedAt: string | null;
 };
 
@@ -113,13 +115,13 @@ function mapRate(row: {
   };
 }
 
-export async function listSuppliers(filters: { q?: string; archived?: boolean; partyType?: string; region?: string }): Promise<SupplierListItem[]> {
+export async function listSuppliers(filters: { q?: string; archived?: boolean; partyType?: string; region?: string; equipmentId?: string }): Promise<SupplierListItem[]> {
   let query = getServiceClient()
     .from("suppliers")
     .select(`
       id, company_name, party_type, phone, email, emirate, emirates, archived_at,
-      supplier_contacts(name, phone, is_primary),
-      supplier_equipment(id)
+      supplier_contacts(name, job_title, phone, is_primary),
+      supplier_equipment(id, equipment_id, equipment(name))
     `)
     .order("company_name");
   query = filters.archived ? query.not("archived_at", "is", null) : query.is("archived_at", null);
@@ -129,13 +131,20 @@ export async function listSuppliers(filters: { q?: string; archived?: boolean; p
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   const region = filters.region ?? "";
+  const equipmentId = filters.equipmentId ?? "";
   return (data ?? []).flatMap((row) => {
     const emirates = emiratesFromRow(row.emirates, row.emirate as string);
     const storedRegion = row.emirate as string;
     if (region && !(emirates as readonly string[]).includes(region) && !storedRegion.includes(region)) return [];
-    const contacts = (Array.isArray(row.supplier_contacts) ? row.supplier_contacts : []) as { name: string; phone: string; is_primary: boolean }[];
+    const contacts = (Array.isArray(row.supplier_contacts) ? row.supplier_contacts : []) as { name: string; job_title: string; phone: string; is_primary: boolean }[];
     const primary = contacts.find((contact) => contact.is_primary) ?? contacts[0];
     const equipment = Array.isArray(row.supplier_equipment) ? row.supplier_equipment : [];
+    if (equipmentId && !equipment.some((item) => (item as { equipment_id?: string }).equipment_id === equipmentId)) return [];
+    const equipmentNames = equipment.flatMap((item) => {
+      const linked = (item as { equipment?: { name?: string } | { name?: string }[] | null }).equipment;
+      const record = Array.isArray(linked) ? linked[0] : linked;
+      return record?.name ? [record.name] : [];
+    });
     return [{
       id: row.id as string,
       companyName: row.company_name as string,
@@ -145,7 +154,9 @@ export async function listSuppliers(filters: { q?: string; archived?: boolean; p
       emirate: row.emirate as string,
       emirates,
       contactName: primary?.name ?? "",
+      contactTitle: (primary?.job_title ?? "").trim(),
       equipmentCount: equipment.length,
+      equipmentNames: [...new Set(equipmentNames)].slice(0, 4),
       archivedAt: (row.archived_at as string | null) ?? null,
     }];
   });

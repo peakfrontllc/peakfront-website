@@ -5,6 +5,7 @@ import { logActivity } from "@/lib/auth/activity";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
 import { DOCUMENT_BUCKET, IMAGE_BUCKET, removeStoredFile, storeFile } from "@/lib/erp/files";
+import { boomValue } from "@/lib/erp/lengths";
 import {
   ASSET_STATUSES,
   EQUIPMENT_STATUSES,
@@ -21,7 +22,15 @@ function choice<T extends string>(value: string, allowed: readonly T[], fallback
   return allowed.includes(value as T) ? (value as T) : fallback;
 }
 
-const CATEGORY_PATH = "/manage/categories";
+const CATEGORY_PATH = "/dashboard/categories";
+
+function categoryPath(categoryId: string, typeId = "") {
+  const params = new URLSearchParams();
+  if (categoryId) params.set("category", categoryId);
+  if (typeId) params.set("type", typeId);
+  const query = params.toString();
+  return query ? `${CATEGORY_PATH}?${query}` : CATEGORY_PATH;
+}
 
 async function categoryParent(parentId: string, categoryId?: string) {
   if (!parentId) return null;
@@ -67,12 +76,34 @@ async function rootCategoryId(id: string) {
   return parent.parent_id as string;
 }
 
+async function attachCategoryImage(id: string, formData: FormData, returnPath: string) {
+  const file = fileFromForm(formData, "image");
+  if (!file) return;
+  const service = getServiceClient();
+  const { data: current } = await service.from("equipment_categories").select("image_path").eq("id", id).maybeSingle();
+  let storagePath = "";
+  try {
+    storagePath = await storeFile(IMAGE_BUCKET, `categories/${id}`, file, "image");
+  } catch (error) {
+    fail(returnPath, error instanceof Error ? error.message : "The photo could not be saved.");
+  }
+  const { error } = await service.from("equipment_categories").update({ image_path: storagePath }).eq("id", id);
+  if (error) {
+    await removeStoredFile(IMAGE_BUCKET, storagePath);
+    fail(returnPath, "The photo could not be saved.");
+  }
+  const previous = (current?.image_path as string | null) ?? "";
+  if (previous && previous !== storagePath) await removeStoredFile(IMAGE_BUCKET, previous);
+}
+
 export async function createCategory(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.equipmentWrite);
   const name = field(formData, "name");
   const description = field(formData, "description");
   const tonnage = field(formData, "tonnage");
   const parentId = field(formData, "parentId");
+  const requested = field(formData, "kind");
+  const kind = parentId && (requested === "boom" || requested === "length") ? requested : "capacity";
   if (name.length < 2) fail(CATEGORY_PATH, "Enter a category name.");
   const parentName = await categoryParent(parentId);
   if (parentId) {
@@ -103,14 +134,18 @@ export async function createCategory(formData: FormData) {
       slug,
       description,
       tonnage,
+      kind,
       parent_id: parentId || null,
       created_by: session.userId,
     })
     .select("id")
     .single();
   if (error || !data) fail(CATEGORY_PATH, "The category could not be saved.");
-  await logActivity(session, "equipment_category.created", "equipment_category", data.id as string, { name });
-  redirect(`${CATEGORY_PATH}?category=${await rootCategoryId(parentId || (data.id as string))}`);
+  const createdId = data.id as string;
+  const returnPath = categoryPath(await rootCategoryId(parentId || createdId), field(formData, "type"));
+  await attachCategoryImage(createdId, formData, returnPath);
+  await logActivity(session, "equipment_category.created", "equipment_category", createdId, { name });
+  redirect(returnPath);
 }
 
 export async function updateCategory(formData: FormData) {
@@ -141,7 +176,7 @@ export async function renameCategory(formData: FormData) {
   const id = field(formData, "id");
   const name = field(formData, "name");
   const focus = await rootCategoryId(field(formData, "focus") || id);
-  const returnPath = `${CATEGORY_PATH}?category=${encodeURIComponent(focus)}`;
+  const returnPath = categoryPath(focus, field(formData, "type"));
   if (name.length < 2) fail(returnPath, "Enter a category name.");
   const service = getServiceClient();
   const { data: current } = await service.from("equipment_categories").select("id, parent_id").eq("id", id).maybeSingle();
@@ -157,6 +192,7 @@ export async function renameCategory(formData: FormData) {
   if (duplicate) fail(returnPath, `${name} is already used here.`);
   const { error } = await service.from("equipment_categories").update({ name }).eq("id", id);
   if (error) fail(returnPath, "The name could not be saved.");
+  await attachCategoryImage(id, formData, returnPath);
   await logActivity(session, "equipment_category.renamed", "equipment_category", id, { name });
   redirect(returnPath);
 }
@@ -171,8 +207,7 @@ export async function setCategoryArchived(formData: FormData) {
     .eq("id", id);
   if (error) fail(CATEGORY_PATH, "The category could not be updated.");
   await logActivity(session, archived ? "equipment_category.archived" : "equipment_category.restored", "equipment_category", id);
-  const focus = field(formData, "focus");
-  redirect(focus ? `${CATEGORY_PATH}?category=${encodeURIComponent(focus)}` : CATEGORY_PATH);
+  redirect(categoryPath(field(formData, "focus"), field(formData, "type")));
 }
 
 export async function deleteCategory(formData: FormData) {
@@ -186,7 +221,7 @@ export async function deleteCategory(formData: FormData) {
     .eq("id", id)
     .maybeSingle();
   const stay = focus || (category?.parent_id as string | null) || id;
-  const returnPath = `${CATEGORY_PATH}?category=${encodeURIComponent(stay)}`;
+  const returnPath = categoryPath(stay, field(formData, "type"));
   if (!category) fail(CATEGORY_PATH, "That category was already deleted.");
 
   const { data: children } = await service.from("equipment_categories").select("id").eq("parent_id", id);
@@ -196,6 +231,7 @@ export async function deleteCategory(formData: FormData) {
     : { data: [] };
   const grandchildIds = (grandchildren ?? []).map((child) => child.id as string);
   const ids = [id, ...childIds, ...grandchildIds];
+  const { data: photos } = await service.from("equipment_categories").select("image_path").in("id", ids);
   const { count, error: countError } = await service
     .from("equipment")
     .select("id", { count: "exact", head: true })
@@ -214,6 +250,9 @@ export async function deleteCategory(formData: FormData) {
   }
   const { error } = await service.from("equipment_categories").delete().eq("id", id);
   if (error) fail(returnPath, "The category could not be deleted.");
+  for (const photo of photos ?? []) {
+    if (photo.image_path) await removeStoredFile(IMAGE_BUCKET, photo.image_path as string);
+  }
   await logActivity(session, "equipment_category.deleted", "equipment_category", id, { name: category.name });
   redirect(category.parent_id ? returnPath : CATEGORY_PATH);
 }
@@ -228,6 +267,8 @@ function equipmentInput(formData: FormData) {
     code: code || null,
     description: field(formData, "description"),
     capacity: field(formData, "capacity"),
+    boomLength: boomValue(field(formData, "boomLength")),
+    bedLength: boomValue(field(formData, "bedLength")),
     ownership: choice(field(formData, "ownership"), OWNERSHIP, "supplier"),
     status: choice(field(formData, "status"), EQUIPMENT_STATUSES, "available"),
   };
@@ -238,9 +279,9 @@ export async function createEquipment(formData: FormData) {
   const input = equipmentInput(formData);
   const extras = extraFieldPairs(formData);
   if (input.name.length < 2 || !input.categoryId) {
-    fail("/manage/equipment/new", "Enter a name and choose a category.");
+    fail("/dashboard/equipment/new", "Enter a name and choose a category.");
   }
-  if (extras.error) fail("/manage/equipment/new", extras.error);
+  if (extras.error) fail("/dashboard/equipment/new", extras.error);
   const { data, error } = await getServiceClient()
     .from("equipment")
     .insert({
@@ -249,6 +290,8 @@ export async function createEquipment(formData: FormData) {
       name: input.name,
       description: input.description,
       capacity: input.capacity,
+      boom_length: input.boomLength,
+      bed_length: input.bedLength,
       ownership: input.ownership,
       status: input.status,
       created_by: session.userId,
@@ -256,23 +299,23 @@ export async function createEquipment(formData: FormData) {
     .select("id")
     .single();
   if (error || !data) {
-    fail("/manage/equipment/new", error?.message?.includes("duplicate") ? "That equipment code is already used." : "The equipment could not be saved.");
+    fail("/dashboard/equipment/new", error?.message?.includes("duplicate") ? "That equipment code is already used." : "The equipment could not be saved.");
   }
   if (extras.pairs.length > 0) {
     const { error: fieldError } = await getServiceClient().from("equipment_specifications").insert(
       extras.pairs.map((pair) => ({ equipment_id: data.id, label: pair.label, value: pair.value })),
     );
-    if (fieldError) fail(`/manage/equipment/${data.id}`, "The equipment was saved, but an extra field could not be saved.");
+    if (fieldError) fail(`/dashboard/equipment/${data.id}`, "The equipment was saved, but an extra field could not be saved.");
   }
   await logActivity(session, "equipment.created", "equipment", data.id as string, { name: input.name });
-  redirect(`/manage/equipment/${data.id}`);
+  redirect(`/dashboard/equipment/${data.id}`);
 }
 
 export async function updateEquipment(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.equipmentWrite);
   const id = field(formData, "id");
   const input = equipmentInput(formData);
-  const path = `/manage/equipment/${id}`;
+  const path = `/dashboard/equipment/${id}`;
   if (input.name.length < 2 || !input.categoryId) fail(path, "Enter a name and choose a category.");
   const { error } = await getServiceClient()
     .from("equipment")
@@ -282,6 +325,8 @@ export async function updateEquipment(formData: FormData) {
       name: input.name,
       description: input.description,
       capacity: input.capacity,
+      boom_length: input.boomLength,
+      bed_length: input.bedLength,
       ownership: input.ownership,
       status: input.status,
     })
@@ -299,15 +344,15 @@ export async function setEquipmentArchived(formData: FormData) {
     .from("equipment")
     .update({ archived_at: archived ? new Date().toISOString() : null })
     .eq("id", id);
-  if (error) fail(`/manage/equipment/${id}`, "The equipment could not be updated.");
+  if (error) fail(`/dashboard/equipment/${id}`, "The equipment could not be updated.");
   await logActivity(session, archived ? "equipment.archived" : "equipment.restored", "equipment", id);
-  redirect(archived ? "/manage/equipment?archived=1" : `/manage/equipment/${id}`);
+  redirect(archived ? "/dashboard/equipment?archived=1" : `/dashboard/equipment/${id}`);
 }
 
 export async function deleteEquipment(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.equipmentWrite);
   const id = field(formData, "id");
-  const path = `/manage/equipment/${id}`;
+  const path = `/dashboard/equipment/${id}`;
   const service = getServiceClient();
   const { data: links } = await service.from("supplier_equipment").select("id").eq("equipment_id", id);
   const linkIds = (links ?? []).map((link) => link.id as string);
@@ -327,7 +372,7 @@ export async function deleteEquipment(formData: FormData) {
   const { error } = await service.from("equipment").delete().eq("id", id);
   if (error) fail(path, "The equipment could not be deleted.");
   await logActivity(session, "equipment.deleted", "equipment", id);
-  redirect("/manage/equipment");
+  redirect("/dashboard/equipment");
 }
 
 export async function addSpecification(formData: FormData) {
@@ -335,7 +380,7 @@ export async function addSpecification(formData: FormData) {
   const equipmentId = field(formData, "equipmentId");
   const label = field(formData, "label");
   const value = field(formData, "value");
-  const path = `/manage/equipment/${equipmentId}`;
+  const path = `/dashboard/equipment/${equipmentId}`;
   if (!label || !value) fail(path, "Enter a specification label and value.");
   const { error } = await getServiceClient().from("equipment_specifications").insert({
     equipment_id: equipmentId,
@@ -353,14 +398,14 @@ export async function deleteSpecification(formData: FormData) {
   const id = field(formData, "id");
   await getServiceClient().from("equipment_specifications").delete().eq("id", id);
   await logActivity(session, "equipment_specification.deleted", "equipment", equipmentId);
-  redirect(`/manage/equipment/${equipmentId}`);
+  redirect(`/dashboard/equipment/${equipmentId}`);
 }
 
 export async function addAsset(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.equipmentWrite);
   const equipmentId = field(formData, "equipmentId");
   const assetCode = field(formData, "assetCode");
-  const path = `/manage/equipment/${equipmentId}`;
+  const path = `/dashboard/equipment/${equipmentId}`;
   if (assetCode.length < 2) fail(path, "Enter an asset code.");
   const { error } = await getServiceClient().from("equipment_assets").insert({
     equipment_id: equipmentId,
@@ -381,7 +426,7 @@ export async function addAsset(formData: FormData) {
 export async function updateAsset(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.equipmentWrite);
   const equipmentId = field(formData, "equipmentId");
-  const path = `/manage/equipment/${equipmentId}`;
+  const path = `/dashboard/equipment/${equipmentId}`;
   const assetCode = field(formData, "assetCode");
   if (assetCode.length < 2) fail(path, "Enter an asset code.");
   const { error } = await getServiceClient().from("equipment_assets").update({
@@ -401,7 +446,7 @@ export async function updateAsset(formData: FormData) {
 export async function addEquipmentImage(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.equipmentWrite);
   const equipmentId = field(formData, "equipmentId");
-  const path = `/manage/equipment/${equipmentId}`;
+  const path = `/dashboard/equipment/${equipmentId}`;
   const file = fileFromForm(formData, "image");
   if (!file) fail(path, "Choose an image.");
   try {
@@ -428,13 +473,13 @@ export async function deleteEquipmentImage(formData: FormData) {
   await getServiceClient().from("equipment_images").delete().eq("id", id);
   if (storagePath) await removeStoredFile(IMAGE_BUCKET, storagePath);
   await logActivity(session, "equipment_image.deleted", "equipment", equipmentId);
-  redirect(`/manage/equipment/${equipmentId}`);
+  redirect(`/dashboard/equipment/${equipmentId}`);
 }
 
 export async function addEquipmentDocument(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.documentsWrite);
   const equipmentId = field(formData, "equipmentId");
-  const path = `/manage/equipment/${equipmentId}`;
+  const path = `/dashboard/equipment/${equipmentId}`;
   const title = field(formData, "title");
   const file = fileFromForm(formData, "document");
   if (!title || !file) fail(path, "Enter a title and choose a file.");
@@ -460,7 +505,7 @@ export async function addEquipmentDocument(formData: FormData) {
 export async function addMaintenance(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.equipmentWrite);
   const equipmentId = field(formData, "equipmentId");
-  const path = `/manage/equipment/${equipmentId}`;
+  const path = `/dashboard/equipment/${equipmentId}`;
   const servicedOn = field(formData, "servicedOn");
   const description = field(formData, "description");
   if (!servicedOn || description.length < 2) fail(path, "Enter the service date and description.");

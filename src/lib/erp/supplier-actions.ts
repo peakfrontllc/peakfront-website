@@ -2,11 +2,11 @@
 
 import { redirect } from "next/navigation";
 import { logActivity } from "@/lib/auth/activity";
-import { PERMISSIONS } from "@/lib/auth/permissions";
-import { requirePermission } from "@/lib/auth/session";
+import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
+import { requirePermission, requireStaff } from "@/lib/auth/session";
 import { DOCUMENT_BUCKET, removeStoredFile, storeFile } from "@/lib/erp/files";
 import { insertCustomFields } from "@/lib/erp/custom-fields";
-import { checked, chosenEmirates, dayBefore, extraFieldPairs, fail, field, fileFromForm, parseMoney } from "@/lib/erp/shared";
+import { checked, chosenEmirates, dayBefore, EMIRATES, extraFieldPairs, fail, field, fileFromForm, parseMoney, searchTerm, todayIso } from "@/lib/erp/shared";
 import { getServiceClient } from "@/lib/supabase/service";
 
 function supplierInput(formData: FormData) {
@@ -30,25 +30,25 @@ export async function createSupplier(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.suppliersWrite);
   const input = supplierInput(formData);
   const extras = extraFieldPairs(formData);
-  if (input.company_name.length < 2) fail("/manage/suppliers/new", input.party_type === "individual" ? "Enter the person's name." : "Enter the company name.");
-  if (extras.error) fail("/manage/suppliers/new", extras.error);
+  if (input.company_name.length < 2) fail("/dashboard/suppliers/new", input.party_type === "individual" ? "Enter the person's name." : "Enter the company name.");
+  if (extras.error) fail("/dashboard/suppliers/new", extras.error);
   const { data, error } = await getServiceClient()
     .from("suppliers")
     .insert({ ...input, created_by: session.userId })
     .select("id")
     .single();
-  if (error || !data) fail("/manage/suppliers/new", "The supplier could not be saved.");
+  if (error || !data) fail("/dashboard/suppliers/new", "The supplier could not be saved.");
   const fieldError = await insertCustomFields("supplier", data.id as string, extras.pairs);
-  if (fieldError) fail(`/manage/suppliers/${data.id}`, "The supplier was saved, but an extra field could not be saved.");
+  if (fieldError) fail(`/dashboard/suppliers/${data.id}`, "The supplier was saved, but an extra field could not be saved.");
   await logActivity(session, "supplier.created", "supplier", data.id as string, { name: input.company_name });
-  redirect(`/manage/suppliers/${data.id}`);
+  redirect(`/dashboard/suppliers/${data.id}`);
 }
 
 export async function updateSupplier(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.suppliersWrite);
   const id = field(formData, "id");
   const input = supplierInput(formData);
-  const path = `/manage/suppliers/${id}`;
+  const path = `/dashboard/suppliers/${id}`;
   if (input.company_name.length < 2) fail(path, input.party_type === "individual" ? "Enter the person's name." : "Enter the company name.");
   const { error } = await getServiceClient().from("suppliers").update(input).eq("id", id);
   if (error) fail(path, "The supplier could not be saved.");
@@ -64,15 +64,15 @@ export async function setSupplierArchived(formData: FormData) {
     .from("suppliers")
     .update({ archived_at: archived ? new Date().toISOString() : null })
     .eq("id", id);
-  if (error) fail(`/manage/suppliers/${id}`, "The supplier could not be updated.");
+  if (error) fail(`/dashboard/suppliers/${id}`, "The supplier could not be updated.");
   await logActivity(session, archived ? "supplier.archived" : "supplier.restored", "supplier", id);
-  redirect(archived ? "/manage/suppliers?archived=1" : `/manage/suppliers/${id}`);
+  redirect(archived ? "/dashboard/suppliers?archived=1" : `/dashboard/suppliers/${id}`);
 }
 
 export async function deleteSupplier(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.suppliersWrite);
   const id = field(formData, "id");
-  const path = `/manage/suppliers/${id}`;
+  const path = `/dashboard/suppliers/${id}`;
   const service = getServiceClient();
   const { data: links } = await service.from("supplier_equipment").select("id").eq("supplier_id", id);
   const linkIds = (links ?? []).map((link) => link.id as string);
@@ -86,13 +86,13 @@ export async function deleteSupplier(formData: FormData) {
   const { error } = await service.from("suppliers").delete().eq("id", id);
   if (error) fail(path, "The supplier could not be deleted.");
   await logActivity(session, "supplier.deleted", "supplier", id);
-  redirect("/manage/suppliers");
+  redirect("/dashboard/suppliers");
 }
 
 export async function addSupplierContact(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.suppliersWrite);
   const supplierId = field(formData, "supplierId");
-  const path = `/manage/suppliers/${supplierId}`;
+  const path = `/dashboard/suppliers/${supplierId}`;
   const name = field(formData, "name");
   if (name.length < 2) fail(path, "Enter the contact name.");
   const service = getServiceClient();
@@ -118,13 +118,13 @@ export async function deleteSupplierContact(formData: FormData) {
   const supplierId = field(formData, "supplierId");
   await getServiceClient().from("supplier_contacts").delete().eq("id", field(formData, "id"));
   await logActivity(session, "supplier_contact.deleted", "supplier", supplierId);
-  redirect(`/manage/suppliers/${supplierId}`);
+  redirect(`/dashboard/suppliers/${supplierId}`);
 }
 
 export async function updateSupplierContact(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.suppliersWrite);
   const supplierId = field(formData, "supplierId");
-  const path = `/manage/suppliers/${supplierId}`;
+  const path = `/dashboard/suppliers/${supplierId}`;
   const name = field(formData, "name");
   if (name.length < 2) fail(path, "Enter the contact name.");
   const service = getServiceClient();
@@ -147,7 +147,7 @@ export async function updateSupplierContact(formData: FormData) {
 export async function updateSupplierLocation(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.suppliersWrite);
   const supplierId = field(formData, "supplierId");
-  const path = `/manage/suppliers/${supplierId}`;
+  const path = `/dashboard/suppliers/${supplierId}`;
   const label = field(formData, "label");
   if (label.length < 2) fail(path, "Enter a location name.");
   const { error } = await getServiceClient().from("supplier_locations").update({
@@ -164,7 +164,7 @@ export async function updateSupplierLocation(formData: FormData) {
 export async function addSupplierLocation(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.suppliersWrite);
   const supplierId = field(formData, "supplierId");
-  const path = `/manage/suppliers/${supplierId}`;
+  const path = `/dashboard/suppliers/${supplierId}`;
   const label = field(formData, "label");
   if (label.length < 2) fail(path, "Enter a location name.");
   const { error } = await getServiceClient().from("supplier_locations").insert({
@@ -184,7 +184,7 @@ export async function addSupplierNote(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.suppliersWrite);
   const supplierId = field(formData, "supplierId");
   const body = field(formData, "body");
-  const path = `/manage/suppliers/${supplierId}`;
+  const path = `/dashboard/suppliers/${supplierId}`;
   if (body.length < 2) fail(path, "Enter a note.");
   const { error } = await getServiceClient().from("supplier_notes").insert({
     supplier_id: supplierId,
@@ -199,7 +199,7 @@ export async function addSupplierNote(formData: FormData) {
 export async function addSupplierDocument(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.documentsWrite);
   const supplierId = field(formData, "supplierId");
-  const path = `/manage/suppliers/${supplierId}`;
+  const path = `/dashboard/suppliers/${supplierId}`;
   const title = field(formData, "title");
   const file = fileFromForm(formData, "document");
   if (!title || !file) fail(path, "Enter a title and choose a file.");
@@ -219,14 +219,43 @@ export async function addSupplierDocument(formData: FormData) {
     fail(path, error instanceof Error ? error.message : "The document could not be saved.");
   }
   await logActivity(session, "supplier_document.created", "supplier", supplierId, { title });
-  redirect(path);
+  redirect(`${path}#documents`);
+}
+
+export async function deleteSupplierDocument(formData: FormData) {
+  const session = await requirePermission(PERMISSIONS.documentsWrite);
+  const supplierId = field(formData, "supplierId");
+  const id = field(formData, "id");
+  const path = `/dashboard/suppliers/${supplierId}`;
+  const service = getServiceClient();
+  const { data } = await service
+    .from("supplier_documents")
+    .select("storage_path")
+    .eq("id", id)
+    .eq("supplier_id", supplierId)
+    .maybeSingle();
+  if (!data) fail(path, "That document was not found.");
+  await removeStoredFile(DOCUMENT_BUCKET, data.storage_path as string);
+  const { error } = await service.from("supplier_documents").delete().eq("id", id).eq("supplier_id", supplierId);
+  if (error) fail(path, "The document could not be removed.");
+  await logActivity(session, "supplier_document.deleted", "supplier", supplierId);
+  redirect(`${path}#documents`);
+}
+
+function equipmentReturn(formData: FormData) {
+  const value = field(formData, "returnTo");
+  return /^\/dashboard\/equipment\/[0-9a-f-]{36}$/i.test(value) ? `${value}#suppliers` : "";
 }
 
 export async function linkSupplierEquipment(formData: FormData) {
-  const session = await requirePermission(PERMISSIONS.suppliersWrite);
+  const session = await requireStaff();
+  const allowed = hasPermission(session.permissions, PERMISSIONS.suppliersWrite)
+    || hasPermission(session.permissions, PERMISSIONS.equipmentWrite);
+  if (!allowed) redirect(`/dashboard/forbidden?need=${encodeURIComponent(PERMISSIONS.suppliersWrite)}`);
   const supplierId = field(formData, "supplierId");
   const equipmentId = field(formData, "equipmentId");
-  const path = `/manage/suppliers/${supplierId}`;
+  const path = equipmentReturn(formData) || `/dashboard/suppliers/${supplierId}`;
+  if (!supplierId) fail(path, "Choose a supplier.");
   if (!equipmentId) fail(path, "Choose equipment.");
   const { error } = await getServiceClient().from("supplier_equipment").insert({
     supplier_id: supplierId,
@@ -241,10 +270,15 @@ export async function linkSupplierEquipment(formData: FormData) {
   redirect(path);
 }
 
+function supplierPath(formData: FormData, supplierId: string) {
+  const profile = `/dashboard/suppliers/${supplierId}`;
+  return field(formData, "returnTo") === `${profile}/equipment` ? `${profile}/equipment` : profile;
+}
+
 export async function updateSupplierEquipment(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.suppliersWrite);
   const supplierId = field(formData, "supplierId");
-  const path = `/manage/suppliers/${supplierId}`;
+  const path = supplierPath(formData, supplierId);
   const { error } = await getServiceClient().from("supplier_equipment").update({
     lead_time: field(formData, "leadTime"),
     notes: field(formData, "notes"),
@@ -258,7 +292,7 @@ export async function addSupplierRate(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.ratesWrite);
   const supplierId = field(formData, "supplierId");
   const supplierEquipmentId = field(formData, "supplierEquipmentId");
-  const path = `/manage/suppliers/${supplierId}`;
+  const path = supplierPath(formData, supplierId);
   const validFrom = field(formData, "validFrom");
   const daily = parseMoney(field(formData, "dailyRate"));
   const weekly = parseMoney(field(formData, "weeklyRate"));
@@ -313,5 +347,87 @@ export async function addSupplierRate(formData: FormData) {
     supplierId,
     validFrom,
   });
+  redirect(path);
+}
+
+function ratesReturnPath(formData: FormData) {
+  const params = new URLSearchParams();
+  const q = searchTerm(field(formData, "q"));
+  if (q) params.set("q", q);
+  const view = field(formData, "view");
+  if (view === "list" || view === "table") params.set("view", view);
+  const supplier = field(formData, "supplier");
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(supplier)) params.set("supplier", supplier);
+  const purpose = field(formData, "purpose").replace(/[\r\n]/g, " ").trim().slice(0, 80);
+  if (purpose) params.set("purpose", purpose);
+  const region = field(formData, "region");
+  if ((EMIRATES as readonly string[]).includes(region)) params.set("region", region);
+  const status = field(formData, "status");
+  if (status === "rated" || status === "missing") params.set("status", status);
+  const text = params.toString();
+  return text ? `/dashboard/rates?${text}` : "/dashboard/rates";
+}
+
+export async function updateEquipmentRate(formData: FormData) {
+  const session = await requirePermission(PERMISSIONS.ratesWrite);
+  const supplierEquipmentId = field(formData, "supplierEquipmentId");
+  const rateId = field(formData, "rateId");
+  const path = ratesReturnPath(formData);
+  const daily = parseMoney(field(formData, "dailyRate"));
+  const weekly = parseMoney(field(formData, "weeklyRate"));
+  const monthly = parseMoney(field(formData, "monthlyRate"));
+  const transport = parseMoney(field(formData, "transportCharge"));
+  const operator = parseMoney(field(formData, "operatorDailyCharge"));
+  if (!supplierEquipmentId) fail(path, "Link a supplier before saving a rate.");
+  if ([daily, weekly, monthly, transport, operator].some((value) => Number.isNaN(value))) {
+    fail(path, "Enter amounts as numbers with up to two decimal places.");
+  }
+  if (daily === null && weekly === null && monthly === null) {
+    fail(path, "Enter at least one of the daily, weekly, or monthly rates.");
+  }
+
+  const service = getServiceClient();
+  const amounts = {
+    daily_rate: daily,
+    weekly_rate: weekly,
+    monthly_rate: monthly,
+    transport_charge: transport,
+    operator_daily_charge: operator,
+    vat_included: checked(formData, "vatIncluded"),
+  };
+  if (rateId) {
+    const { data, error } = await service
+      .from("supplier_rates")
+      .update(amounts)
+      .eq("id", rateId)
+      .eq("supplier_equipment_id", supplierEquipmentId)
+      .is("valid_to", null)
+      .select("id")
+      .maybeSingle();
+    if (error || !data) fail(path, "The current rate could not be updated.");
+    await logActivity(session, "supplier_rate.updated", "supplier_rate", data.id as string, { supplierEquipmentId });
+    redirect(path);
+  }
+
+  const { data: open } = await service
+    .from("supplier_rates")
+    .select("id")
+    .eq("supplier_equipment_id", supplierEquipmentId)
+    .is("valid_to", null)
+    .maybeSingle();
+  if (open) fail(path, "This equipment already has a current rate. Refresh the page and edit that rate.");
+  const { data, error } = await service
+    .from("supplier_rates")
+    .insert({
+      ...amounts,
+      supplier_equipment_id: supplierEquipmentId,
+      valid_from: todayIso(),
+      notes: "",
+      created_by: session.userId,
+    })
+    .select("id")
+    .single();
+  if (error || !data) fail(path, "The rate could not be saved.");
+  await logActivity(session, "supplier_rate.created", "supplier_rate", data.id as string, { supplierEquipmentId });
   redirect(path);
 }

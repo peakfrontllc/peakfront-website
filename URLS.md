@@ -6,14 +6,14 @@ Base: https://www.peakfront.ae
 
 | Path | URL | Notes |
 | --- | --- | --- |
-| `/manage/login` | https://www.peakfront.ae/manage/login | Staff sign-in. Invite only. |
-| `/manage` | https://www.peakfront.ae/manage | Website project portfolio. Requires a staff account. |
-| `/manage/equipment` | https://www.peakfront.ae/manage/equipment | Equipment catalogue, assets, and documents. |
-| `/manage/suppliers` | https://www.peakfront.ae/manage/suppliers | Supplier profiles, contacts, and rates. |
-| `/manage/rates` | https://www.peakfront.ae/manage/rates | Current supplier rates and comparisons. |
-| `/manage/clients` | https://www.peakfront.ae/manage/clients | Client profiles, contacts, and equipment interests. |
-| `/manage/staff` | https://www.peakfront.ae/manage/staff | Staff invitations, roles, and activity. |
-| `/manage/account` | https://www.peakfront.ae/manage/account | Own name and password. |
+| `/dashboard/login` | https://www.peakfront.ae/dashboard/login | Staff sign-in. Invite only. |
+| `/dashboard` | https://www.peakfront.ae/dashboard | Website project portfolio. Requires a staff account. |
+| `/dashboard/equipment` | https://www.peakfront.ae/dashboard/equipment | Equipment catalogue, assets, and documents. |
+| `/dashboard/suppliers` | https://www.peakfront.ae/dashboard/suppliers | Supplier profiles, contacts, and rates. |
+| `/dashboard/rates` | https://www.peakfront.ae/dashboard/rates | Current supplier rates and comparisons. |
+| `/dashboard/clients` | https://www.peakfront.ae/dashboard/clients | Client profiles, contacts, and equipment interests. |
+| `/dashboard/staff` | https://www.peakfront.ae/dashboard/staff | Staff invitations, roles, and activity. |
+| `/dashboard/account` | https://www.peakfront.ae/dashboard/account | Own name and password. |
 | `/admin` | https://www.peakfront.ae/admin | Decap CMS (GitHub login) |
 
 ## Downloads and documents
@@ -43,4 +43,4 @@ Base: https://www.peakfront.ae
 | `/privacy` | https://www.peakfront.ae/privacy | Privacy policy |
 | `/terms` | https://www.peakfront.ae/terms | Terms of use |
 
-Local equivalents use the same paths, for example http://localhost:3000/manage
+Local equivalents use the same paths, for example http://localhost:3000/dashboard

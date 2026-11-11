@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
+import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
 import Link from "next/link";
+import { CollapsibleSection } from "@/components/manage/erp/CollapsibleSection";
 import type { LucideIcon } from "lucide-react";
 import { Archive, ArchiveRestore, Plus } from "lucide-react";
-import { CollapsibleSection, SectionStack } from "@/components/manage/erp/CollapsibleSection";
 import { buttonClass, fieldClass, labelClass } from "@/components/manage/form-styles";
 import { EMIRATES } from "@/lib/erp/shared";
 
@@ -52,22 +52,47 @@ export function Flash({ error }: { error?: string }) {
 export function Panel({
   title,
   children,
-  defaultOpen = false,
   id,
+  collapsible = false,
+  defaultOpen = false,
 }: {
   title: string;
   children: ReactNode;
   defaultOpen?: boolean;
   id?: string;
+  collapsible?: boolean;
 }) {
+  if (collapsible) {
+    return (
+      <CollapsibleSection id={id} title={title} defaultOpen={defaultOpen}>
+        {children}
+      </CollapsibleSection>
+    );
+  }
   return (
-    <CollapsibleSection title={title} defaultOpen={defaultOpen} id={id}>
-      {children}
-    </CollapsibleSection>
+    <section id={id} className="scroll-mt-28 overflow-hidden rounded-2xl border border-navy/10 bg-white shadow-sm">
+      <h2 className="flex items-center gap-2.5 bg-navy px-5 py-3 text-sm font-semibold text-white">
+        <span className="h-4 w-1 rounded-full bg-amber" aria-hidden />
+        {title}
+      </h2>
+      <div className="px-5 py-4">{children}</div>
+    </section>
   );
 }
 
-export { SectionStack };
+export function SectionStack({ children, collapsible = false }: { children: ReactNode; collapsible?: boolean }) {
+  return (
+    <div className="space-y-4">
+      {collapsible
+        ? Children.map(children, (child) => (
+            isValidElement(child)
+              ? cloneElement(child as ReactElement<{ collapsible?: boolean }>, { collapsible: true })
+              : child
+          ))
+        : children}
+    </div>
+  );
+}
 
 export function DataCard({ children }: { children: ReactNode }) {
   return (
@@ -94,12 +119,12 @@ export function EmiratesField({ defaultValue = [] }: { defaultValue?: string[] }
   );
 }
 
-export function EmirateField({ name, defaultValue }: { name: string; defaultValue?: string }) {
+export function EmirateField({ name, defaultValue, allowAll = false }: { name: string; defaultValue?: string; allowAll?: boolean }) {
   return (
     <div>
       <label className={labelClass} htmlFor={name}>Region</label>
       <select id={name} name={name} defaultValue={defaultValue ?? ""} className={fieldClass}>
-        <option value="">Select</option>
+        <option value="">{allowAll ? "All regions" : "Select"}</option>
         {EMIRATES.map((emirate) => (
           <option key={emirate} value={emirate}>{emirate}</option>
         ))}
@@ -140,21 +165,36 @@ export function fileHref(bucket: string, path: string) {
   return `/api/erp/files?bucket=${encodeURIComponent(bucket)}&path=${encodeURIComponent(path)}`;
 }
 
+const DOCUMENT_TYPES: Record<string, string> = {
+  trade_licence: "Trade licence",
+  insurance: "Insurance",
+  certificate: "Certificate",
+  other: "Other",
+};
+
+export function documentTypeLabel(value: string) {
+  return DOCUMENT_TYPES[value] ?? value;
+}
+
 export function ExtraFieldPanel({
   fields,
   canWrite,
   addAction,
   removeAction,
   hidden,
+  id = "fields",
+  collapsible = false,
 }: {
   fields: { id: string; label: string; value: string }[];
   canWrite: boolean;
   addAction: (formData: FormData) => Promise<void>;
   removeAction: (formData: FormData) => Promise<void>;
   hidden: { name: string; value: string }[];
+  id?: string;
+  collapsible?: boolean;
 }) {
   return (
-    <Panel title="Extra fields">
+    <Panel id={id} title={id === "specs" ? "Specs" : "Extra fields"} collapsible={collapsible}>
       {fields.length === 0 ? (
         <p className="text-sm text-slate-500">No extra fields yet.</p>
       ) : (

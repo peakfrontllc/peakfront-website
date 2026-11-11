@@ -1,5 +1,5 @@
 export const fieldClass =
-  "mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-navy shadow-sm outline-none transition focus:border-blue focus:ring-2 focus:ring-blue/15";
+  "mt-1.5 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-navy shadow-sm outline-none transition focus:border-navy focus:bg-white focus:ring-2 focus:ring-navy/10";
 
 export const labelClass = "text-xs font-semibold text-slate-600";
 

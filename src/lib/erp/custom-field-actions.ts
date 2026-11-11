@@ -14,7 +14,7 @@ function ownerFromForm(formData: FormData) {
   return {
     ownerType: rawType === "client" ? "client" as const : "supplier" as const,
     ownerId,
-    path: `/manage/${rawType === "client" ? "clients" : "suppliers"}/${ownerId}`,
+    path: `/dashboard/${rawType === "client" ? "clients" : "suppliers"}/${ownerId}`,
   };
 }
 
@@ -24,7 +24,7 @@ async function authorize(ownerType: "supplier" | "client") {
 
 export async function addCustomField(formData: FormData) {
   const owner = ownerFromForm(formData);
-  if (!owner) fail("/manage", "The extra field could not be saved.");
+  if (!owner) fail("/dashboard", "The extra field could not be saved.");
   const session = await authorize(owner.ownerType);
   const label = field(formData, "label");
   const value = field(formData, "value");
@@ -42,7 +42,7 @@ export async function addCustomField(formData: FormData) {
 
 export async function deleteCustomField(formData: FormData) {
   const owner = ownerFromForm(formData);
-  if (!owner) fail("/manage", "The extra field could not be removed.");
+  if (!owner) fail("/dashboard", "The extra field could not be removed.");
   const session = await authorize(owner.ownerType);
   const id = field(formData, "id");
   const { error } = await getServiceClient()

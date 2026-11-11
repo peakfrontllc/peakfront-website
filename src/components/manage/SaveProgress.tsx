@@ -55,9 +55,12 @@ export function SaveProgress() {
         buttons.add(submitter);
         queueMicrotask(() => {
           if (!submitter.isConnected) return;
+          submitter.classList.add("is-saving");
+          const onlyForScreenReaders = submitter.querySelector(".sr-only");
+          const iconOnly = Boolean(onlyForScreenReaders) && submitter.innerText.trim() === (onlyForScreenReaders?.textContent ?? "").trim();
+          if (iconOnly) return;
           submitter.dataset.saveLabel = submitter.textContent ?? "";
           submitter.textContent = "Saving…";
-          submitter.classList.add("is-saving");
         });
       }
     };

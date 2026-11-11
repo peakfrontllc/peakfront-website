@@ -2,17 +2,22 @@ import "server-only";
 
 import { getServiceClient } from "@/lib/supabase/service";
 import { listEquipment, type EquipmentListItem } from "@/lib/erp/equipment";
-import { isCurrentRate, searchTerm } from "@/lib/erp/shared";
+import { matchesSearch } from "@/lib/erp/search";
+import { EMIRATES, emiratesFromRow, isCurrentRate } from "@/lib/erp/shared";
 
 export type CurrentRate = {
   id: string;
   supplierId: string;
   supplierName: string;
+  place: string;
+  regions: string[];
   equipmentId: string;
   equipmentName: string;
   purposeName: string;
   typeName: string;
   sizeName: string;
+  boomLength: string;
+  bedLength: string;
   alias: string;
   dailyRate: number | null;
   weeklyRate: number | null;
@@ -23,6 +28,8 @@ export type CurrentRate = {
   validFrom: string;
   validTo: string | null;
   hasRate: boolean;
+  rateId: string;
+  supplierEquipmentId: string;
 };
 
 type RawMoneyRate = {
@@ -37,10 +44,19 @@ type RawMoneyRate = {
   valid_to: string | null;
 };
 
+type LinkedSupplier = {
+  id: string;
+  company_name: string;
+  archived_at: string | null;
+  emirate: string;
+  emirates: unknown;
+  supplier_locations: { emirate: string }[] | null;
+};
+
 type LinkedEquipment = {
   id: string;
   equipment_id: string;
-  suppliers: { id: string; company_name: string; archived_at: string | null } | { id: string; company_name: string; archived_at: string | null }[] | null;
+  suppliers: LinkedSupplier | LinkedSupplier[] | null;
   supplier_rates: RawMoneyRate[] | null;
 };
 
@@ -73,9 +89,18 @@ function equipmentLabels(item: EquipmentListItem) {
   return { typeName, sizeName, alias };
 }
 
+function supplierPlace(supplier: LinkedSupplier) {
+  const fromProfile = emiratesFromRow(supplier.emirates, supplier.emirate ?? "");
+  const fromYards = (supplier.supplier_locations ?? [])
+    .map((spot) => spot.emirate.trim())
+    .filter((value) => (EMIRATES as readonly string[]).includes(value));
+  const regions = EMIRATES.filter((item) => fromProfile.includes(item) || fromYards.includes(item));
+  return { place: regions.join(" · "), regions: [...regions] };
+}
+
 function rateRow(
   item: EquipmentListItem,
-  link: { id: string; supplierId: string; supplierName: string; rates: RawMoneyRate[] } | null,
+  link: { id: string; supplierId: string; supplierName: string; place: string; regions: string[]; rates: RawMoneyRate[] } | null,
 ): CurrentRate {
   const labels = equipmentLabels(item);
   const current = link?.rates
@@ -85,11 +110,15 @@ function rateRow(
     id: current?.id ?? link?.id ?? item.id,
     supplierId: link?.supplierId ?? "",
     supplierName: link?.supplierName ?? "",
+    place: link?.place ?? "",
+    regions: link?.regions ?? [],
     equipmentId: item.id,
     equipmentName: item.name,
     purposeName: item.purposeName,
     typeName: labels.typeName,
     sizeName: labels.sizeName,
+    boomLength: item.boomLength,
+    bedLength: item.bedLength,
     alias: labels.alias,
     dailyRate: current ? amount(current.daily_rate) : null,
     weeklyRate: current ? amount(current.weekly_rate) : null,
@@ -100,6 +129,8 @@ function rateRow(
     validFrom: current?.valid_from ?? "",
     validTo: current?.valid_to ?? null,
     hasRate: Boolean(current),
+    rateId: current?.id ?? "",
+    supplierEquipmentId: link?.id ?? "",
   };
 }
 
@@ -110,21 +141,24 @@ async function loadRates(): Promise<CurrentRate[]> {
       .from("supplier_equipment")
       .select(`
         id, equipment_id,
-        suppliers(id, company_name, archived_at),
+        suppliers(id, company_name, archived_at, emirate, emirates, supplier_locations(emirate)),
         supplier_rates(id, daily_rate, weekly_rate, monthly_rate, transport_charge, operator_daily_charge, vat_included, valid_from, valid_to)
       `),
   ]);
   if (error) throw new Error(error.message);
 
-  const links = new Map<string, { id: string; supplierId: string; supplierName: string; rates: RawMoneyRate[] }[]>();
+  const links = new Map<string, { id: string; supplierId: string; supplierName: string; place: string; regions: string[]; rates: RawMoneyRate[] }[]>();
   for (const row of (data ?? []) as unknown as LinkedEquipment[]) {
     const supplier = one(row.suppliers);
     if (!supplier || supplier.archived_at) continue;
+    const place = supplierPlace(supplier);
     const current = links.get(row.equipment_id) ?? [];
     current.push({
       id: row.id,
       supplierId: supplier.id,
       supplierName: supplier.company_name,
+      place: place.place,
+      regions: place.regions,
       rates: row.supplier_rates ?? [],
     });
     links.set(row.equipment_id, current);
@@ -143,11 +177,21 @@ async function loadRates(): Promise<CurrentRate[]> {
 }
 
 export async function listCurrentRates(q?: string) {
-  const term = searchTerm(q).toLowerCase();
   const rates = await loadRates();
-  if (!term) return rates;
   return rates.filter((rate) =>
-    `${rate.purposeName} ${rate.typeName} ${rate.sizeName} ${rate.alias} ${rate.equipmentName} ${rate.supplierName}`.toLowerCase().includes(term),
+    matchesSearch(q ?? "", [
+      rate.purposeName,
+      rate.typeName,
+      rate.sizeName,
+      rate.boomLength,
+      rate.bedLength,
+      rate.boomLength ? "boom" : "",
+      rate.bedLength ? "length" : "",
+      rate.alias,
+      rate.equipmentName,
+      rate.supplierName,
+      rate.place,
+    ]),
   );
 }
 

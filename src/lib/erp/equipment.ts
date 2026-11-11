@@ -1,7 +1,9 @@
 import "server-only";
 
 import { getServiceClient } from "@/lib/supabase/service";
-import { isCurrentRate, searchTerm } from "@/lib/erp/shared";
+import { equipmentFacts } from "@/lib/erp/lengths";
+import { matchesSearch } from "@/lib/erp/search";
+import { emiratesFromRow, isCurrentRate } from "@/lib/erp/shared";
 
 export type CategoryOption = {
   id: string;
@@ -11,6 +13,8 @@ export type CategoryOption = {
   parentId: string | null;
   parentName: string;
   tonnage: string;
+  kind: "capacity" | "boom" | "length";
+  imagePath: string;
   archivedAt: string | null;
 };
 
@@ -19,13 +23,26 @@ export type EquipmentListItem = {
   code: string;
   name: string;
   capacity: string;
+  boomLength: string;
+  bedLength: string;
   ownership: string;
   status: string;
   categoryName: string;
   purposeName: string;
   typeName: string;
   sizeName: string;
-  suppliers: { id: string; name: string; phone: string }[];
+  suppliers: {
+    id: string;
+    name: string;
+    phone: string;
+    email: string;
+    emirate: string;
+    emirates: string[];
+    partyType: "individual" | "company";
+    ownerName: string;
+    contactTitle: string;
+    leadTime: string;
+  }[];
   archivedAt: string | null;
 };
 
@@ -33,6 +50,11 @@ export type EquipmentSupplier = {
   supplierId: string;
   supplierName: string;
   phone: string;
+  email: string;
+  emirate: string;
+  partyType: "individual" | "company";
+  ownerName: string;
+  contactTitle: string;
   leadTime: string;
   dailyRate: number | null;
   weeklyRate: number | null;
@@ -105,13 +127,15 @@ type CategoryRow = {
   description: string;
   parent_id: string | null;
   tonnage: string;
+  kind: string;
+  image_path: string | null;
   archived_at: string | null;
 };
 
 async function loadCategoryRows(includeArchived: boolean) {
   let query = getServiceClient()
     .from("equipment_categories")
-    .select("id, name, slug, description, parent_id, tonnage, archived_at")
+    .select("id, name, slug, description, parent_id, tonnage, kind, image_path, archived_at")
     .order("name");
   if (!includeArchived) query = query.is("archived_at", null);
   const { data, error } = await query;
@@ -129,6 +153,8 @@ function toCategoryOptions(rows: CategoryRow[]): CategoryOption[] {
     parentId: row.parent_id,
     parentName: row.parent_id ? names.get(row.parent_id) ?? "" : "",
     tonnage: row.tonnage ?? "",
+    kind: row.kind === "boom" ? "boom" : row.kind === "length" ? "length" : "capacity",
+    imagePath: row.image_path ?? "",
     archivedAt: row.archived_at,
   }));
   const sortKey = (item: CategoryOption) => {
@@ -147,13 +173,14 @@ export async function listCategories(includeArchived = false): Promise<CategoryO
 export async function listEquipment(filters: {
   q?: string;
   category?: string;
+  region?: string;
   archived?: boolean;
 }): Promise<EquipmentListItem[]> {
   const categories = await listCategories(true);
   const byId = new Map(categories.map((category) => [category.id, category]));
   let query = getServiceClient()
     .from("equipment")
-    .select("id, code, name, capacity, ownership, status, archived_at, category_id")
+    .select("id, code, name, capacity, boom_length, bed_length, ownership, status, archived_at, category_id")
     .order("name");
   query = filters.archived ? query.not("archived_at", "is", null) : query.is("archived_at", null);
   if (filters.category) {
@@ -170,28 +197,53 @@ export async function listEquipment(filters: {
     }
     query = query.in("category_id", ids.size > 0 ? [...ids] : ["00000000-0000-0000-0000-000000000000"]);
   }
-  const term = searchTerm(filters.q);
-  if (term) {
-    query = query.or(`name.ilike.%${term}%,code.ilike.%${term}%,capacity.ilike.%${term}%`);
-  }
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  const equipmentIds = (data ?? []).map((row) => row.id as string);
-  const suppliersByEquipment = new Map<string, { id: string; name: string; phone: string }[]>();
+  const term = filters.q?.trim() ?? "";
+  const rows = (data ?? []).filter((row) => {
+    if (!term) return true;
+    const category = byId.get(row.category_id as string);
+    const place = cataloguePlace(category, byId, (row.capacity as string) ?? "");
+    return matchesSearch(term, [
+      place.purposeName,
+      place.typeName,
+      place.sizeName,
+      (row.name as string) ?? "",
+      (row.code as string) ?? "",
+      (row.capacity as string) ?? "",
+      (row.boom_length as string) ?? "",
+      (row.bed_length as string) ?? "",
+      (row.boom_length as string) ? "boom" : "",
+      (row.bed_length as string) ? "length" : "",
+      category ? categoryLabel(category) : "",
+    ]);
+  });
+  const equipmentIds = rows.map((row) => row.id as string);
+  const suppliersByEquipment = new Map<string, EquipmentListItem["suppliers"]>();
   if (equipmentIds.length > 0) {
     const { data: links, error: linkError } = await getServiceClient()
       .from("supplier_equipment")
-      .select("equipment_id, suppliers(id, company_name, phone, archived_at)")
+      .select("equipment_id, lead_time, suppliers(id, company_name, party_type, phone, email, emirate, emirates, archived_at, supplier_contacts(name, job_title, phone, is_primary))")
       .in("equipment_id", equipmentIds);
     if (linkError) throw new Error(linkError.message);
     for (const link of links ?? []) {
       const equipmentId = link.equipment_id as string;
       const linked = Array.isArray(link.suppliers) ? link.suppliers[0] : link.suppliers;
       if (!linked || linked.archived_at) continue;
+      const contacts = (Array.isArray(linked.supplier_contacts) ? linked.supplier_contacts : linked.supplier_contacts ? [linked.supplier_contacts] : []) as { name?: string; job_title?: string; phone?: string; is_primary?: boolean }[];
+      const owner = contacts.find((contact) => contact.is_primary) ?? contacts[0];
+      const emirates = emiratesFromRow(linked.emirates, (linked.emirate as string) ?? "");
       const supplier = {
         id: linked.id as string,
         name: linked.company_name as string,
-        phone: (linked.phone as string) ?? "",
+        phone: ((linked.phone as string) || owner?.phone || "").trim(),
+        email: ((linked.email as string) ?? "").trim(),
+        emirate: emirates.join(", "),
+        emirates,
+        partyType: linked.party_type === "individual" ? "individual" as const : "company" as const,
+        ownerName: (owner?.name ?? "").trim(),
+        contactTitle: (owner?.job_title ?? "").trim(),
+        leadTime: ((link.lead_time as string) ?? "").trim(),
       };
       const current = suppliersByEquipment.get(equipmentId) ?? [];
       if (!current.some((item) => item.id === supplier.id)) current.push(supplier);
@@ -201,23 +253,29 @@ export async function listEquipment(filters: {
       suppliers.sort((a, b) => a.name.localeCompare(b.name));
     }
   }
-  return (data ?? []).map((row) => {
+  const region = (filters.region ?? "").trim();
+  return rows.flatMap((row) => {
     const category = byId.get(row.category_id as string);
     const place = cataloguePlace(category, byId, (row.capacity as string) ?? "");
-    return {
+    const suppliers = suppliersByEquipment.get(row.id as string) ?? [];
+    const inRegion = region ? suppliers.filter((supplier) => supplier.emirates.includes(region)) : suppliers;
+    if (region && inRegion.length === 0) return [];
+    return [{
       id: row.id as string,
       code: (row.code as string | null) ?? "",
       name: row.name as string,
       capacity: row.capacity as string,
+      boomLength: (row.boom_length as string) ?? "",
+      bedLength: (row.bed_length as string) ?? "",
       ownership: row.ownership as string,
       status: row.status as string,
       categoryName: category ? categoryLabel(category) : "",
       purposeName: place.purposeName,
       typeName: place.typeName,
       sizeName: place.sizeName,
-      suppliers: suppliersByEquipment.get(row.id as string) ?? [],
+      suppliers: inRegion,
       archivedAt: (row.archived_at as string | null) ?? null,
-    };
+    }];
   }).sort((a, b) => (
     a.purposeName.localeCompare(b.purposeName)
     || a.typeName.localeCompare(b.typeName)
@@ -231,7 +289,7 @@ export async function listEquipmentSuppliers(equipmentId: string): Promise<Equip
     .from("supplier_equipment")
     .select(`
       lead_time,
-      suppliers(id, company_name, phone, archived_at),
+      suppliers(id, company_name, party_type, phone, email, emirate, emirates, archived_at, supplier_contacts(name, job_title, phone, is_primary)),
       supplier_rates(daily_rate, weekly_rate, monthly_rate, valid_from, valid_to)
     `)
     .eq("equipment_id", equipmentId);
@@ -240,6 +298,9 @@ export async function listEquipmentSuppliers(equipmentId: string): Promise<Equip
   return (data ?? []).flatMap((row) => {
     const linked = Array.isArray(row.suppliers) ? row.suppliers[0] : row.suppliers;
     if (!linked || linked.archived_at) return [];
+    const contacts = (Array.isArray(linked.supplier_contacts) ? linked.supplier_contacts : linked.supplier_contacts ? [linked.supplier_contacts] : []) as { name?: string; job_title?: string; phone?: string; is_primary?: boolean }[];
+    const owner = contacts.find((contact) => contact.is_primary) ?? contacts[0];
+    const emirates = emiratesFromRow(linked.emirates, (linked.emirate as string) ?? "");
     const rates = [...((row.supplier_rates as {
       daily_rate: number | string | null;
       weekly_rate: number | string | null;
@@ -258,8 +319,13 @@ export async function listEquipmentSuppliers(equipmentId: string): Promise<Equip
     return [{
       supplierId: linked.id as string,
       supplierName: linked.company_name as string,
-      phone: (linked.phone as string) ?? "",
-      leadTime: (row.lead_time as string) ?? "",
+      phone: ((linked.phone as string) || owner?.phone || "").trim(),
+      email: ((linked.email as string) ?? "").trim(),
+      emirate: emirates.join(", "),
+      partyType: linked.party_type === "individual" ? "individual" as const : "company" as const,
+      ownerName: (owner?.name ?? "").trim(),
+      contactTitle: (owner?.job_title ?? "").trim(),
+      leadTime: ((row.lead_time as string) ?? "").trim(),
       dailyRate: money(current?.daily_rate),
       weeklyRate: money(current?.weekly_rate),
       monthlyRate: money(current?.monthly_rate),
@@ -273,9 +339,11 @@ export type EquipmentOption = {
   code: string;
   group: string;
   label: string;
+  typeName: string;
+  detail: string;
 };
 
-function equipmentOption(row: { id: string; name: string; code: string | null; capacity: string; category_id: string }, categories: CategoryOption[]): EquipmentOption {
+function equipmentOption(row: { id: string; name: string; code: string | null; capacity: string; boom_length: string; bed_length: string; category_id: string }, categories: CategoryOption[]): EquipmentOption {
   const byId = new Map(categories.map((category) => [category.id, category]));
   const category = byId.get(row.category_id);
   const parent = category?.parentId ? byId.get(category.parentId) : undefined;
@@ -292,6 +360,8 @@ function equipmentOption(row: { id: string; name: string; code: string | null; c
     code: row.code ?? "",
     group,
     label: parts.join(" · ") || name,
+    typeName,
+    detail: equipmentFacts(sizeName, row.capacity, row.boom_length, row.bed_length),
   };
 }
 
@@ -299,7 +369,7 @@ export async function listEquipmentOptions(): Promise<EquipmentOption[]> {
   const [{ data, error }, categories] = await Promise.all([
     getServiceClient()
       .from("equipment")
-      .select("id, name, code, capacity, category_id")
+      .select("id, name, code, capacity, boom_length, bed_length, category_id")
       .is("archived_at", null)
       .order("name"),
     listCategories(),
@@ -311,6 +381,8 @@ export async function listEquipmentOptions(): Promise<EquipmentOption[]> {
       name: row.name as string,
       code: (row.code as string | null) ?? "",
       capacity: (row.capacity as string) ?? "",
+      boom_length: (row.boom_length as string) ?? "",
+      bed_length: (row.bed_length as string) ?? "",
       category_id: row.category_id as string,
     }, categories))
     .sort((a, b) => a.group.localeCompare(b.group) || a.label.localeCompare(b.label, undefined, { numeric: true }));
@@ -330,7 +402,7 @@ export async function getEquipment(id: string): Promise<EquipmentDetail | null> 
   const { data, error } = await getServiceClient()
     .from("equipment")
     .select(`
-      id, category_id, code, name, description, capacity, ownership, status, archived_at,
+      id, category_id, code, name, description, capacity, boom_length, bed_length, ownership, status, archived_at,
       equipment_categories(name),
       equipment_specifications(id, label, value, sort_order),
       equipment_assets(id, asset_code, serial_number, registration_number, year_made, status, location, notes, archived_at),
@@ -355,6 +427,8 @@ export async function getEquipment(id: string): Promise<EquipmentDetail | null> 
     name: data.name as string,
     description: data.description as string,
     capacity: data.capacity as string,
+    boomLength: (data.boom_length as string) ?? "",
+    bedLength: (data.bed_length as string) ?? "",
     ownership: data.ownership as string,
     status: data.status as string,
     archivedAt: (data.archived_at as string | null) ?? null,

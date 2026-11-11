@@ -7,15 +7,16 @@ import {
 } from "@/lib/supabase/public-env";
 
 const PUBLIC_PATHS = new Set([
-  "/manage/login",
-  "/manage/forgot-password",
-  "/manage/reset-password",
-  "/manage/auth/callback",
-  "/manage/auth/sign-out",
+  "/dashboard/login",
+  "/dashboard/forgot-password",
+  "/dashboard/reset-password",
+  "/dashboard/auth/callback",
+  "/dashboard/auth/confirm",
+  "/dashboard/auth/sign-out",
 ]);
 
 function isStaffPage(pathname: string) {
-  return pathname === "/manage" || pathname.startsWith("/manage/");
+  return pathname === "/dashboard" || pathname.startsWith("/dashboard/");
 }
 
 function isProtectedApi(pathname: string) {
@@ -52,7 +53,7 @@ export async function proxy(request: NextRequest) {
     }
     if (staffPage && !PUBLIC_PATHS.has(pathname)) {
       const url = request.nextUrl.clone();
-      url.pathname = "/manage/login";
+      url.pathname = "/dashboard/login";
       url.search = "";
       return NextResponse.redirect(url);
     }
@@ -90,14 +91,14 @@ export async function proxy(request: NextRequest) {
 
   if (staffPage && !isPublicStaffPage && !user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/manage/login";
+    url.pathname = "/dashboard/login";
     url.searchParams.set("next", pathname);
     return copyCookies(response, NextResponse.redirect(url));
   }
 
-  if (user && (pathname === "/manage/login" || pathname === "/manage/forgot-password")) {
+  if (user && (pathname === "/dashboard/login" || pathname === "/dashboard/forgot-password")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/manage";
+    url.pathname = "/dashboard";
     url.search = "";
     return copyCookies(response, NextResponse.redirect(url));
   }
@@ -106,5 +107,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/manage", "/manage/:path*", "/api/projects", "/api/projects/:path*", "/api/erp/:path*"],
+  matcher: ["/dashboard", "/dashboard/:path*", "/api/projects", "/api/projects/:path*", "/api/erp/:path*"],
 };

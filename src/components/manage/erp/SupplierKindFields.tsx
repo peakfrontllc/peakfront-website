@@ -22,22 +22,26 @@ export function SupplierKindFields({
       <fieldset className="sm:col-span-2">
         <legend className={labelClass}>Supplier type</legend>
         <div className="mt-2 grid gap-3 sm:grid-cols-2">
-          {TYPES.map((item) => (
-            <label key={item.value} className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-3 ${type === item.value ? "border-navy bg-slate-50" : "border-slate-200 bg-white"}`}>
-              <input
-                type="radio"
-                name="partyType"
-                value={item.value}
-                checked={type === item.value}
-                onChange={() => setType(item.value)}
-                className="mt-1"
-              />
-              <span>
-                <span className="block text-sm font-semibold text-navy">{item.title}</span>
-                <span className="block text-xs text-slate-500">{item.detail}</span>
-              </span>
-            </label>
-          ))}
+          {TYPES.map((item) => {
+            const selected = type === item.value;
+            return (
+              <label key={item.value} className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border px-4 py-3 transition ${selected ? "border-navy bg-white shadow-sm ring-1 ring-navy" : "border-slate-200 bg-slate-50/70 hover:border-slate-300"}`}>
+                <input
+                  type="radio"
+                  name="partyType"
+                  value={item.value}
+                  checked={selected}
+                  onChange={() => setType(item.value)}
+                  className="sr-only"
+                />
+                <span>
+                  <span className="block text-sm font-semibold text-navy">{item.title}</span>
+                  <span className="mt-0.5 block text-xs text-slate-500">{item.detail}</span>
+                </span>
+                <span className={`h-4 w-4 shrink-0 rounded-full border ${selected ? "border-navy bg-navy shadow-[inset_0_0_0_3px_white]" : "border-slate-300 bg-white"}`} aria-hidden />
+              </label>
+            );
+          })}
         </div>
       </fieldset>
       <div className="sm:col-span-2">

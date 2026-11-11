@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getServiceClient } from "@/lib/supabase/service";
+import { matchesSearch } from "@/lib/erp/search";
 import { searchTerm } from "@/lib/erp/shared";
 
 export type ClientListItem = {
@@ -8,7 +9,11 @@ export type ClientListItem = {
   companyName: string;
   industry: string;
   phone: string;
+  email: string;
   emirate: string;
+  contactName: string;
+  contactTitle: string;
+  interestCount: number;
   archivedAt: string | null;
 };
 
@@ -19,6 +24,7 @@ export type ClientDetail = {
   industry: string;
   email: string;
   phone: string;
+  website: string;
   billingAddress: string;
   emirate: string;
   notes: string;
@@ -48,38 +54,61 @@ export type ClientDetail = {
     durationNote: string;
   }[];
   noteLog: { id: string; body: string; createdAt: string }[];
+  documents: {
+    id: string;
+    docType: string;
+    title: string;
+    storagePath: string;
+    expiresOn: string | null;
+  }[];
 };
 
-export async function listClients(filters: { q?: string; archived?: boolean }): Promise<ClientListItem[]> {
+export async function listClients(filters: { q?: string; archived?: boolean; region?: string }): Promise<ClientListItem[]> {
   let query = getServiceClient()
     .from("clients")
-    .select("id, company_name, industry, phone, emirate, archived_at")
+    .select(`
+      id, company_name, industry, phone, email, emirate, archived_at,
+      client_contacts(name, job_title, is_primary),
+      client_equipment_interests(id)
+    `)
     .order("company_name");
   query = filters.archived ? query.not("archived_at", "is", null) : query.is("archived_at", null);
-  const term = searchTerm(filters.q);
-  if (term) {
-    query = query.or(`company_name.ilike.%${term}%,industry.ilike.%${term}%,phone.ilike.%${term}%,emirate.ilike.%${term}%`);
-  }
   const { data, error } = await query;
   if (error) throw new Error(error.message);
-  return (data ?? []).map((row) => ({
-    id: row.id as string,
-    companyName: row.company_name as string,
-    industry: row.industry as string,
-    phone: row.phone as string,
-    emirate: row.emirate as string,
-    archivedAt: (row.archived_at as string | null) ?? null,
-  }));
+  const region = filters.region ?? "";
+  const term = searchTerm(filters.q);
+  return (data ?? []).flatMap((row) => {
+    const contacts = (Array.isArray(row.client_contacts) ? row.client_contacts : []) as { name: string; job_title: string; is_primary: boolean }[];
+    const contact = contacts.find((item) => item.is_primary) ?? contacts[0];
+    const companyName = row.company_name as string;
+    const contactName = (contact?.name ?? "").trim();
+    const item: ClientListItem = {
+      id: row.id as string,
+      companyName,
+      industry: (row.industry as string) ?? "",
+      phone: (row.phone as string) ?? "",
+      email: (row.email as string) ?? "",
+      emirate: (row.emirate as string) ?? "",
+      contactName: contactName.toLowerCase() === companyName.toLowerCase() ? "" : contactName,
+      contactTitle: (contact?.job_title ?? "").trim(),
+      interestCount: Array.isArray(row.client_equipment_interests) ? row.client_equipment_interests.length : 0,
+      archivedAt: (row.archived_at as string | null) ?? null,
+    };
+    if (region && item.emirate !== region) return [];
+    if (!matchesSearch(term, [item.companyName, item.industry, item.phone, item.email, item.emirate, item.contactName, item.contactTitle])) return [];
+    return [item];
+  });
 }
 
 export async function getClient(id: string): Promise<ClientDetail | null> {
   const { data, error } = await getServiceClient()
     .from("clients")
     .select(`
-      id, company_name, trade_licence, industry, email, phone, billing_address, emirate, notes, archived_at,
+      id, company_name, trade_licence, industry, email, phone, website, billing_address, emirate, notes, archived_at,
       client_contacts(id, name, job_title, phone, email, whatsapp, is_primary),
       client_locations(id, label, address, city, emirate, notes),
       client_notes(id, body, created_at),
+      client_documents(id, doc_type, title, storage_path, expires_on),
       client_equipment_interests(id, equipment_id, typical_quantity, duration_note, equipment(name))
     `)
     .eq("id", id)
@@ -94,6 +123,7 @@ export async function getClient(id: string): Promise<ClientDetail | null> {
     industry: data.industry as string,
     email: data.email as string,
     phone: data.phone as string,
+    website: (data.website as string) ?? "",
     billingAddress: data.billing_address as string,
     emirate: data.emirate as string,
     notes: data.notes as string,
@@ -135,5 +165,18 @@ export async function getClient(id: string): Promise<ClientDetail | null> {
     noteLog: ((data.client_notes as { id: string; body: string; created_at: string }[]) ?? [])
       .sort((a, b) => b.created_at.localeCompare(a.created_at))
       .map((item) => ({ id: item.id, body: item.body, createdAt: item.created_at })),
+    documents: ((data.client_documents as {
+      id: string;
+      doc_type: string;
+      title: string;
+      storage_path: string;
+      expires_on: string | null;
+    }[]) ?? []).map((item) => ({
+      id: item.id,
+      docType: item.doc_type,
+      title: item.title,
+      storagePath: item.storage_path,
+      expiresOn: item.expires_on,
+    })),
   };
 }

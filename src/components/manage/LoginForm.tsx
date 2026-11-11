@@ -49,7 +49,7 @@ export function LoginForm({ next }: { next: string }) {
         {pending ? "Signing in…" : "Sign in"}
       </button>
       <p className="mt-6 text-sm text-slate-600">
-        <Link href="/manage/forgot-password" className="font-semibold text-blue hover:underline">
+        <Link href="/dashboard/forgot-password" className="font-semibold text-blue hover:underline">
           Forgot password
         </Link>
       </p>

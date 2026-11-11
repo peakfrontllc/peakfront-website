@@ -29,6 +29,7 @@ const legacyLogoRedirects = [
 const nextConfig: NextConfig = {
   devIndicators: false,
   images: {
+    qualities: [75, 90],
     remotePatterns: [
       {
         protocol: "https",
@@ -39,6 +40,16 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      {
+        source: "/manage",
+        destination: "/dashboard",
+        permanent: false,
+      },
+      {
+        source: "/manage/:path*",
+        destination: "/dashboard/:path*",
+        permanent: false,
+      },
       {
         source: "/download",
         destination: "/downloads",
