@@ -3,17 +3,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
 import { CataloguePhoto } from "@/components/manage/erp/CataloguePhoto";
+import { SocialLinksField } from "@/components/manage/erp/SocialLinksField";
 import { InlineEdit } from "@/components/manage/erp/InlineEdit";
+import { ProvidedEquipmentField } from "@/components/manage/erp/ProvidedEquipmentField";
 import { SupplierKindFields } from "@/components/manage/erp/SupplierKindFields";
 import { PermanentDeleteButton } from "@/components/manage/erp/PermanentDeleteButton";
 import { SectionNav } from "@/components/manage/erp/SectionNav";
 import { ArchiveButton, EmiratesField, ExtraFieldPanel, Flash, Panel, SectionStack, TextField, documentTypeLabel, fileHref } from "@/components/manage/erp/ui";
 import { buttonClass, fieldClass } from "@/components/manage/form-styles";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
+import { socialHref } from "@/lib/erp/shared";
 import { requirePermission } from "@/lib/auth/session";
 import { addCustomField, deleteCustomField } from "@/lib/erp/custom-field-actions";
 import { listCustomFields } from "@/lib/erp/custom-fields";
-import { equipmentGroups, listEquipmentOptions } from "@/lib/erp/equipment";
+import { catalogueTypeGroups, equipmentGroups, listCategories, listEquipmentOptions } from "@/lib/erp/equipment";
 import { DOCUMENT_BUCKET } from "@/lib/erp/files";
 import {
   addSupplierContact,
@@ -26,6 +29,7 @@ import {
   linkSupplierEquipment,
   setSupplierArchived,
   updateSupplier,
+  updateSupplierCatalogue,
   updateSupplierContact,
   updateSupplierLocation,
 } from "@/lib/erp/supplier-actions";
@@ -44,10 +48,11 @@ export default async function SupplierDetailPage({
   const session = await requirePermission(PERMISSIONS.suppliersRead);
   const { id } = await params;
   const query = await searchParams;
-  const [supplier, equipment, customFields] = await Promise.all([
+  const [supplier, equipment, customFields, categories] = await Promise.all([
     getSupplier(id),
     listEquipmentOptions(),
     listCustomFields("supplier", id),
+    listCategories(),
   ]);
   if (!supplier) notFound();
   const canWrite = hasPermission(session.permissions, PERMISSIONS.suppliersWrite);
@@ -70,6 +75,19 @@ export default async function SupplierDetailPage({
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{supplier.partyType === "individual" ? "Individual" : "Company"}</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-navy">{supplier.companyName}</h1>
           <p className="mt-1 text-sm text-slate-500">{[supplier.phone, supplier.email, supplier.emirates.join(", ")].filter(Boolean).join(" · ") || "No contact yet"}</p>
+          {supplier.socialLinks.length > 0 && (
+            <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm">
+              {supplier.socialLinks.map((link, index) => {
+                const href = socialHref(link.url);
+                const text = link.label || link.url;
+                return href ? (
+                  <a key={`${link.url}-${index}`} href={href} target="_blank" rel="noreferrer" className="font-medium text-navy underline decoration-navy/30 underline-offset-2 hover:text-blue">{text}</a>
+                ) : (
+                  <span key={`${link.url}-${index}`} className="text-navy">{text}</span>
+                );
+              })}
+            </p>
+          )}
         </div>
         {canWrite && (
           <div className="flex shrink-0 gap-2">
@@ -87,6 +105,7 @@ export default async function SupplierDetailPage({
         { id: "fields", label: "Fields" },
         { id: "contacts", label: "Contacts" },
         { id: "locations", label: "Locations" },
+        { id: "provides", label: "Equipment they provide" },
         { id: "equipment", label: "Available equipment" },
         { id: "notes", label: "Notes" },
         { id: "documents", label: "Documents" },
@@ -108,11 +127,12 @@ export default async function SupplierDetailPage({
                 <TextField name="website" label="Website" defaultValue={supplier.website} />
                 <EmiratesField defaultValue={supplier.emirates} />
                 <div className="sm:col-span-2"><TextField name="address" label="Address" defaultValue={supplier.address} /></div>
+                <SocialLinksField links={supplier.socialLinks} />
                 <div className="sm:col-span-2"><TextField name="notes" label="Summary" defaultValue={supplier.notes} /></div>
                 <button className={buttonClass} type="submit">Save details</button>
               </form>
             ) : (
-              <p className="text-sm text-slate-600">{supplier.partyType === "individual" ? "Individual" : "Company"} · {supplier.phone} · {supplier.email} · {supplier.emirate}</p>
+              <p className="text-sm text-slate-600">{[supplier.partyType === "individual" ? "Individual" : "Company", supplier.phone, supplier.email, supplier.website, supplier.emirate, ...supplier.socialLinks.map((link) => link.label || link.url)].filter(Boolean).join(" · ")}</p>
             )}
           </Panel>
 
@@ -209,6 +229,24 @@ export default async function SupplierDetailPage({
                 <input name="emirate" placeholder="Emirate" className={fieldClass} />
                 <button className={buttonClass} type="submit">Add location</button>
               </form>
+            )}
+          </Panel>
+
+          <Panel id="provides" title={supplier.provided.length > 0 ? `Equipment they provide · ${supplier.provided.map((item) => item.name).join(", ")}` : "Equipment they provide"}>
+            {canWrite ? (
+              <form action={updateSupplierCatalogue}>
+                <input type="hidden" name="supplierId" value={supplier.id} />
+                <ProvidedEquipmentField groups={catalogueTypeGroups(categories)} selectedIds={supplier.provided.map((item) => item.categoryId)} />
+                <button className={`${buttonClass} mt-4`} type="submit">Save equipment list</button>
+              </form>
+            ) : supplier.provided.length === 0 ? (
+              <p className="text-sm text-slate-500">No equipment is listed yet.</p>
+            ) : (
+              <ul className="flex flex-wrap gap-2">
+                {supplier.provided.map((item) => (
+                  <li key={item.id} className="rounded-full bg-navy/10 px-2.5 py-1 text-xs font-medium text-navy">{item.name}</li>
+                ))}
+              </ul>
             )}
           </Panel>
 

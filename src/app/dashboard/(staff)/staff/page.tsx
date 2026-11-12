@@ -47,7 +47,7 @@ export default async function StaffPage() {
                 Recent activity
               </h2>
               <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-sm">
+                <table className="stack-table min-w-full text-left text-sm">
                   <thead className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                     <tr>
                       <th className="px-4 py-3 font-semibold">When</th>
@@ -58,18 +58,18 @@ export default async function StaffPage() {
                   <tbody>
                     {activity.length === 0 ? (
                       <tr>
-                        <td className="px-4 py-4 text-slate-500" colSpan={3}>
+                        <td className="px-4 py-4 text-slate-500" colSpan={3} data-label="">
                           No activity yet.
                         </td>
                       </tr>
                     ) : (
                       activity.map((entry) => (
                         <tr key={entry.id} className="border-b border-slate-100 last:border-0">
-                          <td className="px-4 py-3 text-slate-600">
+                          <td className="px-4 py-3 text-slate-600" data-label="When">
                             {new Date(entry.createdAt).toLocaleString("en-AE")}
                           </td>
-                          <td className="px-4 py-3 font-medium text-navy">{entry.actorName}</td>
-                          <td className="px-4 py-3 text-slate-600">{activityLabel(entry.action)}</td>
+                          <td className="px-4 py-3 font-medium text-navy" data-label="Who">{entry.actorName}</td>
+                          <td className="px-4 py-3 text-slate-600" data-label="Action">{activityLabel(entry.action)}</td>
                         </tr>
                       ))
                     )}

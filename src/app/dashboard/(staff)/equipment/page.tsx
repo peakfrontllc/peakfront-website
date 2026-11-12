@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Boxes, Search } from "lucide-react";
 import { EquipmentCatalogue, EquipmentViewSwitch, equipmentView, type EquipmentView } from "@/components/manage/erp/EquipmentCatalogue";
+import { ListPagination } from "@/components/manage/erp/ListPagination";
 import { ExportLink, Flash, MasterHero } from "@/components/manage/erp/ui";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
 import { listCategories, listEquipment } from "@/lib/erp/equipment";
+import { currentPage, pageSlice } from "@/lib/erp/pagination";
 import { EMIRATES } from "@/lib/erp/shared";
 
 export const dynamic = "force-dynamic";
@@ -17,27 +19,30 @@ const filterClass =
 export default async function EquipmentPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; category?: string; region?: string; archived?: string; view?: string; error?: string }>;
+  searchParams: Promise<{ q?: string; category?: string; region?: string; archived?: string; view?: string; page?: string; error?: string }>;
 }) {
   const session = await requirePermission(PERMISSIONS.equipmentRead);
   const params = await searchParams;
   const archived = params.archived === "1";
   const region = (EMIRATES as readonly string[]).includes(params.region ?? "") ? params.region ?? "" : "";
   const view = equipmentView(params.view);
-  const hrefFor = (next: EquipmentView) => {
+  const hrefFor = (next: EquipmentView, nextPage = 1) => {
     const query = new URLSearchParams();
     if (params.q) query.set("q", params.q);
     if (params.category) query.set("category", params.category);
     if (region) query.set("region", region);
     if (archived) query.set("archived", "1");
     if (next !== "cards") query.set("view", next);
+    if (nextPage > 1) query.set("page", String(nextPage));
     const text = query.toString();
     return text ? `/dashboard/equipment?${text}` : "/dashboard/equipment";
   };
-  const [items, categories] = await Promise.all([
+  const [loaded, categories] = await Promise.all([
     listEquipment({ q: params.q, category: params.category, region, archived }),
     listCategories(true),
   ]);
+  const page = currentPage(params.page, loaded.length);
+  const items = pageSlice(loaded, page);
   const canWrite = hasPermission(session.permissions, PERMISSIONS.equipmentWrite);
   const archiveQuery = new URLSearchParams();
   if (!archived) archiveQuery.set("archived", "1");
@@ -70,10 +75,10 @@ export default async function EquipmentPage({
       <div className="overflow-hidden rounded-2xl border border-navy/10 shadow-sm">
         <div className="flex flex-col gap-3 bg-navy px-4 py-3 lg:flex-row lg:items-center">
           <p className="text-sm text-white/80">
-            <span className="font-semibold text-white">{items.length}</span>{" "}
-            {items.length === 1 ? "machine" : "machines"}
+            <span className="font-semibold text-white">{loaded.length}</span>{" "}
+            {loaded.length === 1 ? "machine" : "machines"}
           </p>
-          <EquipmentViewSwitch view={view} hrefFor={hrefFor} />
+          <EquipmentViewSwitch view={view} hrefFor={(next) => hrefFor(next, page)} />
           <form action="/dashboard/equipment" className="grid flex-1 gap-2 sm:grid-cols-2 xl:ml-auto xl:max-w-5xl xl:grid-cols-[minmax(0,1fr)_11rem_11rem_auto]">
             {archived && <input type="hidden" name="archived" value="1" />}
             {view !== "cards" && <input type="hidden" name="view" value={view} />}
@@ -107,6 +112,7 @@ export default async function EquipmentPage({
           </Link>
         </div>
         <EquipmentCatalogue items={items} view={view} />
+        <ListPagination page={page} total={loaded.length} hrefFor={(nextPage) => hrefFor(view, nextPage)} />
       </div>
     </>
   );

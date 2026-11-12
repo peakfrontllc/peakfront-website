@@ -193,7 +193,7 @@ function StaffRow({
         </div>
         <div className="flex flex-wrap items-end gap-2">
           {canAssignRoles && (
-            <form action={roleAction} className="flex items-end gap-2">
+            <form action={roleAction} className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-end">
               <input type="hidden" name="staffId" value={member.id} />
               <div>
                 <label className={labelClass} htmlFor={`role-${member.id}`}>Role</label>
@@ -201,7 +201,7 @@ function StaffRow({
                   id={`role-${member.id}`}
                   name="role"
                   defaultValue={member.roleKey}
-                  className="mt-1.5 h-9 rounded-lg border border-slate-200 bg-white px-3 text-sm text-navy outline-none focus:border-navy focus:ring-2 focus:ring-navy/10"
+                  className="mt-1.5 h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-navy outline-none focus:border-navy focus:ring-2 focus:ring-navy/10 sm:w-auto"
                 >
                   {roles.map((role) => (
                     <option key={role.id} value={role.key}>{role.name}</option>

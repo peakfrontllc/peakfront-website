@@ -200,3 +200,65 @@ button.is-saving {
     width: 100%;
   }
 }
+
+@media (max-width: 639px) {
+  #main-content :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), select, textarea) {
+    font-size: 16px;
+  }
+
+  .view-switch :is(a, button) {
+    gap: 0;
+    font-size: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .stack-table {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .stack-table thead {
+    display: none;
+  }
+
+  .stack-table,
+  .stack-table tbody,
+  .stack-table tr,
+  .stack-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .stack-table tr {
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.65rem 0;
+  }
+
+  .stack-table td {
+    display: grid;
+    grid-template-columns: 6.75rem minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: start;
+    padding: 0.3rem 1rem;
+    text-align: left;
+  }
+
+  .stack-table td::before {
+    content: attr(data-label);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #64748b;
+  }
+
+  .stack-table td[data-label=""] {
+    display: block;
+  }
+
+  .stack-table td[data-label=""]::before {
+    content: none;
+  }
+}

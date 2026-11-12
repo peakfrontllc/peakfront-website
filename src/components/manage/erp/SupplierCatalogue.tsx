@@ -18,22 +18,30 @@ function machineLabel(count: number) {
   return count === 1 ? "1 machine" : `${count} machines`;
 }
 
+function equipmentSummary(supplier: SupplierListItem) {
+  if (supplier.providedNames.length === 0) return machineLabel(supplier.equipmentCount);
+  const shown = supplier.providedNames.slice(0, 3).join(", ");
+  const extra = supplier.providedNames.length > 3 ? ` +${supplier.providedNames.length - 3}` : "";
+  const available = supplier.equipmentCount > 0 ? ` · ${machineLabel(supplier.equipmentCount)} available` : "";
+  return `${shown}${extra}${available}`;
+}
+
 function showContact(supplier: SupplierListItem) {
   return Boolean(supplier.contactName) && supplier.contactName.toLowerCase() !== supplier.companyName.toLowerCase();
 }
 
-function PartyIcon({ type }: { type: SupplierListItem["partyType"] }) {
+function PartyIcon({ type, compact = false }: { type: SupplierListItem["partyType"]; compact?: boolean }) {
   const Icon = type === "individual" ? UserRound : Building2;
   return (
-    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-navy text-white">
-      <Icon className="h-4 w-4" aria-hidden />
+    <span className={`flex shrink-0 items-center justify-center bg-navy text-white ${compact ? "h-7 w-7 rounded-lg" : "h-10 w-10 rounded-xl"}`}>
+      <Icon className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden />
     </span>
   );
 }
 
 function DetailsLink({ id }: { id: string }) {
   return (
-    <Link href={`/dashboard/suppliers/${id}`} className="text-xs font-semibold text-navy hover:text-blue">
+    <Link href={`/dashboard/suppliers/${id}`} className="text-[13px] font-semibold text-navy hover:text-blue">
       View more details
     </Link>
   );
@@ -62,7 +70,7 @@ export function SupplierViewSwitch({
     { id: "table" as const, label: "Table", icon: Table2 },
   ];
   return (
-    <div className="flex shrink-0 rounded-lg bg-white/10 p-0.5">
+    <div className="view-switch flex shrink-0 rounded-lg bg-white/10 p-0.5">
       {views.map((item) => {
         const Icon = item.icon;
         const active = view === item.id;
@@ -103,7 +111,7 @@ export function SupplierCatalogue({ items, view }: { items: SupplierListItem[]; 
                 </div>
               </div>
               <p className="text-xs text-slate-500 lg:w-56 lg:shrink-0">{place || supplier.email || "No contact yet"}</p>
-              <p className="text-xs text-slate-500 lg:w-28 lg:shrink-0">{machineLabel(supplier.equipmentCount)}</p>
+              <p className="text-xs text-slate-500 lg:w-56 lg:shrink-0">{equipmentSummary(supplier)}</p>
               <DetailsLink id={supplier.id} />
             </li>
           );
@@ -114,7 +122,7 @@ export function SupplierCatalogue({ items, view }: { items: SupplierListItem[]; 
   if (view === "table") {
     return (
       <div className="overflow-x-auto bg-white">
-        <table className="w-full min-w-[920px] text-left text-sm">
+        <table className="stack-table w-full text-left text-sm">
           <thead className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
             <tr>
               <th className="px-4 py-3 font-semibold">Supplier</th>
@@ -129,7 +137,7 @@ export function SupplierCatalogue({ items, view }: { items: SupplierListItem[]; 
           <tbody>
             {items.map((supplier) => (
               <tr key={supplier.id} className="border-b border-slate-100 align-top transition last:border-0 hover:bg-amber/15">
-                <td className="px-4 py-3">
+                <td className="px-4 py-3" data-label="Supplier">
                   <div className="flex items-start gap-3">
                     <PartyIcon type={supplier.partyType} />
                     <div className="min-w-0">
@@ -138,7 +146,7 @@ export function SupplierCatalogue({ items, view }: { items: SupplierListItem[]; 
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-xs">
+                <td className="px-4 py-3 text-xs" data-label="Contact">
                   {showContact(supplier) ? (
                     <p className="text-navy">
                       {supplier.contactTitle && <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-400">{supplier.contactTitle}</span>}
@@ -148,13 +156,13 @@ export function SupplierCatalogue({ items, view }: { items: SupplierListItem[]; 
                     <span className="text-slate-400">—</span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-slate-600">{supplier.phone || "—"}</td>
-                <td className="px-4 py-3 text-slate-600">{supplier.emirates.join(", ") || "—"}</td>
-                <td className="px-4 py-3 break-all text-slate-600">{supplier.email || "—"}</td>
-                <td className="px-4 py-3">
-                  <p className="text-xs font-medium text-navy">{machineLabel(supplier.equipmentCount)}</p>
+                <td className="px-4 py-3 text-slate-600" data-label="Phone">{supplier.phone || "—"}</td>
+                <td className="px-4 py-3 text-slate-600" data-label="Emirates">{supplier.emirates.join(", ") || "—"}</td>
+                <td className="px-4 py-3 break-all text-slate-600" data-label="Email">{supplier.email || "—"}</td>
+                <td className="px-4 py-3" data-label="Equipment">
+                  <p className="text-xs font-medium text-navy">{equipmentSummary(supplier)}</p>
                 </td>
-                <td className="px-4 py-3 text-right"><DetailsLink id={supplier.id} /></td>
+                <td className="px-4 py-3 text-right" data-label=""><DetailsLink id={supplier.id} /></td>
               </tr>
             ))}
           </tbody>
@@ -163,28 +171,28 @@ export function SupplierCatalogue({ items, view }: { items: SupplierListItem[]; 
     );
   }
   return (
-    <ul className="grid gap-3 bg-[#eef2f6] p-3 sm:grid-cols-2 xl:grid-cols-3">
-      {items.map((supplier) => (
+    <ul className="grid gap-2 bg-[#eef2f6] p-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {items.map((supplier) => {
+        const contact = showContact(supplier) ? [supplier.contactTitle, supplier.contactName].filter(Boolean).join(" ") : "";
+        return (
           <li key={supplier.id}>
-            <article className="flex h-full flex-col rounded-2xl border border-navy/10 bg-white p-4 transition hover:border-amber hover:bg-amber/15 hover:shadow-sm">
-              <div className="flex items-start gap-3">
-                <PartyIcon type={supplier.partyType} />
+            <article className="flex h-full flex-col rounded-xl border border-navy/10 bg-white p-2.5 transition hover:border-amber hover:bg-amber/15">
+              <div className="flex items-center gap-2">
+                <PartyIcon type={supplier.partyType} compact />
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-navy">{supplier.companyName}</p>
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{partyLabel(supplier.partyType)}</p>
+                  <p className="truncate text-base font-semibold text-navy">{supplier.companyName}</p>
+                  <p className="truncate text-[13px] text-slate-400">{[partyLabel(supplier.partyType), contact].filter(Boolean).join(" · ")}</p>
                 </div>
               </div>
-              <div className="mt-3 space-y-1 text-xs text-slate-500">
-                <ContactLine supplier={supplier} />
-                <p>{supplier.phone || "No phone"}</p>
-              </div>
-              <p className="mt-3 text-[11px] font-medium text-slate-400">{machineLabel(supplier.equipmentCount)}</p>
-              <div className="mt-3">
+              <p className="mt-1.5 truncate text-[13px] text-slate-500">{supplier.phone || "No phone"}</p>
+              <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-slate-400">{equipmentSummary(supplier)}</p>
+              <div className="mt-1.5">
                 <DetailsLink id={supplier.id} />
               </div>
             </article>
           </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }

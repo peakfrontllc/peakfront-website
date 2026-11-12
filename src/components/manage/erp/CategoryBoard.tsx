@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Archive, ArchiveRestore, Check, ChevronRight, ImagePlus, Pencil, Plus, Search } from "lucide-react";
 import { categoryUnits } from "@/lib/erp/category-units";
-import { capacityLabel, lengthField } from "@/lib/erp/lengths";
+import { boomLabel, capacityLabel, lengthField } from "@/lib/erp/lengths";
 import { matchesSearch } from "@/lib/erp/search";
 import { PermanentDeleteButton } from "@/components/manage/erp/PermanentDeleteButton";
 import { EquipmentMark } from "@/components/manage/erp/equipment-icons";
@@ -40,6 +40,8 @@ const CATEGORY_PHOTOS: Record<string, string> = {
   "material handling": "/images/categories/material-handling.webp",
   "power and site services": "/images/categories/power-site.webp",
   transport: "/images/categories/transport.webp",
+  tma: "/images/categories/tma.webp",
+  van: "/images/categories/van.webp",
 };
 
 function categoryPhoto(name: string) {
@@ -167,7 +169,7 @@ export function CategoryBoard({
           {active.length === 1 ? "main category" : "main categories"}
         </p>
         {canWrite && (
-          <form action={createCategory} className="flex flex-1 items-center gap-2 sm:ml-auto sm:max-w-md">
+          <form action={createCategory} className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:ml-auto sm:max-w-md">
             <PhotoPicker src="" />
             <input
               name="name"
@@ -175,14 +177,14 @@ export function CategoryBoard({
               minLength={2}
               placeholder="New main category"
               aria-label="New main category"
-              className={inputClass}
+              className={`${inputClass} min-w-0 flex-1 basis-40`}
             />
             <button className={primaryButton} type="submit"><Plus className="h-4 w-4" aria-hidden />Add</button>
           </form>
         )}
       </div>
       <div className="grid min-h-0 md:flex-1 md:grid-cols-[21rem_minmax(0,1fr)]">
-        <div className="flex max-h-72 min-h-0 flex-col border-b border-slate-200/80 bg-slate-50/80 md:max-h-none md:border-b-0 md:border-r">
+        <div className="flex max-h-[50vh] min-h-0 flex-col border-b border-slate-200/80 bg-slate-50/80 md:max-h-none md:border-b-0 md:border-r">
           <div className="p-3">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
@@ -231,7 +233,7 @@ export function CategoryBoard({
           {selected ? (
             <>
               <div className="border-b border-slate-200/80 px-4 py-4">
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                   {canWrite ? (
                     <form action={renameCategory} className="contents">
                       <input type="hidden" name="id" value={selected.id} />
@@ -243,7 +245,7 @@ export function CategoryBoard({
                         minLength={2}
                         defaultValue={selected.name}
                         aria-label="Main category name"
-                        className={`${inputClass} min-w-0 flex-1`}
+                        className={`${inputClass} min-w-40 flex-1 basis-40`}
                       />
                       <button className={primaryButton} type="submit"><Check className="h-4 w-4" aria-hidden />Save</button>
                     </form>
@@ -334,7 +336,7 @@ export function CategoryBoard({
                 )}
               </div>
               {canWrite && !selected.archivedAt && (
-                <form action={createCategory} className="flex items-center gap-2 border-t border-slate-200/80 bg-white p-3">
+                <form action={createCategory} className="flex flex-wrap items-center gap-2 border-t border-slate-200/80 bg-white p-3">
                   <input type="hidden" name="parentId" value={selected.id} />
                   <PhotoPicker src="" />
                   <input
@@ -343,7 +345,7 @@ export function CategoryBoard({
                     minLength={2}
                     placeholder={`Add equipment under ${selected.name}`}
                     aria-label={`Add equipment under ${selected.name}`}
-                    className={inputClass}
+                    className={`${inputClass} min-w-0 flex-1 basis-40`}
                   />
                   <button className={`${primaryButton} whitespace-nowrap`} type="submit"><Plus className="h-4 w-4" aria-hidden />Add equipment</button>
                 </form>
@@ -499,12 +501,12 @@ function EquipmentDetails({
   return (
     <>
       {canWrite && (
-        <form key={type.id} action={renameCategory} className="mb-3 flex items-center gap-2">
+        <form key={type.id} action={renameCategory} className="mb-3 flex flex-wrap items-center gap-2">
           <input type="hidden" name="id" value={type.id} />
           <input type="hidden" name="focus" value={purpose.id} />
           <input type="hidden" name="type" value={type.id} />
           <PhotoPicker src={picture(type)} />
-          <input name="name" required minLength={2} defaultValue={type.name} aria-label={`${type.name} name`} className={inputClass} />
+          <input name="name" required minLength={2} defaultValue={type.name} aria-label={`${type.name} name`} className={`${inputClass} min-w-0 flex-1 basis-40`} />
           <button className={primaryButton} type="submit"><Check className="h-4 w-4" aria-hidden />Save</button>
         </form>
       )}
@@ -525,12 +527,12 @@ function EquipmentDetails({
             </ul>
           )}
           {canWrite && (
-            <form action={createCategory} className="mt-3 flex gap-2">
+            <form action={createCategory} className="mt-3 flex flex-wrap gap-2">
               <input type="hidden" name="parentId" value={type.id} />
               <input type="hidden" name="focus" value={purpose.id} />
               <input type="hidden" name="type" value={type.id} />
               <input type="hidden" name="kind" value="capacity" />
-              <input name="name" required minLength={2} placeholder={units.capacityPlaceholder} aria-label={`Add a capacity under ${type.name}`} className={inputClass} />
+              <input name="name" required minLength={2} placeholder={units.capacityPlaceholder} aria-label={`Add a capacity under ${type.name}`} className={`${inputClass} min-w-0 flex-1 basis-32`} />
               <button className={`${primaryButton} whitespace-nowrap`} type="submit"><Plus className="h-4 w-4" aria-hidden />Add</button>
             </form>
           )}
@@ -552,12 +554,12 @@ function EquipmentDetails({
               </ul>
             )}
             {canWrite && (
-              <form action={createCategory} className="mt-3 flex gap-2">
+              <form action={createCategory} className="mt-3 flex flex-wrap gap-2">
                 <input type="hidden" name="parentId" value={type.id} />
                 <input type="hidden" name="focus" value={purpose.id} />
                 <input type="hidden" name="type" value={type.id} />
                 <input type="hidden" name="kind" value={units.secondKind} />
-                <input name="name" required minLength={2} placeholder={units.secondPlaceholder || "8 m"} aria-label={`Add a ${secondTitle.toLowerCase()} under ${type.name}`} className={inputClass} />
+                <input name="name" required minLength={2} placeholder={units.secondPlaceholder || "8 m"} aria-label={`Add a ${secondTitle.toLowerCase()} under ${type.name}`} className={`${inputClass} min-w-0 flex-1 basis-32`} />
                 <button className={`${primaryButton} whitespace-nowrap`} type="submit"><Plus className="h-4 w-4" aria-hidden />Add</button>
               </form>
             )}
@@ -583,7 +585,7 @@ function SizeChip({
 }) {
   return (
     <li className={`inline-flex max-w-full items-center rounded-full border py-0.5 pl-3 pr-0.5 ${archived ? "border-dashed border-slate-300 bg-slate-50 text-slate-400" : "border-slate-200 bg-white text-navy"}`}>
-      <span className="truncate text-sm font-medium">{capacityLabel(size.name)}</span>
+      <span className="truncate text-sm font-medium">{size.kind === "boom" ? boomLabel(size.name) : capacityLabel(size.name)}</span>
       {canWrite && (
         <span className="ml-0.5 flex items-center">
           <ArchiveButton

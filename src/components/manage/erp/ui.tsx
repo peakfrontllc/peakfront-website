@@ -1,6 +1,7 @@
 import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
 import Link from "next/link";
 import { CollapsibleSection } from "@/components/manage/erp/CollapsibleSection";
+import { EmiratesField } from "@/components/manage/erp/EmiratesField";
 import type { LucideIcon } from "lucide-react";
 import { Archive, ArchiveRestore, Plus } from "lucide-react";
 import { buttonClass, fieldClass, labelClass } from "@/components/manage/form-styles";
@@ -31,7 +32,7 @@ export function MasterHero({
         </div>
       </div>
       {action && (
-        <Link href={action.href} className={buttonClass}>
+        <Link href={action.href} className={`${buttonClass} w-full sm:w-auto`}>
           {action.label.startsWith("Add") && <Plus className="h-4 w-4" aria-hidden />}
           {action.label}
         </Link>
@@ -71,11 +72,11 @@ export function Panel({
   }
   return (
     <section id={id} className="scroll-mt-28 overflow-hidden rounded-2xl border border-navy/10 bg-white shadow-sm">
-      <h2 className="flex items-center gap-2.5 bg-navy px-5 py-3 text-sm font-semibold text-white">
+      <h2 className="flex items-center gap-2.5 bg-navy px-4 py-3 text-sm font-semibold text-white sm:px-5">
         <span className="h-4 w-1 rounded-full bg-amber" aria-hidden />
         {title}
       </h2>
-      <div className="px-5 py-4">{children}</div>
+      <div className="px-4 py-4 sm:px-5">{children}</div>
     </section>
   );
 }
@@ -102,22 +103,7 @@ export function DataCard({ children }: { children: ReactNode }) {
   );
 }
 
-export function EmiratesField({ defaultValue = [] }: { defaultValue?: string[] }) {
-  const selected = new Set(defaultValue);
-  return (
-    <fieldset className="sm:col-span-2">
-      <legend className={labelClass}>Regions</legend>
-      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {EMIRATES.map((emirate) => (
-          <label key={emirate} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-navy">
-            <input type="checkbox" name="emirates" value={emirate} defaultChecked={selected.has(emirate)} />
-            {emirate}
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
+export { EmiratesField };
 
 export function EmirateField({ name, defaultValue, allowAll = false }: { name: string; defaultValue?: string; allowAll?: boolean }) {
   return (
@@ -208,8 +194,8 @@ export function ExtraFieldPanel({
       ) : (
         <ul className="space-y-2">
           {fields.map((item) => (
-            <li key={item.id} className="flex items-center justify-between gap-3 text-sm">
-              <span><strong>{item.label}:</strong> {item.value}</span>
+            <li key={item.id} className="flex items-start justify-between gap-3 text-sm">
+              <span className="min-w-0 break-words"><strong>{item.label}:</strong> {item.value}</span>
               {canWrite && (
                 <form action={removeAction}>
                   {hidden.map((entry) => (

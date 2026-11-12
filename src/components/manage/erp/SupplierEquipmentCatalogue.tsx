@@ -30,7 +30,7 @@ export type SupplierEquipmentItem = {
 function EquipmentFacts({ item }: { item: { group: string; detail: string } }) {
   if (!item.group && !item.detail) return null;
   return (
-    <p className="text-xs text-slate-500">
+    <p className="text-[13px] text-slate-500">
       {item.group}
       {item.group && item.detail ? " · " : ""}
       {item.detail && <span className="font-medium text-navy">{item.detail}</span>}
@@ -59,7 +59,7 @@ export function SupplierEquipmentViewSwitch({
     { id: "table" as const, label: "Table", icon: Table2 },
   ];
   return (
-    <div className="flex shrink-0 rounded-lg bg-white/10 p-0.5">
+    <div className="view-switch flex shrink-0 rounded-lg bg-white/10 p-0.5">
       {views.map((item) => {
         const Icon = item.icon;
         const active = view === item.id;
@@ -99,7 +99,7 @@ export function SupplierEquipmentCatalogue({
   if (view === "table") {
     return (
       <div className="overflow-x-auto bg-white">
-        <table className="w-full min-w-[40rem] text-left text-sm">
+        <table className="stack-table w-full text-left text-sm">
           <thead className="border-b border-slate-200 text-[11px] uppercase tracking-wide text-slate-400">
             <tr>
               <th className="px-4 py-3 font-semibold">Equipment</th>
@@ -113,15 +113,15 @@ export function SupplierEquipmentCatalogue({
           <tbody>
             {items.map((item) => (
               <tr key={item.id} className="border-b border-slate-100 align-top transition last:border-0 hover:bg-amber/15">
-                <td className="px-4 py-3">
+                <td className="px-4 py-3" data-label="Equipment">
                   <p className="font-semibold text-navy">{item.name}</p>
                   <EquipmentFacts item={item} />
                 </td>
-                <td className="px-4 py-3 text-xs text-slate-500">{item.leadTime || "—"}</td>
-                <td className="px-4 py-3 text-xs font-semibold text-navy">{formatMoney(item.daily)}</td>
-                <td className="px-4 py-3 text-xs font-semibold text-navy">{formatMoney(item.weekly)}</td>
-                <td className="px-4 py-3 text-xs font-semibold text-navy">{formatMoney(item.monthly)}</td>
-                <td className="px-4 py-3 text-right"><DetailsLink id={item.equipmentId} /></td>
+                <td className="px-4 py-3 text-xs text-slate-500" data-label="Lead time">{item.leadTime || "—"}</td>
+                <td className="px-4 py-3 text-xs font-semibold text-navy" data-label="Day">{formatMoney(item.daily)}</td>
+                <td className="px-4 py-3 text-xs font-semibold text-navy" data-label="Week">{formatMoney(item.weekly)}</td>
+                <td className="px-4 py-3 text-xs font-semibold text-navy" data-label="Month">{formatMoney(item.monthly)}</td>
+                <td className="px-4 py-3 text-right" data-label=""><DetailsLink id={item.equipmentId} /></td>
               </tr>
             ))}
           </tbody>
@@ -149,14 +149,14 @@ export function SupplierEquipmentCatalogue({
     );
   }
   return (
-    <ul className="grid gap-3 bg-[#eef2f6] p-3 sm:grid-cols-2 xl:grid-cols-3">
+    <ul className="grid gap-2 bg-[#eef2f6] p-2 sm:grid-cols-2 xl:grid-cols-3">
       {items.map((item) => (
         <li key={item.id}>
-          <article className="rounded-2xl border border-navy/10 bg-white p-3 transition hover:border-amber hover:bg-amber/15">
+          <article className="rounded-xl border border-navy/10 bg-white p-2.5 transition hover:border-amber hover:bg-amber/15">
             <div className="flex items-center gap-2">
               <CataloguePhoto name={item.typeName} small />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-navy">{item.name}</p>
+                <p className="truncate text-base font-semibold text-navy">{item.name}</p>
                 <EquipmentFacts item={item} />
               </div>
               <DetailsLink id={item.equipmentId} />

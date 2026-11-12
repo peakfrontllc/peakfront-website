@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Handshake, Search } from "lucide-react";
 import { ClientCatalogue, ClientViewSwitch, clientView, type ClientView } from "@/components/manage/erp/ClientCatalogue";
+import { ListPagination } from "@/components/manage/erp/ListPagination";
 import { ExportLink, Flash, MasterHero } from "@/components/manage/erp/ui";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
 import { listClients } from "@/lib/erp/clients";
+import { currentPage, pageSlice } from "@/lib/erp/pagination";
 import { matchesSearch } from "@/lib/erp/search";
 import { EMIRATES } from "@/lib/erp/shared";
 
@@ -18,7 +20,7 @@ const filterClass =
 export default async function ClientsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; region?: string; industry?: string; archived?: string; view?: string; error?: string }>;
+  searchParams: Promise<{ q?: string; region?: string; industry?: string; archived?: string; view?: string; page?: string; error?: string }>;
 }) {
   const session = await requirePermission(PERMISSIONS.clientsRead);
   const params = await searchParams;
@@ -33,14 +35,17 @@ export default async function ClientsPage({
     if (industry && client.industry !== industry) return false;
     return matchesSearch(params.q ?? "", [client.companyName, client.industry, client.phone, client.email, client.website, client.emirate, client.contactName, client.contactTitle]);
   });
+  const page = currentPage(params.page, clients.length);
+  const visibleClients = pageSlice(clients, page);
   const canWrite = hasPermission(session.permissions, PERMISSIONS.clientsWrite);
-  const clientHref = (nextView: ClientView, nextArchived: boolean) => {
+  const clientHref = (nextView: ClientView, nextArchived: boolean, nextPage = 1) => {
     const query = new URLSearchParams();
     if (params.q) query.set("q", params.q);
     if (region) query.set("region", region);
     if (industry) query.set("industry", industry);
     if (nextArchived) query.set("archived", "1");
     if (nextView !== "cards") query.set("view", nextView);
+    if (nextPage > 1) query.set("page", String(nextPage));
     const text = query.toString();
     return text ? `/dashboard/clients?${text}` : "/dashboard/clients";
   };
@@ -66,7 +71,7 @@ export default async function ClientsPage({
             <span className="font-semibold text-white">{clients.length}</span>{" "}
             {clients.length === 1 ? "client" : "clients"}
           </p>
-          <ClientViewSwitch view={view} hrefFor={(next) => clientHref(next, archived)} />
+          <ClientViewSwitch view={view} hrefFor={(next) => clientHref(next, archived, page)} />
           <form action="/dashboard/clients" className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(8rem,1fr)_11rem_minmax(8rem,1fr)_auto]">
             {archived && <input type="hidden" name="archived" value="1" />}
             {view !== "cards" && <input type="hidden" name="view" value={view} />}
@@ -89,7 +94,8 @@ export default async function ClientsPage({
             {archived ? "Active" : "Archived"}
           </Link>
         </div>
-        <ClientCatalogue items={clients} view={view} />
+        <ClientCatalogue items={visibleClients} view={view} />
+        <ListPagination page={page} total={clients.length} hrefFor={(nextPage) => clientHref(view, archived, nextPage)} />
       </div>
     </>
   );

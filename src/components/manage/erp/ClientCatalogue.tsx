@@ -53,7 +53,7 @@ export function ClientViewSwitch({
     { id: "table" as const, label: "Table", icon: Table2 },
   ];
   return (
-    <div className="flex shrink-0 rounded-lg bg-white/10 p-0.5">
+    <div className="view-switch flex shrink-0 rounded-lg bg-white/10 p-0.5">
       {views.map((item) => {
         const Icon = item.icon;
         const active = view === item.id;
@@ -102,7 +102,7 @@ export function ClientCatalogue({ items, view }: { items: ClientListItem[]; view
   if (view === "table") {
     return (
       <div className="overflow-x-auto bg-white">
-        <table className="w-full min-w-[880px] text-left text-sm">
+        <table className="stack-table w-full text-left text-sm">
           <thead className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
             <tr>
               <th className="px-4 py-3">Client</th>
@@ -117,7 +117,7 @@ export function ClientCatalogue({ items, view }: { items: ClientListItem[]; view
           <tbody>
             {items.map((client) => (
               <tr key={client.id} className="border-b border-slate-100 transition last:border-0 hover:bg-amber/15">
-                <td className="px-4 py-3">
+                <td className="px-4 py-3" data-label="Client">
                   <div className="flex items-center gap-3">
                     <ClientIcon />
                     <div>
@@ -126,12 +126,12 @@ export function ClientCatalogue({ items, view }: { items: ClientListItem[]; view
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-xs text-navy">{client.contactName || "—"}</td>
-                <td className="px-4 py-3 text-slate-600">{client.phone || "—"}</td>
-                <td className="px-4 py-3 text-slate-600">{client.emirate || "—"}</td>
-                <td className="px-4 py-3 break-all text-slate-600">{client.email || "—"}</td>
-                <td className="px-4 py-3 text-xs text-navy">{interestLabel(client.interestCount)}</td>
-                <td className="px-4 py-3 text-right"><DetailsLink id={client.id} /></td>
+                <td className="px-4 py-3 text-xs text-navy" data-label="Contact">{client.contactName || "—"}</td>
+                <td className="px-4 py-3 text-slate-600" data-label="Phone">{client.phone || "—"}</td>
+                <td className="px-4 py-3 text-slate-600" data-label="Region">{client.emirate || "—"}</td>
+                <td className="px-4 py-3 break-all text-slate-600" data-label="Email">{client.email || "—"}</td>
+                <td className="px-4 py-3 text-xs text-navy" data-label="Equipment">{interestLabel(client.interestCount)}</td>
+                <td className="px-4 py-3 text-right" data-label=""><DetailsLink id={client.id} /></td>
               </tr>
             ))}
           </tbody>

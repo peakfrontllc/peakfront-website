@@ -16,6 +16,20 @@ export function boomValue(value: string) {
   return value.trim().replace(/\s+/g, " ").slice(0, 80);
 }
 
+export function boomMetres(value: string) {
+  const match = value.trim().toLowerCase().match(/(\d+(?:\.\d+)?)\s*m\b/);
+  return match?.[1] ?? "";
+}
+
+export function boomLabel(value: string) {
+  const text = value.trim().replace(/\s+/g, " ");
+  if (!text) return "";
+  const metres = text.match(/^(\d+(?:\.\d+)?)\s*m(?:\s*boom)?$/i);
+  if (metres) return `${metres[1]} m boom`;
+  if (/boom/i.test(text)) return text;
+  return `${text} boom`;
+}
+
 export function capacityLabel(value: string) {
   const text = value.trim().replace(/\s+/g, " ");
   if (!text || /\bcapacity\b/i.test(text)) return text;

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { CataloguePhoto } from "@/components/manage/erp/CataloguePhoto";
 import { fieldClass, labelClass } from "@/components/manage/form-styles";
 import { categoryUnits } from "@/lib/erp/category-units";
-import { capacityLabel, lengthField } from "@/lib/erp/lengths";
+import { boomLabel, capacityLabel, lengthField } from "@/lib/erp/lengths";
 
 function isWeightCapacity(name: string) {
   return /kg|person|people|ton/.test(name.toLowerCase());
@@ -38,7 +38,7 @@ export function EquipmentCategoryFields({
   const [typeId, setTypeId] = useState(grandparent ? parent?.id ?? "" : parent ? current?.id ?? "" : "");
   const [sizeId, setSizeId] = useState(grandparent ? current?.id ?? "" : "");
   const [capacityValue, setCapacityValue] = useState(capacity);
-  const [boomValue, setBoomValue] = useState(boomLength);
+  const [boomValue, setBoomValue] = useState(boomLabel(boomLength) || boomLength);
   const [bedValue, setBedValue] = useState(bedLength);
   const purposes = categories.filter((category) => !category.parentId);
   const types = useMemo(
@@ -68,7 +68,7 @@ export function EquipmentCategoryFields({
   const sizeLabel = access && measure !== "boom" && weightSizes.length === 0 && reachSizes.length > 0 ? "Height" : "Capacity";
   const chosenCapacity = capacitySizes.find((item) => item.id === sizeId);
   const selectedId = chosenCapacity?.id || sizeId || typeId;
-  const lengths = measure === "boom" ? booms.map((item) => item.name) : bedLengths.map((item) => item.name);
+  const lengths = measure === "boom" ? booms.map((item) => boomLabel(item.name)) : bedLengths.map((item) => item.name);
   const lengthValue = measure === "boom" ? boomValue : bedValue;
   const lengthChoices = lengthValue && !lengths.includes(lengthValue) ? [lengthValue, ...lengths] : lengths;
   const units = categoryUnits(purpose?.name ?? "", type?.name ?? "");

@@ -5,7 +5,7 @@ import { logActivity } from "@/lib/auth/activity";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
 import { DOCUMENT_BUCKET, IMAGE_BUCKET, removeStoredFile, storeFile } from "@/lib/erp/files";
-import { boomValue } from "@/lib/erp/lengths";
+import { boomLabel, boomValue } from "@/lib/erp/lengths";
 import {
   ASSET_STATUSES,
   EQUIPMENT_STATUSES,
@@ -98,12 +98,13 @@ async function attachCategoryImage(id: string, formData: FormData, returnPath: s
 
 export async function createCategory(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.equipmentWrite);
-  const name = field(formData, "name");
+  const enteredName = field(formData, "name");
   const description = field(formData, "description");
   const tonnage = field(formData, "tonnage");
   const parentId = field(formData, "parentId");
   const requested = field(formData, "kind");
   const kind = parentId && (requested === "boom" || requested === "length") ? requested : "capacity";
+  const name = kind === "boom" ? boomLabel(enteredName) || enteredName : enteredName;
   if (name.length < 2) fail(CATEGORY_PATH, "Enter a category name.");
   const parentName = await categoryParent(parentId);
   if (parentId) {
@@ -179,21 +180,22 @@ export async function renameCategory(formData: FormData) {
   const returnPath = categoryPath(focus, field(formData, "type"));
   if (name.length < 2) fail(returnPath, "Enter a category name.");
   const service = getServiceClient();
-  const { data: current } = await service.from("equipment_categories").select("id, parent_id").eq("id", id).maybeSingle();
+  const { data: current } = await service.from("equipment_categories").select("id, parent_id, kind").eq("id", id).maybeSingle();
   if (!current) fail(CATEGORY_PATH, "That category was already deleted.");
+  const label = current.kind === "boom" ? boomLabel(name) || name : name;
   let duplicateQuery = service
     .from("equipment_categories")
     .select("id")
-    .ilike("name", name)
+    .ilike("name", label)
     .is("archived_at", null)
     .neq("id", id);
   duplicateQuery = current.parent_id ? duplicateQuery.eq("parent_id", current.parent_id) : duplicateQuery.is("parent_id", null);
   const { data: duplicate } = await duplicateQuery.maybeSingle();
-  if (duplicate) fail(returnPath, `${name} is already used here.`);
-  const { error } = await service.from("equipment_categories").update({ name }).eq("id", id);
+  if (duplicate) fail(returnPath, `${label} is already used here.`);
+  const { error } = await service.from("equipment_categories").update({ name: label }).eq("id", id);
   if (error) fail(returnPath, "The name could not be saved.");
   await attachCategoryImage(id, formData, returnPath);
-  await logActivity(session, "equipment_category.renamed", "equipment_category", id, { name });
+  await logActivity(session, "equipment_category.renamed", "equipment_category", id, { name: label });
   redirect(returnPath);
 }
 

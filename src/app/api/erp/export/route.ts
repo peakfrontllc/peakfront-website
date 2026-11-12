@@ -128,10 +128,11 @@ async function exportSuppliers(url: URL) {
     partyType: partyType === "individual" || partyType === "company" ? partyType : "",
     region: regionOf(url),
     equipmentId: text(url, "equipment"),
+    catalogueId: text(url, "catalogue"),
   });
   return csvFile(
     "peakfront-suppliers.csv",
-    ["Name", "Type", "Phone", "Email", "Regions", "Contact", "Job title", "Equipment", "Equipment names", "Archived"],
+    ["Name", "Type", "Phone", "Email", "Regions", "Contact", "Job title", "Equipment", "Equipment names", "Provides", "Social links", "Archived"],
     items.map((item) => [
       item.companyName,
       item.partyType === "individual" ? "Individual" : "Company",
@@ -142,6 +143,8 @@ async function exportSuppliers(url: URL) {
       item.contactTitle,
       item.equipmentCount,
       item.equipmentNames.join("; "),
+      item.providedNames.join("; "),
+      item.socialLinks.join("; "),
       yesNo(Boolean(item.archivedAt)),
     ]),
   );

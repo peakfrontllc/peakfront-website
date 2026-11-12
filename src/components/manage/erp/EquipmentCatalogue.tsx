@@ -74,7 +74,11 @@ function SupplierFacts({ supplier }: { supplier: EquipmentListItem["suppliers"][
       {showOwner && <p className="text-xs text-navy">{supplier.contactTitle && <span className="text-slate-400">{supplier.contactTitle} </span>}{supplier.ownerName}</p>}
       {place && <p className="text-xs text-slate-500">{place}</p>}
       {supplier.email && <p className="break-all text-xs text-slate-500">{supplier.email}</p>}
-      {supplier.leadTime && <p className="text-xs text-slate-500">Lead time {supplier.leadTime}</p>}
+      {supplier.source === "catalogue" ? (
+        <p className="text-xs text-slate-500">Provides this equipment</p>
+      ) : (
+        supplier.leadTime ? <p className="text-xs text-slate-500">Lead time {supplier.leadTime}</p> : null
+      )}
     </div>
   );
 }
@@ -103,7 +107,7 @@ export function EquipmentViewSwitch({
     { id: "table" as const, label: "Table", icon: Table2 },
   ];
   return (
-    <div className="flex rounded-lg bg-white/10 p-0.5">
+    <div className="view-switch flex shrink-0 rounded-lg bg-white/10 p-0.5">
       {views.map((item) => {
         const Icon = item.icon;
         const active = view === item.id;
@@ -161,7 +165,7 @@ export function EquipmentCatalogue({ items, view }: { items: EquipmentListItem[]
   if (view === "table") {
     return (
       <div className="overflow-x-auto bg-white">
-        <table className="w-full min-w-[860px] text-left text-sm">
+        <table className="stack-table w-full text-left text-sm">
           <thead className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
             <tr>
               <th className="px-4 py-3 font-semibold">Equipment</th>
@@ -178,7 +182,7 @@ export function EquipmentCatalogue({ items, view }: { items: EquipmentListItem[]
               const facts = machineFacts(item);
               return (
                 <tr key={item.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" data-label="Equipment">
                     <div className="flex items-center gap-3">
                       <CataloguePhoto name={facts.equipmentName} />
                       <div className="min-w-0">
@@ -187,14 +191,14 @@ export function EquipmentCatalogue({ items, view }: { items: EquipmentListItem[]
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{item.purposeName || "—"}</td>
-                  <td className="px-4 py-3 font-medium text-navy">{facts.capacity || "—"}</td>
-                  <td className="px-4 py-3 text-slate-600">{facts.lengthNote || "—"}</td>
-                  <td className="px-4 py-3 text-slate-600">{ownershipLabel(item.ownership)}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 text-slate-600" data-label="Category">{item.purposeName || "—"}</td>
+                  <td className="px-4 py-3 font-medium text-navy" data-label="Capacity">{facts.capacity || "—"}</td>
+                  <td className="px-4 py-3 text-slate-600" data-label="Length">{facts.lengthNote || "—"}</td>
+                  <td className="px-4 py-3 text-slate-600" data-label="Source">{ownershipLabel(item.ownership)}</td>
+                  <td className="px-4 py-3" data-label="Status">
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium capitalize ${statusClass(item.status)}`}>{item.status}</span>
                   </td>
-                  <td className="px-4 py-3 text-xs">
+                  <td className="px-4 py-3 text-xs" data-label="Supplier">
                     <SupplierPreview item={item} />
                   </td>
                 </tr>
@@ -206,23 +210,25 @@ export function EquipmentCatalogue({ items, view }: { items: EquipmentListItem[]
     );
   }
   return (
-    <ul className="grid gap-3 bg-[#eef2f6] p-3 sm:grid-cols-2 xl:grid-cols-3">
+    <ul className="grid gap-2 bg-[#eef2f6] p-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {items.map((item) => {
         const facts = machineFacts(item);
+        const spec = [facts.capacity, facts.lengthNote].filter(Boolean).join(" · ");
         return (
           <li key={item.id}>
-            <article className="flex h-full gap-3 rounded-xl border border-navy/10 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            <article className="flex h-full items-start gap-2 rounded-xl border border-navy/10 bg-white p-2 transition hover:border-amber hover:bg-amber/15">
               <Link href={`/dashboard/equipment/${item.id}`} className="shrink-0" aria-label={facts.equipmentName}>
-                <CataloguePhoto name={facts.equipmentName} />
+                <CataloguePhoto name={facts.equipmentName} small />
               </Link>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[11px] font-medium uppercase tracking-wide text-slate-400">{item.purposeName || "Equipment"}</p>
-                <Link href={`/dashboard/equipment/${item.id}`} className="mt-0.5 block truncate text-sm font-semibold text-navy hover:text-blue">{facts.equipmentName}</Link>
-                {facts.alias && <p className="truncate text-xs text-slate-500">{facts.alias}</p>}
-                <div className="mt-2">
-                  <Pills item={item} capacity={facts.capacity} lengthNote={facts.lengthNote} />
-                </div>
-                <p className="mt-2 truncate text-xs text-slate-500">
+                <p className="truncate text-xs font-medium uppercase tracking-wide text-slate-400">{item.purposeName || "Equipment"}</p>
+                <Link href={`/dashboard/equipment/${item.id}`} className="block truncate text-base font-semibold leading-5 text-navy hover:text-blue">{facts.equipmentName}</Link>
+                {facts.alias && <p className="truncate text-[13px] text-slate-500">{facts.alias}</p>}
+                <p className="mt-1 flex items-center gap-1.5 text-[13px] text-slate-500">
+                  <span className="truncate">{spec || ownershipLabel(item.ownership)}</span>
+                  <span className={`shrink-0 rounded-full px-1.5 py-px font-medium capitalize ${statusClass(item.status)}`}>{item.status}</span>
+                </p>
+                <p className="mt-0.5 truncate text-[13px] text-slate-500">
                   <SupplierLine item={item} />
                 </p>
               </div>

@@ -29,7 +29,7 @@ function PartyIcon({ type, compact = false }: { type: EquipmentSupplier["partyTy
 
 function DetailsLink({ id }: { id: string }) {
   return (
-    <Link href={`/dashboard/suppliers/${id}`} className="text-xs font-semibold text-navy hover:text-blue">
+    <Link href={`/dashboard/suppliers/${id}`} className="text-[13px] font-semibold text-navy hover:text-blue">
       View more details
     </Link>
   );
@@ -38,7 +38,7 @@ function DetailsLink({ id }: { id: string }) {
 function ContactLine({ supplier }: { supplier: EquipmentSupplier }) {
   if (!showContact(supplier)) return null;
   return (
-    <p className="text-xs text-navy">
+    <p className="text-[13px] text-navy">
       {supplier.contactTitle && <span className="text-slate-400">{supplier.contactTitle} </span>}
       {supplier.ownerName}
     </p>
@@ -53,9 +53,9 @@ function RateTiles({ supplier }: { supplier: EquipmentSupplier }) {
         ["Week", supplier.weeklyRate],
         ["Month", supplier.monthlyRate],
       ].map(([rateLabel, amount]) => (
-        <div key={String(rateLabel)} className="rounded-xl bg-white px-2 py-2 text-center ring-1 ring-slate-200">
-          <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{rateLabel}</dt>
-          <dd className="mt-0.5 text-xs font-semibold text-navy">{typeof amount === "number" ? formatMoney(amount) : "—"}</dd>
+        <div key={String(rateLabel)} className="min-w-0 rounded-lg bg-white px-1.5 py-1 text-center ring-1 ring-slate-200">
+          <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">{rateLabel}</dt>
+          <dd className="mt-0.5 break-all text-[13px] font-semibold text-navy">{typeof amount === "number" ? formatMoney(amount) : "—"}</dd>
         </div>
       ))}
     </dl>
@@ -79,7 +79,7 @@ export function EquipmentSupplierViewSwitch({
     { id: "table" as const, label: "Table", icon: Table2 },
   ];
   return (
-    <div className="flex shrink-0 rounded-lg bg-white/10 p-0.5">
+    <div className="view-switch flex shrink-0 rounded-lg bg-white/10 p-0.5">
       {views.map((item) => {
         const Icon = item.icon;
         const active = view === item.id;
@@ -125,24 +125,28 @@ export function EquipmentSupplierCards({
     );
   }
   return (
-    <ul className="grid gap-3 lg:grid-cols-2">
+    <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
       {suppliers.map((supplier) => {
         const place = [supplier.phone, supplier.emirate].filter(Boolean).join(" · ");
         return (
-          <li key={supplier.supplierId} className="flex flex-col rounded-2xl border border-navy/10 bg-[#f4f7fa] p-4 transition hover:border-amber hover:bg-amber/15">
-            <div className="flex items-start gap-3">
-              <PartyIcon type={supplier.partyType} />
+          <li key={supplier.supplierId} className="flex flex-col rounded-xl border border-navy/10 bg-[#f4f7fa] p-2.5 transition hover:border-amber hover:bg-amber/15">
+            <div className="flex items-start gap-2">
+              <PartyIcon type={supplier.partyType} compact />
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-navy">{supplier.supplierName}</p>
-                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">{partyLabel(supplier.partyType)}</p>
+                <p className="truncate text-base font-semibold text-navy">{supplier.supplierName}</p>
+                <p className="truncate text-[13px] text-slate-400">{partyLabel(supplier.partyType)}</p>
                 <ContactLine supplier={supplier} />
-                {place && <p className="mt-1 text-xs text-slate-500">{place}</p>}
-                {supplier.email && <p className="break-all text-xs text-slate-500">{supplier.email}</p>}
-                {supplier.leadTime && <p className="mt-1 text-xs text-slate-500">Lead time {supplier.leadTime}</p>}
+                {place && <p className="truncate text-[13px] text-slate-500">{place}</p>}
+                {supplier.email && <p className="truncate text-[13px] text-slate-500">{supplier.email}</p>}
+                {supplier.source === "catalogue" ? (
+                  <p className="text-[13px] text-slate-500">Provides this equipment</p>
+                ) : (
+                  supplier.leadTime ? <p className="text-[13px] text-slate-500">Lead time {supplier.leadTime}</p> : null
+                )}
               </div>
             </div>
-            {supplierHasRates(supplier, canRates) && <div className="mt-3"><RateTiles supplier={supplier} /></div>}
-            <div className="mt-3">
+            {supplierHasRates(supplier, canRates) && <div className="mt-2"><RateTiles supplier={supplier} /></div>}
+            <div className="mt-1.5">
               <DetailsLink id={supplier.supplierId} />
             </div>
           </li>
@@ -182,7 +186,7 @@ export function EquipmentSupplierCatalogue({
               <div className="min-w-0 text-xs text-slate-500 lg:w-64 lg:shrink-0">
                 <p>{place || "No contact yet"}</p>
                 {supplier.email && <p className="break-all">{supplier.email}</p>}
-                {supplier.leadTime && <p>Lead time {supplier.leadTime}</p>}
+                {supplier.source === "catalogue" ? <p>Provides this equipment</p> : supplier.leadTime ? <p>Lead time {supplier.leadTime}</p> : null}
               </div>
               {supplierHasRates(supplier, canRates) && (
                 <div className="w-full lg:w-64 lg:shrink-0">
@@ -199,7 +203,7 @@ export function EquipmentSupplierCatalogue({
   if (view === "table") {
     return (
       <div className="overflow-x-auto bg-white">
-        <table className="w-full min-w-[860px] text-left text-sm">
+        <table className="stack-table w-full text-left text-sm">
           <thead className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
             <tr>
               <th className="px-4 py-3 font-semibold">Supplier</th>
@@ -216,7 +220,7 @@ export function EquipmentSupplierCatalogue({
           <tbody>
             {suppliers.map((supplier) => (
               <tr key={supplier.supplierId} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                <td className="px-4 py-3">
+                <td className="px-4 py-3" data-label="Supplier">
                   <div className="flex items-center gap-3">
                     <PartyIcon type={supplier.partyType} />
                     <div className="min-w-0">
@@ -225,7 +229,7 @@ export function EquipmentSupplierCatalogue({
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 text-xs">
+                <td className="px-4 py-3 text-xs" data-label="Contact">
                   {showContact(supplier) ? (
                     <p className="text-navy">
                       {supplier.contactTitle && <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-400">{supplier.contactTitle}</span>}
@@ -235,13 +239,13 @@ export function EquipmentSupplierCatalogue({
                     <span className="text-slate-400">—</span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-slate-600">{supplier.phone || "—"}</td>
-                <td className="px-4 py-3 text-slate-600">{supplier.emirate || "—"}</td>
-                <td className="px-4 py-3 break-all text-slate-600">{supplier.email || "—"}</td>
-                {canRates && <td className="px-4 py-3 font-medium text-navy">{supplier.dailyRate === null ? "—" : formatMoney(supplier.dailyRate)}</td>}
-                {canRates && <td className="px-4 py-3 font-medium text-navy">{supplier.weeklyRate === null ? "—" : formatMoney(supplier.weeklyRate)}</td>}
-                {canRates && <td className="px-4 py-3 font-medium text-navy">{supplier.monthlyRate === null ? "—" : formatMoney(supplier.monthlyRate)}</td>}
-                <td className="px-4 py-3 text-right"><DetailsLink id={supplier.supplierId} /></td>
+                <td className="px-4 py-3 text-slate-600" data-label="Phone">{supplier.phone || "—"}</td>
+                <td className="px-4 py-3 text-slate-600" data-label="Emirates">{supplier.emirate || "—"}</td>
+                <td className="px-4 py-3 break-all text-slate-600" data-label="Email">{supplier.email || "—"}</td>
+                {canRates && <td className="px-4 py-3 font-medium text-navy" data-label="Day">{supplier.dailyRate === null ? "—" : formatMoney(supplier.dailyRate)}</td>}
+                {canRates && <td className="px-4 py-3 font-medium text-navy" data-label="Week">{supplier.weeklyRate === null ? "—" : formatMoney(supplier.weeklyRate)}</td>}
+                {canRates && <td className="px-4 py-3 font-medium text-navy" data-label="Month">{supplier.monthlyRate === null ? "—" : formatMoney(supplier.monthlyRate)}</td>}
+                <td className="px-4 py-3 text-right" data-label=""><DetailsLink id={supplier.supplierId} /></td>
               </tr>
             ))}
           </tbody>
@@ -250,7 +254,7 @@ export function EquipmentSupplierCatalogue({
     );
   }
   return (
-    <div className="bg-[#eef2f6] p-3">
+      <div className="bg-[#eef2f6] p-2">
       <EquipmentSupplierCards suppliers={suppliers} canRates={canRates} />
     </div>
   );

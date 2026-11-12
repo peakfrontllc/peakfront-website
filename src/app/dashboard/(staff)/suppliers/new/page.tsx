@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Building2 } from "lucide-react";
 import { ExtraFields } from "@/components/manage/erp/ExtraFields";
+import { SocialLinksField } from "@/components/manage/erp/SocialLinksField";
+import { ProvidedEquipmentField } from "@/components/manage/erp/ProvidedEquipmentField";
 import { SupplierKindFields } from "@/components/manage/erp/SupplierKindFields";
 import { EmiratesField, Flash, MasterHero, TextField } from "@/components/manage/erp/ui";
 import { fieldClass, labelClass } from "@/components/manage/form-styles";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
+import { catalogueTypeGroups, listCategories } from "@/lib/erp/equipment";
 import { createSupplier } from "@/lib/erp/supplier-actions";
 
 export const dynamic = "force-dynamic";
@@ -28,14 +31,15 @@ export default async function NewSupplierPage({
 }) {
   await requirePermission(PERMISSIONS.suppliersWrite);
   const params = await searchParams;
+  const groups = catalogueTypeGroups(await listCategories());
 
   return (
     <>
       <MasterHero kicker="Catalogue" title="Add supplier" icon={Building2} />
       <p className="-mt-4 mb-6 max-w-2xl text-sm text-slate-500">
-        Add an individual or a company, then link the equipment they can provide.
+        Add an individual or a company, and choose the equipment they can provide.
       </p>
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-5xl">
         <Flash error={params.error} />
         <form action={createSupplier} className="space-y-4">
           <FormSection title="Supplier">
@@ -52,6 +56,12 @@ export default async function NewSupplierPage({
             <div className="sm:col-span-2">
               <label className={labelClass} htmlFor="address">Address</label>
               <textarea id="address" name="address" rows={3} className={fieldClass} />
+            </div>
+            <SocialLinksField />
+          </FormSection>
+          <FormSection title="Equipment they provide">
+            <div className="sm:col-span-2">
+              <ProvidedEquipmentField groups={groups} />
             </div>
           </FormSection>
           <FormSection title="Notes">

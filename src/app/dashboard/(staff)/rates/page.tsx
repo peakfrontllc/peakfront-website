@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Receipt, Search } from "lucide-react";
 import { RatesCatalogue, RatesViewSwitch } from "@/components/manage/erp/RatesTable";
+import { ListPagination } from "@/components/manage/erp/ListPagination";
 import { ExportLink, Flash, MasterHero } from "@/components/manage/erp/ui";
 import { labelClass } from "@/components/manage/form-styles";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
+import { currentPage, pageSlice } from "@/lib/erp/pagination";
 import { listCurrentRates } from "@/lib/erp/rates";
 import { matchesSearch } from "@/lib/erp/search";
 import { EMIRATES } from "@/lib/erp/shared";
@@ -19,7 +21,7 @@ const controlClass =
 export default async function RatesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; supplier?: string; purpose?: string; region?: string; status?: string; view?: string; error?: string }>;
+  searchParams: Promise<{ q?: string; supplier?: string; purpose?: string; region?: string; status?: string; view?: string; page?: string; error?: string }>;
 }) {
   const session = await requirePermission(PERMISSIONS.ratesRead);
   const params = await searchParams;
@@ -52,7 +54,9 @@ export default async function RatesPage({
       rate.place,
     ]);
   });
-  const hrefFor = (next: "cards" | "list" | "table") => {
+  const page = currentPage(params.page, visible.length);
+  const visibleRates = pageSlice(visible, page);
+  const hrefFor = (next: "cards" | "list" | "table", nextPage = 1) => {
     const query = new URLSearchParams();
     if (params.q) query.set("q", params.q);
     if (supplierId) query.set("supplier", supplierId);
@@ -60,13 +64,14 @@ export default async function RatesPage({
     if (region) query.set("region", region);
     if (status) query.set("status", status);
     if (next !== "cards") query.set("view", next);
+    if (nextPage > 1) query.set("page", String(nextPage));
     const text = query.toString();
     return text ? `/dashboard/rates?${text}` : "/dashboard/rates";
   };
   const viewHrefs = {
-    cards: hrefFor("cards"),
-    list: hrefFor("list"),
-    table: hrefFor("table"),
+    cards: hrefFor("cards", page),
+    list: hrefFor("list", page),
+    table: hrefFor("table", page),
   };
   const ratesExport = () => {
     const query = new URLSearchParams({ kind: "rates" });
@@ -148,11 +153,12 @@ export default async function RatesPage({
           </div>
         </form>
         <RatesCatalogue
-          rates={visible}
+          rates={visibleRates}
           canWrite={canWrite}
           view={view}
           filters={{ q: params.q ?? "", supplier: supplierId, purpose, region, status, view }}
         />
+        <ListPagination page={page} total={visible.length} hrefFor={(nextPage) => hrefFor(view, nextPage)} />
       </div>
     </>
   );

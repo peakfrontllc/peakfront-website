@@ -31,7 +31,7 @@ const RULES: [RegExp, LucideIcon][] = [
   [/boom truck|crane/, Construction],
   [/spider|scissor|boom lift|manlift|mast lift|\blift\b|access/, MoveVertical],
   [/excavator|backhoe|trencher/, Shovel],
-  [/dump truck|tipper|flatbed|dyna|pickup|shifting|truck|trailer|lowbed|haul|recovery|transport/, Truck],
+  [/attenuator|\btma\b|dump truck|tipper|flatbed|dyna|pickup|shifting|truck|trailer|lowbed|haul|recovery|transport/, Truck],
   [/bulldozer|dozer|loader|grader|dump|earth/, Tractor],
   [/reach stacker|forklift|telehandler|pallet|material/, Forklift],
   [/plate compactor|rammer|roller|compactor|compaction/, CircleDot],

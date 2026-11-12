@@ -421,7 +421,7 @@ export default function ManageProjectsClient({
           <span className="font-semibold text-white">{visible.length}</span>{" "}
           {visible.length === 1 ? "project" : "projects"}
         </p>
-        <div className="flex shrink-0 rounded-lg bg-white/10 p-0.5">
+        <div className="view-switch flex shrink-0 rounded-lg bg-white/10 p-0.5">
           {([
             ["cards", "Cards", LayoutGrid],
             ["list", "List", List],
@@ -469,7 +469,7 @@ export default function ManageProjectsClient({
         <p className="bg-white px-4 py-8 text-sm text-slate-500">{items.length === 0 ? "No projects yet." : "No projects match this search."}</p>
       ) : view === "table" ? (
         <div className="overflow-x-auto bg-white">
-          <table className="w-full min-w-[760px] text-left text-sm">
+          <table className="stack-table w-full text-left text-sm">
             <thead className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               <tr>
                 <th className="px-4 py-3">Project</th>
@@ -483,13 +483,13 @@ export default function ManageProjectsClient({
             <tbody>
               {visible.map((project) => (
                 <tr key={project.id} className="border-b border-slate-100 transition last:border-0 hover:bg-amber/15">
-                  <td className="px-4 py-3 font-semibold text-navy">{project.projectName}</td>
-                  <td className="px-4 py-3 text-slate-600">{project.client || "—"}</td>
-                  <td className="px-4 py-3 text-slate-600">{project.location || "—"}</td>
-                  <td className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{project.status}</td>
-                  <td className="px-4 py-3 text-slate-600">{project.images.length}</td>
+                  <td className="px-4 py-3 font-semibold text-navy" data-label="Project">{project.projectName}</td>
+                  <td className="px-4 py-3 text-slate-600" data-label="Client">{project.client || "—"}</td>
+                  <td className="px-4 py-3 text-slate-600" data-label="Location">{project.location || "—"}</td>
+                  <td className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500" data-label="Status">{project.status}</td>
+                  <td className="px-4 py-3 text-slate-600" data-label="Photos">{project.images.length}</td>
                   {canWrite && (
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right" data-label="">
                       <ProjectActions project={project} busy={busyId === project.id} onEdit={() => editProject(project)} onDelete={() => handleDelete(project)} />
                     </td>
                   )}

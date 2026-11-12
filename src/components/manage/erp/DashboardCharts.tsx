@@ -21,7 +21,7 @@ export function DonutChart({
   let cursor = 0;
 
   return (
-    <div className="flex items-center gap-5">
+    <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
       <svg viewBox="0 0 140 140" className="h-36 w-36 shrink-0" role="img" aria-label={caption}>
         <circle cx="70" cy="70" r={radius} fill="none" stroke="currentColor" className="text-white/10" strokeWidth="16" />
         {total > 0 && drawn.map((slice) => {
@@ -69,9 +69,10 @@ export function ColumnChart({
   const largest = Math.max(...items.map((item) => item.count), 1);
   if (items.length === 0) return <p className="py-10 text-sm text-slate-500">{empty}</p>;
   return (
+    <div className="overflow-x-auto">
     <div className="flex h-56 items-end gap-3">
       {items.map((item, index) => (
-        <div key={item.name} className="flex h-full min-w-0 flex-1 flex-col justify-end">
+        <div key={item.name} className="flex h-full w-16 shrink-0 flex-col justify-end sm:w-auto sm:min-w-0 sm:flex-1">
           <p className="mb-1 text-center text-xs font-semibold text-navy">{item.count}</p>
           <div
             className="w-full rounded-t-xl"
@@ -83,6 +84,7 @@ export function ColumnChart({
           <p className="mt-2 line-clamp-2 h-8 text-center text-[11px] leading-4 text-slate-500">{item.name}</p>
         </div>
       ))}
+    </div>
     </div>
   );
 }

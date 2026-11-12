@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { logout } from "@/lib/auth/actions";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -74,6 +74,22 @@ export function DashboardShell({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
   const displayName = fullName || "Staff";
   const backHref = backTarget(pathname);
   const current = items.find((item) => (
@@ -163,7 +179,7 @@ export function DashboardShell({
             className="absolute inset-0 bg-navy/40"
             onClick={() => setOpen(false)}
           />
-          <aside className="relative flex h-full w-72 flex-col bg-navy text-white shadow-xl">
+          <aside className="relative flex h-full w-[min(18rem,88vw)] flex-col bg-navy text-white shadow-xl">
             <div className="flex items-center justify-between px-5 py-5">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber">Peakfront</p>
@@ -179,13 +195,14 @@ export function DashboardShell({
         </div>
       )}
 
-      <div className="lg:pl-60">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 sm:px-6">
-          <div className="flex min-w-0 items-center gap-2">
+      <div className="min-w-0 lg:pl-60">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b border-slate-200 bg-white px-3 sm:gap-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
             <button
               type="button"
               className="rounded-lg p-2 text-navy hover:bg-slate-100 lg:hidden"
               aria-label="Open menu"
+              aria-expanded={open}
               onClick={() => setOpen(true)}
             >
               <Menu className="h-5 w-5" />
@@ -193,26 +210,26 @@ export function DashboardShell({
             {backHref ? (
               <Link
                 href={backHref.href}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-navy shadow-sm hover:bg-slate-50"
+                className="inline-flex min-w-0 max-w-28 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm font-semibold text-navy shadow-sm hover:bg-slate-50 sm:max-w-none sm:gap-1.5 sm:px-3"
               >
-                <ArrowLeft className="h-4 w-4" aria-hidden />
-                {backHref.label}
+                <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
+                <span className="truncate">{backHref.label}</span>
               </Link>
             ) : null}
             {current && CurrentIcon && (
-              <p className="hidden min-w-0 items-center gap-2 text-sm font-semibold text-navy sm:flex">
-                <CurrentIcon className="h-4 w-4 text-slate-500" aria-hidden />
+              <p className={`${backHref ? "hidden sm:flex" : "flex"} min-w-0 items-center gap-2 text-sm font-semibold text-navy`}>
+                <CurrentIcon className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
                 <span className="truncate">{current.label}</span>
               </p>
             )}
           </div>
-          <p className="ml-auto min-w-0 truncate text-sm text-slate-600">
+          <p className="ml-auto hidden min-w-0 truncate text-sm text-slate-600 sm:block">
             <span className="font-semibold text-navy">{displayName}</span>
-            <span className="mx-2 hidden text-slate-300 sm:inline">·</span>
-            <span className="hidden sm:inline">{roleName}</span>
+            <span className="mx-2 text-slate-300">·</span>
+            {roleName}
           </p>
         </header>
-        <main id="main-content" className="px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        <main id="main-content" className="min-w-0 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">{children}</main>
       </div>
     </div>
   );

@@ -46,7 +46,7 @@ export default async function CompareRatesPage({
               <span className="ml-2 font-medium text-slate-500">{rates.length === 1 ? "1 supplier" : `${rates.length} suppliers`}</span>
             </p>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
+              <table className="stack-table min-w-full text-left text-sm">
                 <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   <tr>
                     <th className="px-4 py-3">Supplier</th>
@@ -60,16 +60,16 @@ export default async function CompareRatesPage({
                 </thead>
                 <tbody>
                   {rates.length === 0 ? (
-                    <tr><td className="px-4 py-4 text-slate-500" colSpan={7}>No current supplier rates for {selectedLabel}.</td></tr>
+                    <tr><td className="px-4 py-4 text-slate-500" colSpan={7} data-label="">No current supplier rates for {selectedLabel}.</td></tr>
                   ) : rates.map((rate) => (
                     <tr key={rate.id} className="border-b border-slate-100 last:border-0">
-                      <td className="px-4 py-3"><Link className="font-semibold text-blue hover:underline" href={`/dashboard/suppliers/${rate.supplierId}`}>{rate.supplierName}</Link></td>
-                      <td className="px-4 py-3">{formatMoney(rate.dailyRate)}</td>
-                      <td className="px-4 py-3">{formatMoney(rate.weeklyRate)}</td>
-                      <td className="px-4 py-3">{formatMoney(rate.monthlyRate)}</td>
-                      <td className="px-4 py-3">{formatMoney(rate.transportCharge)}</td>
-                      <td className="px-4 py-3">{formatMoney(rate.operatorDailyCharge)}</td>
-                      <td className="px-4 py-3">{rate.vatIncluded ? "Included" : "Extra"}</td>
+                      <td className="px-4 py-3" data-label="Supplier"><Link className="font-semibold text-blue hover:underline" href={`/dashboard/suppliers/${rate.supplierId}`}>{rate.supplierName}</Link></td>
+                      <td className="px-4 py-3" data-label="Daily">{formatMoney(rate.dailyRate)}</td>
+                      <td className="px-4 py-3" data-label="Weekly">{formatMoney(rate.weeklyRate)}</td>
+                      <td className="px-4 py-3" data-label="Monthly">{formatMoney(rate.monthlyRate)}</td>
+                      <td className="px-4 py-3" data-label="Transport">{formatMoney(rate.transportCharge)}</td>
+                      <td className="px-4 py-3" data-label="Operator">{formatMoney(rate.operatorDailyCharge)}</td>
+                      <td className="px-4 py-3" data-label="VAT">{rate.vatIncluded ? "Included" : "Extra"}</td>
                     </tr>
                   ))}
                 </tbody>

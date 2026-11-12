@@ -1,35 +1,70 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { logActivity } from "@/lib/auth/activity";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission, requireStaff } from "@/lib/auth/session";
+import { catalogueTypeGroups, catalogueTypeIdSet, listCategories } from "@/lib/erp/equipment";
 import { DOCUMENT_BUCKET, removeStoredFile, storeFile } from "@/lib/erp/files";
 import { insertCustomFields } from "@/lib/erp/custom-fields";
-import { checked, chosenEmirates, dayBefore, EMIRATES, extraFieldPairs, fail, field, fileFromForm, parseMoney, searchTerm, todayIso } from "@/lib/erp/shared";
+import { checked, chosenEmirates, dayBefore, EMIRATES, extraFieldPairs, fail, field, fileFromForm, parseMoney, searchTerm, socialLinkPairs, todayIso } from "@/lib/erp/shared";
 import { getServiceClient } from "@/lib/supabase/service";
+
+function redirectTo(path: string): never {
+  refresh();
+  return redirect(path);
+}
 
 function supplierInput(formData: FormData) {
   const emirates = chosenEmirates(formData);
   const partyType = field(formData, "partyType") === "individual" ? "individual" : "company";
+  const links = socialLinkPairs(formData);
   return {
-    party_type: partyType,
-    company_name: field(formData, "companyName"),
-    trade_licence: field(formData, "tradeLicence"),
-    email: field(formData, "email"),
-    phone: field(formData, "phone"),
-    website: field(formData, "website"),
-    address: field(formData, "address"),
-    emirates,
-    emirate: emirates.join(", "),
-    notes: field(formData, "notes"),
+    error: links.error,
+    input: {
+      party_type: partyType,
+      company_name: field(formData, "companyName"),
+      trade_licence: field(formData, "tradeLicence"),
+      email: field(formData, "email"),
+      phone: field(formData, "phone"),
+      website: field(formData, "website"),
+      social_links: links.links,
+      address: field(formData, "address"),
+      emirates,
+      emirate: emirates.join(", "),
+      notes: field(formData, "notes"),
+    },
   };
+}
+
+async function replaceSupplierCatalogue(supplierId: string, formData: FormData) {
+  const categories = await listCategories();
+  const allowed = catalogueTypeIdSet(categories);
+  const selected = new Set(
+    formData.getAll("catalogueCategoryId").filter((value): value is string => typeof value === "string" && allowed.has(value)),
+  );
+  for (const group of catalogueTypeGroups(categories)) {
+    if (!selected.has(group.purposeId)) continue;
+    for (const item of group.items) selected.delete(item.id);
+  }
+  const categoryIds = [...selected];
+  const service = getServiceClient();
+  const { error: clearError } = await service.from("supplier_catalogue").delete().eq("supplier_id", supplierId);
+  if (clearError) return "The equipment list could not be saved.";
+  if (categoryIds.length === 0) return null;
+  const { error } = await service.from("supplier_catalogue").insert(
+    categoryIds.map((categoryId) => ({ supplier_id: supplierId, category_id: categoryId })),
+  );
+  return error ? "The equipment list could not be saved." : null;
 }
 
 export async function createSupplier(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.suppliersWrite);
-  const input = supplierInput(formData);
+  const parsed = supplierInput(formData);
+  const input = parsed.input;
   const extras = extraFieldPairs(formData);
+  if (parsed.error) fail("/dashboard/suppliers/new", parsed.error);
   if (input.company_name.length < 2) fail("/dashboard/suppliers/new", input.party_type === "individual" ? "Enter the person's name." : "Enter the company name.");
   if (extras.error) fail("/dashboard/suppliers/new", extras.error);
   const { data, error } = await getServiceClient()
@@ -38,22 +73,36 @@ export async function createSupplier(formData: FormData) {
     .select("id")
     .single();
   if (error || !data) fail("/dashboard/suppliers/new", "The supplier could not be saved.");
+  const catalogueError = await replaceSupplierCatalogue(data.id as string, formData);
+  if (catalogueError) fail(`/dashboard/suppliers/${data.id}`, "The supplier was saved, but the equipment list could not be saved.");
   const fieldError = await insertCustomFields("supplier", data.id as string, extras.pairs);
   if (fieldError) fail(`/dashboard/suppliers/${data.id}`, "The supplier was saved, but an extra field could not be saved.");
   await logActivity(session, "supplier.created", "supplier", data.id as string, { name: input.company_name });
-  redirect(`/dashboard/suppliers/${data.id}`);
+  redirectTo(`/dashboard/suppliers/${data.id}`);
 }
 
 export async function updateSupplier(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.suppliersWrite);
   const id = field(formData, "id");
-  const input = supplierInput(formData);
+  const parsed = supplierInput(formData);
+  const input = parsed.input;
   const path = `/dashboard/suppliers/${id}`;
+  if (parsed.error) fail(path, parsed.error);
   if (input.company_name.length < 2) fail(path, input.party_type === "individual" ? "Enter the person's name." : "Enter the company name.");
   const { error } = await getServiceClient().from("suppliers").update(input).eq("id", id);
   if (error) fail(path, "The supplier could not be saved.");
   await logActivity(session, "supplier.updated", "supplier", id);
-  redirect(path);
+  redirectTo(path);
+}
+
+export async function updateSupplierCatalogue(formData: FormData) {
+  const session = await requirePermission(PERMISSIONS.suppliersWrite);
+  const supplierId = field(formData, "supplierId");
+  const path = `/dashboard/suppliers/${supplierId}`;
+  const catalogueError = await replaceSupplierCatalogue(supplierId, formData);
+  if (catalogueError) fail(path, catalogueError);
+  await logActivity(session, "supplier_catalogue.updated", "supplier", supplierId);
+  redirectTo(`${path}#provides`);
 }
 
 export async function setSupplierArchived(formData: FormData) {
@@ -66,7 +115,7 @@ export async function setSupplierArchived(formData: FormData) {
     .eq("id", id);
   if (error) fail(`/dashboard/suppliers/${id}`, "The supplier could not be updated.");
   await logActivity(session, archived ? "supplier.archived" : "supplier.restored", "supplier", id);
-  redirect(archived ? "/dashboard/suppliers?archived=1" : `/dashboard/suppliers/${id}`);
+  redirectTo(archived ? "/dashboard/suppliers?archived=1" : `/dashboard/suppliers/${id}`);
 }
 
 export async function deleteSupplier(formData: FormData) {
@@ -86,7 +135,7 @@ export async function deleteSupplier(formData: FormData) {
   const { error } = await service.from("suppliers").delete().eq("id", id);
   if (error) fail(path, "The supplier could not be deleted.");
   await logActivity(session, "supplier.deleted", "supplier", id);
-  redirect("/dashboard/suppliers");
+  redirectTo("/dashboard/suppliers");
 }
 
 export async function addSupplierContact(formData: FormData) {
@@ -110,7 +159,7 @@ export async function addSupplierContact(formData: FormData) {
   });
   if (error) fail(path, "The contact could not be saved.");
   await logActivity(session, "supplier_contact.created", "supplier", supplierId);
-  redirect(path);
+  redirectTo(path);
 }
 
 export async function deleteSupplierContact(formData: FormData) {
@@ -118,7 +167,7 @@ export async function deleteSupplierContact(formData: FormData) {
   const supplierId = field(formData, "supplierId");
   await getServiceClient().from("supplier_contacts").delete().eq("id", field(formData, "id"));
   await logActivity(session, "supplier_contact.deleted", "supplier", supplierId);
-  redirect(`/dashboard/suppliers/${supplierId}`);
+  redirectTo(`/dashboard/suppliers/${supplierId}`);
 }
 
 export async function updateSupplierContact(formData: FormData) {
@@ -141,7 +190,7 @@ export async function updateSupplierContact(formData: FormData) {
   }).eq("id", field(formData, "id")).eq("supplier_id", supplierId);
   if (error) fail(path, "The contact could not be saved.");
   await logActivity(session, "supplier_contact.updated", "supplier", supplierId);
-  redirect(path);
+  redirectTo(path);
 }
 
 export async function updateSupplierLocation(formData: FormData) {
@@ -158,7 +207,7 @@ export async function updateSupplierLocation(formData: FormData) {
   }).eq("id", field(formData, "id")).eq("supplier_id", supplierId);
   if (error) fail(path, "The location could not be saved.");
   await logActivity(session, "supplier_location.updated", "supplier", supplierId);
-  redirect(path);
+  redirectTo(path);
 }
 
 export async function addSupplierLocation(formData: FormData) {
@@ -177,7 +226,7 @@ export async function addSupplierLocation(formData: FormData) {
   });
   if (error) fail(path, "The location could not be saved.");
   await logActivity(session, "supplier_location.created", "supplier", supplierId);
-  redirect(path);
+  redirectTo(path);
 }
 
 export async function addSupplierNote(formData: FormData) {
@@ -193,7 +242,7 @@ export async function addSupplierNote(formData: FormData) {
   });
   if (error) fail(path, "The note could not be saved.");
   await logActivity(session, "supplier_note.created", "supplier", supplierId);
-  redirect(path);
+  redirectTo(path);
 }
 
 export async function addSupplierDocument(formData: FormData) {
@@ -219,7 +268,7 @@ export async function addSupplierDocument(formData: FormData) {
     fail(path, error instanceof Error ? error.message : "The document could not be saved.");
   }
   await logActivity(session, "supplier_document.created", "supplier", supplierId, { title });
-  redirect(`${path}#documents`);
+  redirectTo(`${path}#documents`);
 }
 
 export async function deleteSupplierDocument(formData: FormData) {
@@ -239,7 +288,7 @@ export async function deleteSupplierDocument(formData: FormData) {
   const { error } = await service.from("supplier_documents").delete().eq("id", id).eq("supplier_id", supplierId);
   if (error) fail(path, "The document could not be removed.");
   await logActivity(session, "supplier_document.deleted", "supplier", supplierId);
-  redirect(`${path}#documents`);
+  redirectTo(`${path}#documents`);
 }
 
 function equipmentReturn(formData: FormData) {
@@ -267,7 +316,7 @@ export async function linkSupplierEquipment(formData: FormData) {
     fail(path, error.message.includes("duplicate") ? "That equipment is already linked." : "The equipment could not be linked.");
   }
   await logActivity(session, "supplier_equipment.linked", "supplier", supplierId, { equipmentId });
-  redirect(path);
+  redirectTo(path);
 }
 
 function supplierPath(formData: FormData, supplierId: string) {
@@ -285,7 +334,7 @@ export async function updateSupplierEquipment(formData: FormData) {
   }).eq("id", field(formData, "id")).eq("supplier_id", supplierId);
   if (error) fail(path, "The linked equipment could not be saved.");
   await logActivity(session, "supplier_equipment.updated", "supplier", supplierId);
-  redirect(path);
+  redirectTo(path);
 }
 
 export async function addSupplierRate(formData: FormData) {
@@ -347,7 +396,7 @@ export async function addSupplierRate(formData: FormData) {
     supplierId,
     validFrom,
   });
-  redirect(path);
+  redirectTo(path);
 }
 
 function ratesReturnPath(formData: FormData) {
@@ -406,7 +455,7 @@ export async function updateEquipmentRate(formData: FormData) {
       .maybeSingle();
     if (error || !data) fail(path, "The current rate could not be updated.");
     await logActivity(session, "supplier_rate.updated", "supplier_rate", data.id as string, { supplierEquipmentId });
-    redirect(path);
+    redirectTo(path);
   }
 
   const { data: open } = await service
@@ -429,5 +478,5 @@ export async function updateEquipmentRate(formData: FormData) {
     .single();
   if (error || !data) fail(path, "The rate could not be saved.");
   await logActivity(session, "supplier_rate.created", "supplier_rate", data.id as string, { supplierEquipmentId });
-  redirect(path);
+  redirectTo(path);
 }

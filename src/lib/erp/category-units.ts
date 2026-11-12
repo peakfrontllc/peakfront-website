@@ -67,6 +67,17 @@ export function categoryUnits(purposeName: string, typeName: string) {
       capacityHint = "ton";
       capacityPlaceholder = "5 ton";
     }
+  } else if (purpose.includes("attenuator") || purpose.includes("tma")) {
+    capacityHint = "host vehicle weight";
+    capacityPlaceholder = "15 ton";
+  } else if (purpose.includes("van")) {
+    if (/passenger/.test(type)) {
+      capacityHint = "seats";
+      capacityPlaceholder = "14 seater";
+    } else {
+      capacityHint = "ton";
+      capacityPlaceholder = "3 ton";
+    }
   } else if (purpose.includes("transport")) {
     if (/tanker|water|sewage|fuel/.test(type)) {
       capacityHint = "gallons";

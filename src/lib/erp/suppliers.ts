@@ -1,7 +1,10 @@
 import "server-only";
 
 import { getServiceClient } from "@/lib/supabase/service";
-import { emiratesFromRow, isCurrentRate, searchTerm } from "@/lib/erp/shared";
+import { catalogueAncestorIds, catalogueSearchParts, catalogueTypeGroups, catalogueTypeIdSet, catalogueTypes, listCategories, listedBoomFits } from "@/lib/erp/equipment";
+import { boomMetres } from "@/lib/erp/lengths";
+import { matchesSearch } from "@/lib/erp/search";
+import { emiratesFromRow, isCurrentRate, socialLinksFromValue, type SocialLink } from "@/lib/erp/shared";
 
 export type SupplierListItem = {
   id: string;
@@ -15,6 +18,8 @@ export type SupplierListItem = {
   contactTitle: string;
   equipmentCount: number;
   equipmentNames: string[];
+  providedNames: string[];
+  socialLinks: string[];
   archivedAt: string | null;
 };
 
@@ -49,6 +54,7 @@ export type SupplierDetail = {
   email: string;
   phone: string;
   website: string;
+  socialLinks: SocialLink[];
   address: string;
   emirates: string[];
   emirate: string;
@@ -80,6 +86,7 @@ export type SupplierDetail = {
     expiresOn: string | null;
   }[];
   equipment: SuppliedEquipment[];
+  provided: { id: string; categoryId: string; name: string }[];
 };
 
 function money(value: unknown) {
@@ -115,23 +122,60 @@ function mapRate(row: {
   };
 }
 
-export async function listSuppliers(filters: { q?: string; archived?: boolean; partyType?: string; region?: string; equipmentId?: string }): Promise<SupplierListItem[]> {
+export async function listSuppliers(filters: { q?: string; archived?: boolean; partyType?: string; region?: string; equipmentId?: string; catalogueId?: string }): Promise<SupplierListItem[]> {
+  const categories = await listCategories(true);
+  const typeOrder = new Map<string, number>();
+  catalogueTypeGroups(categories).forEach((group, groupIndex) => {
+    typeOrder.set(group.purposeId, groupIndex * 1000);
+    group.items.forEach((item, itemIndex) => typeOrder.set(item.id, groupIndex * 1000 + itemIndex + 1));
+  });
+  let coveredCategoryIds = new Set<string>();
+  let selectedCategoryId = "";
+  let selectedBoomLength = "";
+  let selectedTypeId = "";
+  let categoryFilterId = "";
+  const catalogueIdsAllowed = catalogueTypeIdSet(categories);
+  const requestedCatalogue = filters.catalogueId ?? "";
+  const requestedEquipment = filters.equipmentId ?? "";
+  if (requestedCatalogue && catalogueIdsAllowed.has(requestedCatalogue)) categoryFilterId = requestedCatalogue;
+  else if (requestedEquipment && catalogueIdsAllowed.has(requestedEquipment)) categoryFilterId = requestedEquipment;
+  const equipmentId = categoryFilterId && categoryFilterId === requestedEquipment ? "" : requestedEquipment;
+  if (equipmentId) {
+    const { data: equipmentRow, error: equipmentError } = await getServiceClient()
+      .from("equipment")
+      .select("category_id, boom_length")
+      .eq("id", equipmentId)
+      .maybeSingle();
+    if (equipmentError) throw new Error(equipmentError.message);
+    selectedCategoryId = (equipmentRow?.category_id as string) ?? "";
+    selectedBoomLength = (equipmentRow?.boom_length as string) ?? "";
+    const ancestors = catalogueAncestorIds(selectedCategoryId, categories);
+    coveredCategoryIds = new Set(ancestors);
+    const typeIds = new Set(catalogueTypes(categories).map((item) => item.id));
+    selectedTypeId = ancestors.find((id) => typeIds.has(id)) ?? "";
+  }
   let query = getServiceClient()
     .from("suppliers")
     .select(`
-      id, company_name, party_type, phone, email, emirate, emirates, archived_at,
+      id, company_name, party_type, phone, email, emirate, emirates, social_links, archived_at,
       supplier_contacts(name, job_title, phone, is_primary),
-      supplier_equipment(id, equipment_id, equipment(name))
+      supplier_equipment(id, equipment_id, equipment(name, boom_length, category_id)),
+      supplier_catalogue(category_id)
     `)
     .order("company_name");
   query = filters.archived ? query.not("archived_at", "is", null) : query.is("archived_at", null);
   if (filters.partyType === "individual" || filters.partyType === "company") query = query.eq("party_type", filters.partyType);
-  const term = searchTerm(filters.q);
-  if (term) query = query.or(`company_name.ilike.%${term}%,phone.ilike.%${term}%,email.ilike.%${term}%,emirate.ilike.%${term}%`);
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   const region = filters.region ?? "";
-  const equipmentId = filters.equipmentId ?? "";
+  const selection = categoryFilterId || equipmentId;
+  const term = selection ? "" : (filters.q ?? "").trim();
+  const categoryMatches = (categoryId: string) => {
+    if (!categoryFilterId || !categoryId) return false;
+    if (categoryId === categoryFilterId) return true;
+    return catalogueAncestorIds(categoryId, categories).includes(categoryFilterId)
+      || catalogueAncestorIds(categoryFilterId, categories).includes(categoryId);
+  };
   return (data ?? []).flatMap((row) => {
     const emirates = emiratesFromRow(row.emirates, row.emirate as string);
     const storedRegion = row.emirate as string;
@@ -139,12 +183,40 @@ export async function listSuppliers(filters: { q?: string; archived?: boolean; p
     const contacts = (Array.isArray(row.supplier_contacts) ? row.supplier_contacts : []) as { name: string; job_title: string; phone: string; is_primary: boolean }[];
     const primary = contacts.find((contact) => contact.is_primary) ?? contacts[0];
     const equipment = Array.isArray(row.supplier_equipment) ? row.supplier_equipment : [];
-    if (equipmentId && !equipment.some((item) => (item as { equipment_id?: string }).equipment_id === equipmentId)) return [];
-    const equipmentNames = equipment.flatMap((item) => {
-      const linked = (item as { equipment?: { name?: string } | { name?: string }[] | null }).equipment;
-      const record = Array.isArray(linked) ? linked[0] : linked;
-      return record?.name ? [record.name] : [];
+    const catalogueIds = (Array.isArray(row.supplier_catalogue) ? row.supplier_catalogue : [])
+      .map((item) => (item as { category_id?: string }).category_id ?? "")
+      .filter(Boolean);
+    const linked = equipment.flatMap((item) => {
+      const rowItem = item as { equipment_id?: string; equipment?: { name?: string; boom_length?: string; category_id?: string } | { name?: string; boom_length?: string; category_id?: string }[] | null };
+      const record = Array.isArray(rowItem.equipment) ? rowItem.equipment[0] : rowItem.equipment;
+      if (!rowItem.equipment_id) return [];
+      return [{ id: rowItem.equipment_id, name: record?.name ?? "", boom: record?.boom_length ?? "", categoryId: record?.category_id ?? "" }];
     });
+    const selectedBoom = boomMetres(selectedBoomLength);
+    const sameFamily = (categoryId: string) => Boolean(selectedTypeId) && catalogueAncestorIds(categoryId, categories).includes(selectedTypeId);
+    const matchesMachine = equipmentId === "" || linked.some((item) => item.id === equipmentId || (selectedBoom !== "" && boomMetres(item.boom) === selectedBoom && sameFamily(item.categoryId))) || (catalogueIds.some((id) => coveredCategoryIds.has(id)) && listedBoomFits(categories, selectedCategoryId, selectedBoomLength, linked));
+    const matchesCatalogue = categoryFilterId === "" || linked.some((item) => categoryMatches(item.categoryId)) || catalogueIds.some((id) => categoryMatches(id));
+    if (selection && (!matchesMachine || !matchesCatalogue)) return [];
+    const equipmentNames = linked.flatMap((item) => item.name ? [item.name] : []);
+    const provided = catalogueIds.flatMap((id) => {
+      const category = categories.find((item) => item.id === id);
+      return category ? [{ id, name: category.name }] : [];
+    }).sort((a, b) => (typeOrder.get(a.id) ?? 9999) - (typeOrder.get(b.id) ?? 9999) || a.name.localeCompare(b.name));
+    const providedNames = provided.map((item) => item.name);
+    const socialLinks = socialLinksFromValue(row.social_links).map((link) => [link.label, link.url].filter(Boolean).join(" "));
+    if (term && !matchesSearch(term, [
+      row.company_name as string,
+      (row.phone as string) ?? "",
+      primary?.phone ?? "",
+      (row.email as string) ?? "",
+      storedRegion,
+      ...emirates,
+      primary?.name ?? "",
+      primary?.job_title ?? "",
+      ...equipmentNames,
+      ...catalogueIds.flatMap((id) => catalogueSearchParts(id, categories)),
+      ...socialLinks,
+    ])) return [];
     return [{
       id: row.id as string,
       companyName: row.company_name as string,
@@ -157,6 +229,8 @@ export async function listSuppliers(filters: { q?: string; archived?: boolean; p
       contactTitle: (primary?.job_title ?? "").trim(),
       equipmentCount: equipment.length,
       equipmentNames: [...new Set(equipmentNames)],
+      providedNames,
+      socialLinks,
       archivedAt: (row.archived_at as string | null) ?? null,
     }];
   });
@@ -166,7 +240,7 @@ export async function getSupplier(id: string): Promise<SupplierDetail | null> {
   const { data, error } = await getServiceClient()
     .from("suppliers")
     .select(`
-      id, party_type, company_name, trade_licence, email, phone, website, address, emirates, emirate, notes, archived_at,
+      id, party_type, company_name, trade_licence, email, phone, website, social_links, address, emirates, emirate, notes, archived_at,
       supplier_contacts(id, name, job_title, phone, email, whatsapp, is_primary),
       supplier_locations(id, label, address, city, emirate, notes),
       supplier_notes(id, body, created_at),
@@ -175,7 +249,8 @@ export async function getSupplier(id: string): Promise<SupplierDetail | null> {
         id, equipment_id, lead_time, notes,
         equipment(name),
         supplier_rates(id, daily_rate, weekly_rate, monthly_rate, transport_charge, operator_daily_charge, vat_included, valid_from, valid_to, notes)
-      )
+      ),
+      supplier_catalogue(id, category_id, equipment_categories(name))
     `)
     .eq("id", id)
     .maybeSingle();
@@ -190,6 +265,7 @@ export async function getSupplier(id: string): Promise<SupplierDetail | null> {
     email: data.email as string,
     phone: data.phone as string,
     website: data.website as string,
+    socialLinks: socialLinksFromValue(data.social_links),
     address: data.address as string,
     emirates: emiratesFromRow(data.emirates, data.emirate as string),
     emirate: data.emirate as string,
@@ -261,5 +337,14 @@ export async function getSupplier(id: string): Promise<SupplierDetail | null> {
         rates: (item.supplier_rates ?? []).map(mapRate).sort((a, b) => b.validFrom.localeCompare(a.validFrom)),
       };
     }),
+    provided: ((data.supplier_catalogue as {
+      id: string;
+      category_id: string;
+      equipment_categories: { name: string } | { name: string }[] | null;
+    }[]) ?? []).flatMap((item) => {
+      const category = Array.isArray(item.equipment_categories) ? item.equipment_categories[0] : item.equipment_categories;
+      if (!category?.name) return [];
+      return [{ id: item.id, categoryId: item.category_id, name: category.name }];
+    }).sort((a, b) => a.name.localeCompare(b.name)),
   };
 }

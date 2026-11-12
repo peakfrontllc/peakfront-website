@@ -70,7 +70,7 @@ export function RatesViewSwitch({
     { id: "table" as const, label: "Table", icon: Table2 },
   ];
   return (
-    <div className="flex shrink-0 rounded-lg bg-white/10 p-0.5">
+    <div className="view-switch flex shrink-0 rounded-lg bg-white/10 p-0.5">
       {views.map((item) => {
         const Icon = item.icon;
         const active = view === item.id;
@@ -149,9 +149,9 @@ function RateTiles({ rate }: { rate: RateLine }) {
   return (
     <dl className="grid grid-cols-3 gap-2">
       {([["Day", rate.dailyRate], ["Week", rate.weeklyRate], ["Month", rate.monthlyRate]] as const).map(([label, amount]) => (
-        <div key={label} className="rounded-lg bg-[#f4f7fa] px-2 py-1.5 text-center">
+        <div key={label} className="min-w-0 rounded-lg bg-[#f4f7fa] px-1.5 py-1.5 text-center">
           <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</dt>
-          <dd className="text-xs font-semibold text-navy">{formatMoney(amount)}</dd>
+          <dd className="break-all text-xs font-semibold text-navy">{formatMoney(amount)}</dd>
         </div>
       ))}
     </dl>
@@ -289,7 +289,7 @@ function RatesTable({
 }) {
   return (
     <div className="overflow-x-auto bg-white">
-      <table className="min-w-full text-left text-sm">
+      <table className="stack-table min-w-full text-left text-sm">
         <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
           <tr>
             <th className="px-4 py-3">Equipment</th>
@@ -327,29 +327,29 @@ function RateTableRow({
   return (
     <>
       <tr className="border-b border-slate-100 transition last:border-0 hover:bg-amber/15">
-        <td className="px-4 py-3">
+        <td className="px-4 py-3" data-label="Equipment">
           <Link href={`/dashboard/equipment/${rate.equipmentId}`} className="font-semibold text-navy hover:text-blue">{rate.typeName}</Link>
           {rate.alias && <span className="mt-0.5 block text-xs text-slate-500">{rate.alias}</span>}
           {rate.purposeName && <span className="mt-0.5 block text-xs text-slate-500">{rate.purposeName}</span>}
         </td>
-        <td className="px-4 py-3 font-medium text-navy">{size || "—"}</td>
-        <td className="px-4 py-3">
+        <td className="px-4 py-3 font-medium text-navy" data-label="Capacity">{size || "—"}</td>
+        <td className="px-4 py-3" data-label="Supplier">
           <SupplierName rate={rate} />
           <PlaceLine place={rate.place} />
         </td>
-        <td className="px-4 py-3">{formatMoney(rate.dailyRate)}</td>
-        <td className="px-4 py-3">{formatMoney(rate.weeklyRate)}</td>
-        <td className="px-4 py-3">{formatMoney(rate.monthlyRate)}</td>
-        <td className="px-4 py-3">{rate.hasRate ? `${rate.validFrom}${rate.vatIncluded ? " · VAT in" : ""}` : "No rate yet"}</td>
+        <td className="px-4 py-3" data-label="Daily">{formatMoney(rate.dailyRate)}</td>
+        <td className="px-4 py-3" data-label="Weekly">{formatMoney(rate.weeklyRate)}</td>
+        <td className="px-4 py-3" data-label="Monthly">{formatMoney(rate.monthlyRate)}</td>
+        <td className="px-4 py-3" data-label="From">{rate.hasRate ? `${rate.validFrom}${rate.vatIncluded ? " · VAT in" : ""}` : "No rate yet"}</td>
         {canWrite && (
-          <td className="px-4 py-3 text-right">
+          <td className="px-4 py-3 text-right" data-label="">
             {canEdit && <EditButton open={open} onClick={() => setOpen((value) => !value)} />}
           </td>
         )}
       </tr>
       {open && canEdit && (
         <tr className="border-b border-slate-100 bg-[#f4f7fa]">
-          <td colSpan={canWrite ? 8 : 7} className="px-4 py-3">
+          <td colSpan={canWrite ? 8 : 7} className="px-4 py-3" data-label="">
             <RateForm rate={rate} filters={filters} />
           </td>
         </tr>

@@ -29,10 +29,10 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-4">
       <section className="overflow-hidden rounded-3xl bg-navy text-white shadow-sm">
-        <div className="grid gap-6 p-5 lg:grid-cols-[1.15fr_0.85fr] lg:p-7">
+        <div className="grid gap-6 p-4 sm:p-5 lg:grid-cols-[1.15fr_0.85fr] lg:p-7">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber">Operations</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight">Dashboard</h1>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Dashboard</h1>
             <p className="mt-2 max-w-md text-sm text-white/65">
               A picture of the catalogue, the people who supply it, the clients, and the website projects.
             </p>

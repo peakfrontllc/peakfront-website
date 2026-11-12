@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Building2, Search } from "lucide-react";
+import { EquipmentFilterSelect } from "@/components/manage/erp/EquipmentFilterSelect";
 import { SupplierCatalogue, SupplierViewSwitch, supplierView, type SupplierView } from "@/components/manage/erp/SupplierCatalogue";
+import { ListPagination } from "@/components/manage/erp/ListPagination";
 import { ExportLink, Flash, MasterHero } from "@/components/manage/erp/ui";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
-import { equipmentGroups, listEquipmentOptions } from "@/lib/erp/equipment";
+import { catalogueTypeGroups, catalogueTypeIdSet, equipmentGroups, listCategories, listEquipmentOptions } from "@/lib/erp/equipment";
+import { currentPage, pageSlice } from "@/lib/erp/pagination";
 import { listSuppliers } from "@/lib/erp/suppliers";
 import { EMIRATES } from "@/lib/erp/shared";
 
@@ -18,7 +22,7 @@ const filterClass =
 export default async function SuppliersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; type?: string; region?: string; equipment?: string; archived?: string; view?: string; error?: string }>;
+  searchParams: Promise<{ q?: string; type?: string; region?: string; equipment?: string; catalogue?: string; archived?: string; view?: string; page?: string; error?: string }>;
 }) {
   const session = await requirePermission(PERMISSIONS.suppliersRead);
   const params = await searchParams;
@@ -26,28 +30,46 @@ export default async function SuppliersPage({
   const partyType = params.type === "individual" || params.type === "company" ? params.type : "";
   const region = (EMIRATES as readonly string[]).includes(params.region ?? "") ? params.region ?? "" : "";
   const view = supplierView(params.view);
-  const equipment = await listEquipmentOptions();
+  const [equipment, categories] = await Promise.all([listEquipmentOptions(), listCategories()]);
+  const catalogueIds = catalogueTypeIdSet(categories);
   const equipmentId = equipment.some((item) => item.id === params.equipment) ? params.equipment ?? "" : "";
-  const suppliers = await listSuppliers({ q: params.q, archived, partyType, region, equipmentId });
+  const catalogueId = catalogueIds.has(params.catalogue ?? "") ? params.catalogue ?? "" : "";
+  if ((equipmentId || catalogueId) && (params.q ?? "").trim()) {
+    const next = new URLSearchParams();
+    if (partyType) next.set("type", partyType);
+    if (region) next.set("region", region);
+    if (catalogueId) next.set("catalogue", catalogueId);
+    if (equipmentId) next.set("equipment", equipmentId);
+    if (archived) next.set("archived", "1");
+    if (view !== "cards") next.set("view", view);
+    redirect(`/dashboard/suppliers?${next}`);
+  }
+  const suppliers = await listSuppliers({ q: params.q, archived, partyType, region, equipmentId, catalogueId });
+  const page = currentPage(params.page, suppliers.length);
+  const visibleSuppliers = pageSlice(suppliers, page);
   const canWrite = hasPermission(session.permissions, PERMISSIONS.suppliersWrite);
-  const supplierHref = (nextView: SupplierView, nextArchived: boolean) => {
+  const supplierHref = (nextView: SupplierView, nextArchived: boolean, nextPage = 1) => {
     const query = new URLSearchParams();
     if (params.q) query.set("q", params.q);
     if (partyType) query.set("type", partyType);
     if (region) query.set("region", region);
+    if (catalogueId) query.set("catalogue", catalogueId);
     if (equipmentId) query.set("equipment", equipmentId);
     if (nextArchived) query.set("archived", "1");
     if (nextView !== "cards") query.set("view", nextView);
+    if (nextPage > 1) query.set("page", String(nextPage));
     const text = query.toString();
     return text ? `/dashboard/suppliers?${text}` : "/dashboard/suppliers";
   };
-  const hrefFor = (next: SupplierView) => supplierHref(next, archived);
+  const hrefFor = (next: SupplierView) => supplierHref(next, archived, page);
+  const pageHref = (nextPage: number) => supplierHref(view, archived, nextPage);
   const archiveHref = supplierHref(view, !archived);
   const supplierExport = () => {
     const query = new URLSearchParams({ kind: "suppliers" });
     if (params.q) query.set("q", params.q);
     if (partyType) query.set("type", partyType);
     if (region) query.set("region", region);
+    if (catalogueId) query.set("catalogue", catalogueId);
     if (equipmentId) query.set("equipment", equipmentId);
     if (archived) query.set("archived", "1");
     return `/api/erp/export?${query}`;
@@ -67,12 +89,12 @@ export default async function SuppliersPage({
             {suppliers.length === 1 ? "supplier" : "suppliers"}
           </p>
           <SupplierViewSwitch view={view} hrefFor={hrefFor} />
-          <form action="/dashboard/suppliers" className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(8rem,1fr)_8rem_9.5rem_minmax(9rem,1.15fr)_auto]">
+          <form action="/dashboard/suppliers" className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(7rem,1fr)_7.5rem_8.5rem_minmax(8rem,1fr)_minmax(9rem,1.15fr)_auto]">
             {archived && <input type="hidden" name="archived" value="1" />}
             {view !== "cards" && <input type="hidden" name="view" value={view} />}
             <div className="relative sm:col-span-2 xl:col-span-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
-              <input name="q" defaultValue={params.q ?? ""} placeholder="Search" aria-label="Search name, phone, or email" className={`${filterClass} pl-9`} />
+              <input name="q" defaultValue={params.q ?? ""} placeholder="Search name or equipment" aria-label="Search name, phone, email, or equipment" className={`${filterClass} pl-9`} />
             </div>
             <select name="type" defaultValue={partyType} aria-label="Type" className={filterClass}>
               <option value="">All types</option>
@@ -83,14 +105,23 @@ export default async function SuppliersPage({
               <option value="">All regions</option>
               {EMIRATES.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
-            <select name="equipment" defaultValue={equipmentId} aria-label="Equipment" className={filterClass}>
-              <option value="">All equipment</option>
-              {equipmentGroups(equipment).map(([group, items]) => (
-                <optgroup key={group} label={group}>
-                  {items.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+            <EquipmentFilterSelect name="catalogue" label="Catalogue" value={catalogueId} className={filterClass}>
+              <option value="">Catalogue</option>
+              {catalogueTypeGroups(categories).map((group) => (
+                <optgroup key={group.purposeId} label={group.purpose}>
+                  <option value={group.purposeId}>{group.purpose}</option>
+                  {group.items.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}
                 </optgroup>
               ))}
-            </select>
+            </EquipmentFilterSelect>
+            <EquipmentFilterSelect name="equipment" label="Available equipment" value={equipmentId} className={filterClass}>
+              <option value="">Available equipment</option>
+              {equipmentGroups(equipment).map(([group, items]) => (
+                <optgroup key={group} label={group}>
+                  {items.map((item) => <option key={item.id} value={item.id}>{[item.label, item.detail].filter(Boolean).join(" · ")}</option>)}
+                </optgroup>
+              ))}
+            </EquipmentFilterSelect>
             <button className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg bg-amber px-3 text-sm font-semibold text-navy hover:bg-amber/90 sm:col-span-2 xl:col-span-1" type="submit">Search</button>
           </form>
           <ExportLink href={supplierExport()} />
@@ -98,7 +129,8 @@ export default async function SuppliersPage({
             {archived ? "Active" : "Archived"}
           </Link>
         </div>
-        <SupplierCatalogue items={suppliers} view={view} />
+        <SupplierCatalogue items={visibleSuppliers} view={view} />
+        <ListPagination page={page} total={suppliers.length} hrefFor={pageHref} />
       </div>
     </>
   );

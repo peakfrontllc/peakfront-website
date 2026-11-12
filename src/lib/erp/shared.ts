@@ -51,6 +51,42 @@ export function field(formData: FormData, key: string) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+export type SocialLink = { label: string; url: string };
+
+export function socialLinkPairs(formData: FormData) {
+  const labels = formData.getAll("socialLabel").map((value) => (typeof value === "string" ? value.trim() : ""));
+  const urls = formData.getAll("socialUrl").map((value) => (typeof value === "string" ? value.trim() : ""));
+  const links: SocialLink[] = [];
+  const count = Math.max(labels.length, urls.length);
+  for (let index = 0; index < count; index += 1) {
+    const label = labels[index] ?? "";
+    const url = urls[index] ?? "";
+    if (!label && !url) continue;
+    if (!url) return { error: "Enter the social link.", links: [] as SocialLink[] };
+    links.push({ label, url });
+  }
+  return { error: null, links };
+}
+
+export function socialLinksFromValue(value: unknown): SocialLink[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const record = item as { label?: unknown; url?: unknown };
+    const label = typeof record.label === "string" ? record.label.trim() : "";
+    const url = typeof record.url === "string" ? record.url.trim() : "";
+    if (!url) return [];
+    return [{ label, url }];
+  });
+}
+
+export function socialHref(url: string) {
+  const trimmed = url.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/^[a-z0-9][\w.-]*\.[a-z]{2,}([/?#].*)?$/i.test(trimmed)) return `https://${trimmed}`;
+  return "";
+}
+
 export function extraFieldPairs(formData: FormData) {
   const labels = formData.getAll("fieldLabel").map((value) => (typeof value === "string" ? value.trim() : ""));
   const values = formData.getAll("fieldValue").map((value) => (typeof value === "string" ? value.trim() : ""));

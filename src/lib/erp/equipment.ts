@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getServiceClient } from "@/lib/supabase/service";
-import { equipmentFacts } from "@/lib/erp/lengths";
+import { boomMetres, equipmentFacts } from "@/lib/erp/lengths";
 import { matchesSearch } from "@/lib/erp/search";
 import { emiratesFromRow, isCurrentRate } from "@/lib/erp/shared";
 
@@ -42,6 +42,7 @@ export type EquipmentListItem = {
     ownerName: string;
     contactTitle: string;
     leadTime: string;
+    source: "available" | "catalogue";
   }[];
   archivedAt: string | null;
 };
@@ -59,6 +60,7 @@ export type EquipmentSupplier = {
   dailyRate: number | null;
   weeklyRate: number | null;
   monthlyRate: number | null;
+  source: "available" | "catalogue";
 };
 
 function cataloguePlace(category: CategoryOption | undefined, categories: Map<string, CategoryOption>, capacity: string) {
@@ -76,6 +78,151 @@ function cataloguePlace(category: CategoryOption | undefined, categories: Map<st
 function sizeRank(value: string) {
   const number = Number(value.replace(/,/g, "").match(/\d+(?:\.\d+)?/)?.[0]);
   return Number.isFinite(number) ? number : Number.MAX_SAFE_INTEGER;
+}
+
+export type CatalogueTypeGroup = {
+  purpose: string;
+  purposeId: string;
+  items: { id: string; name: string }[];
+};
+
+export function catalogueTypes(categories: CategoryOption[]) {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  return categories.flatMap((category) => {
+    if (category.archivedAt || !category.parentId) return [];
+    if (category.kind === "boom" || category.kind === "length") return [];
+    const parent = byId.get(category.parentId);
+    if (!parent || parent.parentId || parent.archivedAt) return [];
+    return [{ id: category.id, name: category.name, purposeId: parent.id, purposeName: parent.name }];
+  }).sort((a, b) => a.purposeName.localeCompare(b.purposeName) || a.name.localeCompare(b.name, undefined, { numeric: true }));
+}
+
+export function catalogueTypeGroups(categories: CategoryOption[]): CatalogueTypeGroup[] {
+  const groups = new Map<string, CatalogueTypeGroup>();
+  for (const item of catalogueTypes(categories)) {
+    const group = groups.get(item.purposeId) ?? { purpose: item.purposeName, purposeId: item.purposeId, items: [] };
+    group.items.push({ id: item.id, name: item.name });
+    groups.set(item.purposeId, group);
+  }
+  for (const category of categories) {
+    if (category.archivedAt || category.parentId || groups.has(category.id)) continue;
+    groups.set(category.id, { purpose: category.name, purposeId: category.id, items: [] });
+  }
+  return [...groups.values()].sort((a, b) => a.purpose.localeCompare(b.purpose));
+}
+
+export function catalogueTypeIdSet(categories: CategoryOption[]) {
+  const ids = new Set(catalogueTypes(categories).map((item) => item.id));
+  for (const group of catalogueTypeGroups(categories)) ids.add(group.purposeId);
+  return ids;
+}
+
+export function listedBoomFits(
+  categories: CategoryOption[],
+  equipmentCategoryId: string,
+  equipmentBoom: string,
+  listed: { categoryId: string; boom: string }[],
+) {
+  const metres = boomMetres(equipmentBoom);
+  if (!metres) return true;
+  const typeIds = new Set(catalogueTypes(categories).map((item) => item.id));
+  const typeId = catalogueAncestorIds(equipmentCategoryId, categories).find((id) => typeIds.has(id));
+  if (!typeId) return true;
+  const family = listed.filter((item) => boomMetres(item.boom) && catalogueAncestorIds(item.categoryId, categories).includes(typeId));
+  if (family.length === 0) return true;
+  return family.some((item) => boomMetres(item.boom) === metres);
+}
+
+export function catalogueAncestorIds(categoryId: string, categories: CategoryOption[]) {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  let current = byId.get(categoryId);
+  while (current && !seen.has(current.id)) {
+    ids.push(current.id);
+    seen.add(current.id);
+    current = current.parentId ? byId.get(current.parentId) : undefined;
+  }
+  return ids;
+}
+
+export function catalogueSearchParts(categoryId: string, categories: CategoryOption[]) {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  const category = byId.get(categoryId);
+  if (!category) return [];
+  const names = [category.name];
+  const parent = category.parentId ? byId.get(category.parentId) : undefined;
+  if (parent && !parent.parentId) names.push(parent.name);
+  const seen = new Set([categoryId]);
+  const queue = [categoryId];
+  while (queue.length > 0) {
+    const current = queue.shift() ?? "";
+    for (const child of categories) {
+      if (child.parentId !== current || seen.has(child.id)) continue;
+      seen.add(child.id);
+      names.push(child.name);
+      queue.push(child.id);
+    }
+  }
+  return names;
+}
+
+type CataloguePerson = {
+  categoryId: string;
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  emirate: string;
+  emirates: string[];
+  partyType: "individual" | "company";
+  ownerName: string;
+  contactTitle: string;
+};
+
+async function loadSupplierBooms() {
+  const { data, error } = await getServiceClient()
+    .from("supplier_equipment")
+    .select("supplier_id, equipment(boom_length, category_id)");
+  if (error) throw new Error(error.message);
+  const bySupplier = new Map<string, { categoryId: string; boom: string }[]>();
+  for (const row of data ?? []) {
+    const equipment = Array.isArray(row.equipment) ? row.equipment[0] : row.equipment;
+    const supplierId = row.supplier_id as string;
+    const current = bySupplier.get(supplierId) ?? [];
+    current.push({
+      categoryId: (equipment?.category_id as string) ?? "",
+      boom: (equipment?.boom_length as string) ?? "",
+    });
+    bySupplier.set(supplierId, current);
+  }
+  return bySupplier;
+}
+
+async function loadCataloguePeople(): Promise<CataloguePerson[]> {
+  const { data, error } = await getServiceClient()
+    .from("supplier_catalogue")
+    .select("category_id, suppliers(id, company_name, party_type, phone, email, emirate, emirates, archived_at, supplier_contacts(name, job_title, phone, is_primary))");
+  if (error) throw new Error(error.message);
+  return (data ?? []).flatMap((link) => {
+    const linked = Array.isArray(link.suppliers) ? link.suppliers[0] : link.suppliers;
+    if (!linked || linked.archived_at) return [];
+    const contacts = (Array.isArray(linked.supplier_contacts) ? linked.supplier_contacts : linked.supplier_contacts ? [linked.supplier_contacts] : []) as { name?: string; job_title?: string; phone?: string; is_primary?: boolean }[];
+    const owner = contacts.find((contact) => contact.is_primary) ?? contacts[0];
+    const emirates = emiratesFromRow(linked.emirates, (linked.emirate as string) ?? "");
+    return [{
+      categoryId: link.category_id as string,
+      id: linked.id as string,
+      name: linked.company_name as string,
+      phone: ((linked.phone as string) || owner?.phone || "").trim(),
+      email: ((linked.email as string) ?? "").trim(),
+      emirate: emirates.join(", "),
+      emirates,
+      partyType: linked.party_type === "individual" ? "individual" as const : "company" as const,
+      ownerName: (owner?.name ?? "").trim(),
+      contactTitle: (owner?.job_title ?? "").trim(),
+    }];
+  });
 }
 
 export function categoryLabel(category: Pick<CategoryOption, "name" | "parentName" | "tonnage">) {
@@ -225,11 +372,18 @@ export async function listEquipment(filters: {
   });
   const equipmentIds = rows.map((row) => row.id as string);
   const suppliersByEquipment = new Map<string, EquipmentListItem["suppliers"]>();
+  const catalogueByType = new Map<string, EquipmentListItem["suppliers"]>();
+  let boomsBySupplier = new Map<string, { categoryId: string; boom: string }[]>();
   if (equipmentIds.length > 0) {
-    const { data: links, error: linkError } = await getServiceClient()
-      .from("supplier_equipment")
-      .select("equipment_id, lead_time, suppliers(id, company_name, party_type, phone, email, emirate, emirates, archived_at, supplier_contacts(name, job_title, phone, is_primary))")
-      .in("equipment_id", equipmentIds);
+    const [{ data: links, error: linkError }, cataloguePeople, supplierBooms] = await Promise.all([
+      getServiceClient()
+        .from("supplier_equipment")
+        .select("equipment_id, lead_time, suppliers(id, company_name, party_type, phone, email, emirate, emirates, archived_at, supplier_contacts(name, job_title, phone, is_primary))")
+        .in("equipment_id", equipmentIds),
+      loadCataloguePeople(),
+      loadSupplierBooms(),
+    ]);
+    boomsBySupplier = supplierBooms;
     if (linkError) throw new Error(linkError.message);
     for (const link of links ?? []) {
       const equipmentId = link.equipment_id as string;
@@ -249,20 +403,44 @@ export async function listEquipment(filters: {
         ownerName: (owner?.name ?? "").trim(),
         contactTitle: (owner?.job_title ?? "").trim(),
         leadTime: ((link.lead_time as string) ?? "").trim(),
+        source: "available" as const,
       };
       const current = suppliersByEquipment.get(equipmentId) ?? [];
       if (!current.some((item) => item.id === supplier.id)) current.push(supplier);
       suppliersByEquipment.set(equipmentId, current);
     }
-    for (const suppliers of suppliersByEquipment.values()) {
-      suppliers.sort((a, b) => a.name.localeCompare(b.name));
+    for (const person of cataloguePeople) {
+      const supplier = {
+        id: person.id,
+        name: person.name,
+        phone: person.phone,
+        email: person.email,
+        emirate: person.emirate,
+        emirates: person.emirates,
+        partyType: person.partyType,
+        ownerName: person.ownerName,
+        contactTitle: person.contactTitle,
+        leadTime: "",
+        source: "catalogue" as const,
+      };
+      const current = catalogueByType.get(person.categoryId) ?? [];
+      if (!current.some((item) => item.id === supplier.id)) current.push(supplier);
+      catalogueByType.set(person.categoryId, current);
     }
   }
   const region = (filters.region ?? "").trim();
   return rows.flatMap((row) => {
     const category = byId.get(row.category_id as string);
     const place = cataloguePlace(category, byId, (row.capacity as string) ?? "");
-    const suppliers = suppliersByEquipment.get(row.id as string) ?? [];
+    const suppliers = [...(suppliersByEquipment.get(row.id as string) ?? [])];
+    for (const categoryId of catalogueAncestorIds(row.category_id as string, categories)) {
+      for (const supplier of catalogueByType.get(categoryId) ?? []) {
+        if (suppliers.some((item) => item.id === supplier.id)) continue;
+        if (!listedBoomFits(categories, row.category_id as string, (row.boom_length as string) ?? "", boomsBySupplier.get(supplier.id) ?? [])) continue;
+        suppliers.push(supplier);
+      }
+    }
+    suppliers.sort((a, b) => (a.source === b.source ? a.name.localeCompare(b.name) : a.source === "available" ? -1 : 1));
     const inRegion = region ? suppliers.filter((supplier) => supplier.emirates.includes(region)) : suppliers;
     if (region && inRegion.length === 0) return [];
     return [{
@@ -290,17 +468,23 @@ export async function listEquipment(filters: {
 }
 
 export async function listEquipmentSuppliers(equipmentId: string): Promise<EquipmentSupplier[]> {
-  const { data, error } = await getServiceClient()
-    .from("supplier_equipment")
-    .select(`
-      lead_time,
-      suppliers(id, company_name, party_type, phone, email, emirate, emirates, archived_at, supplier_contacts(name, job_title, phone, is_primary)),
-      supplier_rates(daily_rate, weekly_rate, monthly_rate, valid_from, valid_to)
-    `)
-    .eq("equipment_id", equipmentId);
+  const [{ data, error }, equipmentRow, categories, cataloguePeople] = await Promise.all([
+    getServiceClient()
+      .from("supplier_equipment")
+      .select(`
+        lead_time,
+        suppliers(id, company_name, party_type, phone, email, emirate, emirates, archived_at, supplier_contacts(name, job_title, phone, is_primary)),
+        supplier_rates(daily_rate, weekly_rate, monthly_rate, valid_from, valid_to)
+      `)
+      .eq("equipment_id", equipmentId),
+    getServiceClient().from("equipment").select("category_id, boom_length").eq("id", equipmentId).maybeSingle(),
+    listCategories(true),
+    loadCataloguePeople(),
+  ]);
   if (error) throw new Error(error.message);
+  const covered = new Set(catalogueAncestorIds((equipmentRow.data?.category_id as string) ?? "", categories));
 
-  return (data ?? []).flatMap((row) => {
+  const linked = (data ?? []).flatMap((row) => {
     const linked = Array.isArray(row.suppliers) ? row.suppliers[0] : row.suppliers;
     if (!linked || linked.archived_at) return [];
     const contacts = (Array.isArray(linked.supplier_contacts) ? linked.supplier_contacts : linked.supplier_contacts ? [linked.supplier_contacts] : []) as { name?: string; job_title?: string; phone?: string; is_primary?: boolean }[];
@@ -334,8 +518,35 @@ export async function listEquipmentSuppliers(equipmentId: string): Promise<Equip
       dailyRate: money(current?.daily_rate),
       weeklyRate: money(current?.weekly_rate),
       monthlyRate: money(current?.monthly_rate),
+      source: "available" as const,
     }];
-  }).sort((a, b) => a.supplierName.localeCompare(b.supplierName));
+  });
+  const linkedIds = new Set(linked.map((supplier) => supplier.supplierId));
+  const boomsBySupplier = await loadSupplierBooms();
+  const equipmentCategoryId = (equipmentRow.data?.category_id as string) ?? "";
+  const equipmentBoom = (equipmentRow.data?.boom_length as string) ?? "";
+  const listed = cataloguePeople.flatMap((person) => {
+    if (!covered.has(person.categoryId) || linkedIds.has(person.id)) return [];
+    if (!listedBoomFits(categories, equipmentCategoryId, equipmentBoom, boomsBySupplier.get(person.id) ?? [])) return [];
+    return [{
+      supplierId: person.id,
+      supplierName: person.name,
+      phone: person.phone,
+      email: person.email,
+      emirate: person.emirate,
+      partyType: person.partyType,
+      ownerName: person.ownerName,
+      contactTitle: person.contactTitle,
+      leadTime: "",
+      dailyRate: null,
+      weeklyRate: null,
+      monthlyRate: null,
+      source: "catalogue" as const,
+    }];
+  });
+  return [...linked, ...listed].sort((a, b) => (
+    a.source === b.source ? a.supplierName.localeCompare(b.supplierName) : a.source === "available" ? -1 : 1
+  ));
 }
 
 export type EquipmentOption = {
@@ -345,6 +556,8 @@ export type EquipmentOption = {
   group: string;
   label: string;
   typeName: string;
+  purposeId: string;
+  typeId: string;
   detail: string;
 };
 
@@ -355,6 +568,8 @@ function equipmentOption(row: { id: string; name: string; code: string | null; c
   const grandparent = parent?.parentId ? byId.get(parent.parentId) : undefined;
   const typeName = grandparent ? parent?.name ?? category?.name ?? "Equipment" : category?.name ?? "Equipment";
   const purposeName = grandparent?.name ?? parent?.name ?? "";
+  const purposeId = grandparent?.id ?? parent?.id ?? category?.id ?? "";
+  const typeId = grandparent ? parent?.id ?? "" : category?.id ?? "";
   const sizeName = grandparent ? category?.name ?? row.capacity : row.capacity;
   const group = purposeName && purposeName !== typeName ? `${purposeName} · ${typeName}` : typeName;
   const name = row.name;
@@ -366,6 +581,8 @@ function equipmentOption(row: { id: string; name: string; code: string | null; c
     group,
     label: parts.join(" · ") || name,
     typeName,
+    purposeId,
+    typeId,
     detail: equipmentFacts(sizeName, row.capacity, row.boom_length, row.bed_length),
   };
 }

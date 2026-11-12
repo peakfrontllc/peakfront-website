@@ -64,7 +64,7 @@ export default async function EquipmentDetailPage({
   const sizeName = grandparent ? category?.name || equipment.capacity : equipment.capacity;
   const lengthNote = measureNote(equipment.boomLength, equipment.bedLength, sizeName);
   const cover = equipment.images[0] ? fileHref(IMAGE_BUCKET, equipment.images[0].storagePath) : "";
-  const linkedSupplierIds = new Set(suppliers.map((supplier) => supplier.supplierId));
+  const linkedSupplierIds = new Set(suppliers.filter((supplier) => supplier.source === "available").map((supplier) => supplier.supplierId));
   const unlinkedSuppliers = allSuppliers.filter((supplier) => !linkedSupplierIds.has(supplier.id));
   const label = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
 
@@ -160,7 +160,7 @@ export default async function EquipmentDetailPage({
 
           <Panel
             id="suppliers"
-            title={suppliers.length > 1 ? `Available from ${suppliers.length} suppliers` : "Suppliers"}
+            title={suppliers.length > 0 ? `Suppliers · ${suppliers.length}` : "Suppliers"}
           >
             {suppliers.length === 0 ? (
               <p className="text-sm text-slate-500">No supplier is linked yet.</p>

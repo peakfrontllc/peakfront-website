@@ -2,7 +2,7 @@
 
 export function SectionNav({ items }: { items: { id: string; label: string }[] }) {
   return (
-    <nav aria-label="On this page" className="sticky top-14 z-20 -mx-4 mb-5 border-b border-slate-200/80 bg-[#f4f6f8]/95 px-4 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+    <nav aria-label="On this page" className="sticky top-14 z-20 -mx-3 mb-5 border-b border-slate-200/80 bg-[#f4f6f8]/95 px-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
       <div className="flex gap-1 overflow-x-auto py-2">
         {items.map((item) => (
           <a
