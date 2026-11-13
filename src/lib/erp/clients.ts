@@ -15,6 +15,7 @@ export type ClientListItem = {
   locationEmirates: string[];
   contactName: string;
   contactTitle: string;
+  contactEmail: string;
   searchParts: string[];
   interestCount: number;
   archivedAt: string | null;
@@ -137,6 +138,7 @@ export async function listClients(filters: { q?: string; archived?: boolean; reg
       locationEmirates: locations.map((location) => (location.emirate ?? "").trim()).filter(Boolean),
       contactName: contactName.toLowerCase() === companyName.toLowerCase() ? "" : contactName,
       contactTitle: (contact?.job_title ?? "").trim(),
+      contactEmail: (contact?.email ?? "").trim(),
       searchParts,
       interestCount: interests.length,
       archivedAt: (row.archived_at as string | null) ?? null,

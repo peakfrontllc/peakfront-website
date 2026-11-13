@@ -16,6 +16,7 @@ export type SupplierListItem = {
   emirates: string[];
   contactName: string;
   contactTitle: string;
+  contactEmail: string;
   equipmentCount: number;
   equipmentNames: string[];
   providedNames: string[];
@@ -164,7 +165,7 @@ export async function listSuppliers(filters: { q?: string; archived?: boolean; p
     .from("suppliers")
     .select(`
       id, company_name, party_type, phone, email, emirate, emirates, social_links, archived_at,
-      supplier_contacts(name, job_title, phone, is_primary),
+      supplier_contacts(name, job_title, phone, email, is_primary),
       supplier_equipment(id, equipment_id, equipment(name, boom_length, category_id)),
       supplier_catalogue(category_id)
     `)
@@ -186,7 +187,7 @@ export async function listSuppliers(filters: { q?: string; archived?: boolean; p
     const emirates = emiratesFromRow(row.emirates, row.emirate as string);
     const storedRegion = row.emirate as string;
     if (region && !(emirates as readonly string[]).includes(region) && !storedRegion.includes(region)) return [];
-    const contacts = (Array.isArray(row.supplier_contacts) ? row.supplier_contacts : []) as { name: string; job_title: string; phone: string; is_primary: boolean }[];
+    const contacts = (Array.isArray(row.supplier_contacts) ? row.supplier_contacts : []) as { name: string; job_title: string; phone: string; email?: string; is_primary: boolean }[];
     const primary = contacts.find((contact) => contact.is_primary) ?? contacts[0];
     const equipment = Array.isArray(row.supplier_equipment) ? row.supplier_equipment : [];
     const catalogueIds = (Array.isArray(row.supplier_catalogue) ? row.supplier_catalogue : [])
@@ -219,6 +220,7 @@ export async function listSuppliers(filters: { q?: string; archived?: boolean; p
       ...emirates,
       primary?.name ?? "",
       primary?.job_title ?? "",
+      primary?.email ?? "",
       ...equipmentNames,
       ...catalogueIds.flatMap((id) => catalogueSearchParts(id, categories)),
       ...socialLinks,
@@ -233,6 +235,7 @@ export async function listSuppliers(filters: { q?: string; archived?: boolean; p
       emirates,
       contactName: primary?.name ?? "",
       contactTitle: (primary?.job_title ?? "").trim(),
+      contactEmail: (primary?.email ?? "").trim(),
       equipmentCount: equipment.length,
       equipmentNames: [...new Set(equipmentNames)],
       providedNames,

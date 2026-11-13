@@ -133,7 +133,7 @@ async function exportSuppliers(url: URL) {
   });
   return csvFile(
     "peakfront-suppliers.csv",
-    ["Name", "Type", "Phone", "Email", "Regions", "Contact", "Job title", "Equipment", "Equipment names", "Provides", "Social links", "Archived"],
+    ["Name", "Type", "Phone", "Email", "Regions", "Contact", "Job title", "Contact email", "Equipment", "Equipment names", "Provides", "Social links", "Archived"],
     items.map((item) => [
       item.companyName,
       item.partyType === "individual" ? "Individual" : "Company",
@@ -142,6 +142,7 @@ async function exportSuppliers(url: URL) {
       item.emirates.join("; "),
       item.contactName,
       item.contactTitle,
+      item.contactEmail,
       item.equipmentCount,
       item.equipmentNames.join("; "),
       item.providedNames.join("; "),
@@ -164,7 +165,7 @@ async function exportClients(url: URL) {
   });
   return csvFile(
     "peakfront-clients.csv",
-    ["Company", "Industry", "Phone", "Email", "Website", "Region", "Contact", "Job title", "Equipment they need", "Archived"],
+    ["Company", "Industry", "Phone", "Email", "Website", "Region", "Contact", "Job title", "Contact email", "Equipment they need", "Archived"],
     items.map((item) => [
       item.companyName,
       item.industry,
@@ -174,6 +175,7 @@ async function exportClients(url: URL) {
       regionLabel(item.emirate) || "No region",
       item.contactName,
       item.contactTitle,
+      item.contactEmail,
       item.interestCount,
       yesNo(Boolean(item.archivedAt)),
     ]),
