@@ -6,7 +6,7 @@ import { EquipmentSupplierCatalogue, EquipmentSupplierViewSwitch, equipmentSuppl
 import { MasterHero } from "@/components/manage/erp/ui";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
-import { getEquipment, listEquipmentSuppliers } from "@/lib/erp/equipment";
+import { equipmentChargesPerKm, getEquipment, listEquipmentSuppliers } from "@/lib/erp/equipment";
 import { capacityLabel } from "@/lib/erp/lengths";
 import { matchesSearch } from "@/lib/erp/search";
 import { EMIRATES } from "@/lib/erp/shared";
@@ -27,9 +27,10 @@ export default async function EquipmentSuppliersPage({
   const session = await requirePermission(PERMISSIONS.equipmentRead);
   const { id } = await params;
   const query = await searchParams;
-  const [equipment, suppliers] = await Promise.all([
+  const [equipment, suppliers, perKm] = await Promise.all([
     getEquipment(id),
     listEquipmentSuppliers(id),
+    equipmentChargesPerKm(id),
   ]);
   if (!equipment) notFound();
   const canRates = hasPermission(session.permissions, PERMISSIONS.ratesRead);
@@ -102,7 +103,7 @@ export default async function EquipmentSuppliersPage({
         {suppliers.length === 0 ? (
           <p className="bg-[#eef2f6] px-4 py-10 text-sm text-slate-500">No supplier is linked yet.</p>
         ) : (
-          <EquipmentSupplierCatalogue suppliers={visible} view={view} canRates={canRates} />
+          <EquipmentSupplierCatalogue suppliers={visible} view={view} canRates={canRates} perKm={perKm} />
         )}
       </div>
     </>

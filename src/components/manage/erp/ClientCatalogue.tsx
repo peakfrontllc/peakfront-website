@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Handshake, LayoutGrid, List, Table2 } from "lucide-react";
 import type { ClientListItem } from "@/lib/erp/clients";
+import { regionLabel } from "@/lib/erp/shared";
 
 export const CLIENT_VIEWS = ["cards", "list", "table"] as const;
 export type ClientView = (typeof CLIENT_VIEWS)[number];
@@ -91,7 +92,7 @@ export function ClientCatalogue({ items, view }: { items: ClientListItem[]; view
                 <ContactLine client={client} />
               </div>
             </div>
-            <p className="text-xs text-slate-500 lg:w-44">{[client.phone, client.emirate].filter(Boolean).join(" · ") || "No contact yet"}</p>
+            <p className="text-xs text-slate-500 lg:w-44">{[client.phone, regionLabel(client.emirate)].filter(Boolean).join(" · ") || "No contact yet"}</p>
             <p className="text-xs text-slate-500 lg:w-28">{interestLabel(client.interestCount)}</p>
             <DetailsLink id={client.id} />
           </li>
@@ -128,7 +129,7 @@ export function ClientCatalogue({ items, view }: { items: ClientListItem[]; view
                 </td>
                 <td className="px-4 py-3 text-xs text-navy" data-label="Contact">{client.contactName || "—"}</td>
                 <td className="px-4 py-3 text-slate-600" data-label="Phone">{client.phone || "—"}</td>
-                <td className="px-4 py-3 text-slate-600" data-label="Region">{client.emirate || "—"}</td>
+                <td className="px-4 py-3 text-slate-600" data-label="Region">{regionLabel(client.emirate) || "—"}</td>
                 <td className="px-4 py-3 break-all text-slate-600" data-label="Email">{client.email || "—"}</td>
                 <td className="px-4 py-3 text-xs text-navy" data-label="Equipment">{interestLabel(client.interestCount)}</td>
                 <td className="px-4 py-3 text-right" data-label=""><DetailsLink id={client.id} /></td>
@@ -153,7 +154,7 @@ export function ClientCatalogue({ items, view }: { items: ClientListItem[]; view
             </div>
             <div className="mt-3 space-y-1 text-xs text-slate-500">
               <ContactLine client={client} />
-              <p>{[client.phone, client.emirate].filter(Boolean).join(" · ") || "No contact yet"}</p>
+              <p>{[client.phone, regionLabel(client.emirate)].filter(Boolean).join(" · ") || "No contact yet"}</p>
             </div>
             <p className="mt-3 text-[11px] font-medium text-slate-400">{interestLabel(client.interestCount)}</p>
             <div className="mt-3"><DetailsLink id={client.id} /></div>

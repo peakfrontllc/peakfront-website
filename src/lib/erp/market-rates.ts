@@ -13,6 +13,7 @@ export type MarketRate = {
   dailyRate: number | null;
   weeklyRate: number | null;
   monthlyRate: number | null;
+  perKmRate: number | null;
   vatIncluded: boolean;
   notes: string;
   hasRate: boolean;
@@ -23,6 +24,7 @@ type MarketRow = {
   daily_rate: number | string | null;
   weekly_rate: number | string | null;
   monthly_rate: number | string | null;
+  per_km_rate: number | string | null;
   vat_included: boolean;
   notes: string;
 };
@@ -53,6 +55,7 @@ function toMarketRate(item: EquipmentListItem, row: MarketRow | undefined): Mark
   const dailyRate = amount(row?.daily_rate);
   const weeklyRate = amount(row?.weekly_rate);
   const monthlyRate = amount(row?.monthly_rate);
+  const perKmRate = amount(row?.per_km_rate);
   const notes = row?.notes ?? "";
   return {
     equipmentId: item.id,
@@ -64,9 +67,10 @@ function toMarketRate(item: EquipmentListItem, row: MarketRow | undefined): Mark
     dailyRate,
     weeklyRate,
     monthlyRate,
+    perKmRate,
     vatIncluded: row?.vat_included ?? false,
     notes,
-    hasRate: dailyRate !== null || weeklyRate !== null || monthlyRate !== null || notes.trim().length > 0,
+    hasRate: dailyRate !== null || weeklyRate !== null || monthlyRate !== null || perKmRate !== null || notes.trim().length > 0,
   };
 }
 
@@ -75,7 +79,7 @@ export async function listMarketRates(): Promise<MarketRate[]> {
     listEquipment({}),
     getServiceClient()
       .from("equipment_market_rates")
-      .select("equipment_id, daily_rate, weekly_rate, monthly_rate, vat_included, notes"),
+      .select("equipment_id, daily_rate, weekly_rate, monthly_rate, per_km_rate, vat_included, notes"),
   ]);
   if (stored.error) throw new Error(stored.error.message);
   const byEquipment = new Map(((stored.data ?? []) as MarketRow[]).map((row) => [row.equipment_id, row]));
@@ -91,7 +95,7 @@ export async function listMarketRates(): Promise<MarketRate[]> {
 export async function getMarketRate(equipmentId: string) {
   const { data, error } = await getServiceClient()
     .from("equipment_market_rates")
-    .select("daily_rate, weekly_rate, monthly_rate, vat_included, notes")
+    .select("daily_rate, weekly_rate, monthly_rate, per_km_rate, vat_included, notes")
     .eq("equipment_id", equipmentId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -99,13 +103,15 @@ export async function getMarketRate(equipmentId: string) {
   const dailyRate = amount(row?.daily_rate);
   const weeklyRate = amount(row?.weekly_rate);
   const monthlyRate = amount(row?.monthly_rate);
+  const perKmRate = amount(row?.per_km_rate);
   const notes = row?.notes ?? "";
   return {
     dailyRate,
     weeklyRate,
     monthlyRate,
+    perKmRate,
     vatIncluded: row?.vat_included ?? false,
     notes,
-    hasRate: dailyRate !== null || weeklyRate !== null || monthlyRate !== null || notes.trim().length > 0,
+    hasRate: dailyRate !== null || weeklyRate !== null || monthlyRate !== null || perKmRate !== null || notes.trim().length > 0,
   };
 }

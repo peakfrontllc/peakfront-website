@@ -30,6 +30,7 @@ export type RateRow = {
   monthlyRate: number | null;
   transportCharge: number | null;
   operatorDailyCharge: number | null;
+  perKmRate: number | null;
   vatIncluded: boolean;
   validFrom: string;
   validTo: string | null;
@@ -102,6 +103,7 @@ function mapRate(row: {
   monthly_rate: unknown;
   transport_charge: unknown;
   operator_daily_charge: unknown;
+  per_km_rate: unknown;
   vat_included: boolean;
   valid_from: string;
   valid_to: string | null;
@@ -114,6 +116,7 @@ function mapRate(row: {
     monthlyRate: money(row.monthly_rate),
     transportCharge: money(row.transport_charge),
     operatorDailyCharge: money(row.operator_daily_charge),
+    perKmRate: money(row.per_km_rate),
     vatIncluded: row.vat_included,
     validFrom: row.valid_from,
     validTo: row.valid_to,
@@ -248,7 +251,7 @@ export async function getSupplier(id: string): Promise<SupplierDetail | null> {
       supplier_equipment(
         id, equipment_id, lead_time, notes,
         equipment(name),
-        supplier_rates(id, daily_rate, weekly_rate, monthly_rate, transport_charge, operator_daily_charge, vat_included, valid_from, valid_to, notes)
+        supplier_rates(id, daily_rate, weekly_rate, monthly_rate, transport_charge, operator_daily_charge, per_km_rate, vat_included, valid_from, valid_to, notes)
       ),
       supplier_catalogue(id, category_id, equipment_categories(name))
     `)

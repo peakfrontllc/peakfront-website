@@ -3,7 +3,8 @@ import { LayoutGrid, List, Table2 } from "lucide-react";
 import { CataloguePhoto } from "@/components/manage/erp/CataloguePhoto";
 import { SupplierEquipmentEditor } from "@/components/manage/erp/SupplierEquipmentEditor";
 import type { RateRow } from "@/lib/erp/suppliers";
-import { formatMoney } from "@/lib/erp/shared";
+import { chargesPerKm } from "@/lib/erp/lengths";
+import { formatMoney, formatPerKm } from "@/lib/erp/shared";
 
 export const SUPPLIER_EQUIPMENT_VIEWS = ["cards", "list", "table"] as const;
 export type SupplierEquipmentView = (typeof SUPPLIER_EQUIPMENT_VIEWS)[number];
@@ -107,11 +108,14 @@ export function SupplierEquipmentCatalogue({
               <th className="px-4 py-3 font-semibold">Day</th>
               <th className="px-4 py-3 font-semibold">Week</th>
               <th className="px-4 py-3 font-semibold">Month</th>
+              <th className="px-4 py-3 font-semibold">Per km</th>
               <th className="px-4 py-3 font-semibold"><span className="sr-only">Details</span></th>
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => (
+            {items.map((item) => {
+              const current = item.rates.find((rate) => rate.current) ?? item.rates[0];
+              return (
               <tr key={item.id} className="border-b border-slate-100 align-top transition last:border-0 hover:bg-amber/15">
                 <td className="px-4 py-3" data-label="Equipment">
                   <p className="font-semibold text-navy">{item.name}</p>
@@ -121,9 +125,11 @@ export function SupplierEquipmentCatalogue({
                 <td className="px-4 py-3 text-xs font-semibold text-navy" data-label="Day">{formatMoney(item.daily)}</td>
                 <td className="px-4 py-3 text-xs font-semibold text-navy" data-label="Week">{formatMoney(item.weekly)}</td>
                 <td className="px-4 py-3 text-xs font-semibold text-navy" data-label="Month">{formatMoney(item.monthly)}</td>
+                <td className="px-4 py-3 text-xs font-semibold text-navy" data-label="Per km">{chargesPerKm(item.typeName) ? (formatPerKm(current?.perKmRate) || "—") : ""}</td>
                 <td className="px-4 py-3 text-right" data-label=""><DetailsLink id={item.equipmentId} /></td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

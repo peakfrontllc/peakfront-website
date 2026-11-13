@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Building2, LayoutGrid, List, Table2, UserRound } from "lucide-react";
 import type { EquipmentSupplier } from "@/lib/erp/equipment";
-import { formatMoney } from "@/lib/erp/shared";
+import { formatMoney, formatPerKm } from "@/lib/erp/shared";
 
 export const EQUIPMENT_SUPPLIER_VIEWS = ["cards", "list", "table"] as const;
 export type EquipmentSupplierView = (typeof EQUIPMENT_SUPPLIER_VIEWS)[number];
@@ -62,8 +62,15 @@ function RateTiles({ supplier }: { supplier: EquipmentSupplier }) {
   );
 }
 
+function TripNote({ supplier, perKm }: { supplier: EquipmentSupplier; perKm: boolean }) {
+  if (!perKm) return null;
+  const text = formatPerKm(supplier.perKmRate);
+  if (!text) return null;
+  return <p className="mt-2 text-[13px] font-semibold text-navy">{text}</p>;
+}
+
 function supplierHasRates(supplier: EquipmentSupplier, canRates: boolean) {
-  return canRates && (supplier.dailyRate !== null || supplier.weeklyRate !== null || supplier.monthlyRate !== null);
+  return canRates && (supplier.dailyRate !== null || supplier.weeklyRate !== null || supplier.monthlyRate !== null || supplier.perKmRate !== null);
 }
 
 export function EquipmentSupplierViewSwitch({
@@ -103,10 +110,12 @@ export function EquipmentSupplierViewSwitch({
 export function EquipmentSupplierCards({
   suppliers,
   canRates,
+  perKm = false,
   compact = false,
 }: {
   suppliers: EquipmentSupplier[];
   canRates: boolean;
+  perKm?: boolean;
   compact?: boolean;
 }) {
   if (compact) {
@@ -145,7 +154,7 @@ export function EquipmentSupplierCards({
                 )}
               </div>
             </div>
-            {supplierHasRates(supplier, canRates) && <div className="mt-2"><RateTiles supplier={supplier} /></div>}
+            {supplierHasRates(supplier, canRates) && <div className="mt-2"><RateTiles supplier={supplier} /><TripNote supplier={supplier} perKm={perKm} /></div>}
             <div className="mt-1.5">
               <DetailsLink id={supplier.supplierId} />
             </div>
@@ -160,10 +169,12 @@ export function EquipmentSupplierCatalogue({
   suppliers,
   view,
   canRates,
+  perKm = false,
 }: {
   suppliers: EquipmentSupplier[];
   view: EquipmentSupplierView;
   canRates: boolean;
+  perKm?: boolean;
 }) {
   if (suppliers.length === 0) {
     return <p className="bg-[#eef2f6] px-4 py-10 text-sm text-slate-500">No suppliers match this search.</p>;
@@ -191,6 +202,7 @@ export function EquipmentSupplierCatalogue({
               {supplierHasRates(supplier, canRates) && (
                 <div className="w-full lg:w-64 lg:shrink-0">
                   <RateTiles supplier={supplier} />
+                  <TripNote supplier={supplier} perKm={perKm} />
                 </div>
               )}
               <DetailsLink id={supplier.supplierId} />
@@ -214,6 +226,7 @@ export function EquipmentSupplierCatalogue({
               {canRates && <th className="px-4 py-3 font-semibold">Day</th>}
               {canRates && <th className="px-4 py-3 font-semibold">Week</th>}
               {canRates && <th className="px-4 py-3 font-semibold">Month</th>}
+              {canRates && perKm && <th className="px-4 py-3 font-semibold">Per km</th>}
               <th className="px-4 py-3 font-semibold"><span className="sr-only">Details</span></th>
             </tr>
           </thead>
@@ -245,6 +258,7 @@ export function EquipmentSupplierCatalogue({
                 {canRates && <td className="px-4 py-3 font-medium text-navy" data-label="Day">{supplier.dailyRate === null ? "—" : formatMoney(supplier.dailyRate)}</td>}
                 {canRates && <td className="px-4 py-3 font-medium text-navy" data-label="Week">{supplier.weeklyRate === null ? "—" : formatMoney(supplier.weeklyRate)}</td>}
                 {canRates && <td className="px-4 py-3 font-medium text-navy" data-label="Month">{supplier.monthlyRate === null ? "—" : formatMoney(supplier.monthlyRate)}</td>}
+                {canRates && perKm && <td className="px-4 py-3 font-medium text-navy" data-label="Per km">{formatPerKm(supplier.perKmRate) || "—"}</td>}
                 <td className="px-4 py-3 text-right" data-label=""><DetailsLink id={supplier.supplierId} /></td>
               </tr>
             ))}
@@ -255,7 +269,7 @@ export function EquipmentSupplierCatalogue({
   }
   return (
       <div className="bg-[#eef2f6] p-2">
-      <EquipmentSupplierCards suppliers={suppliers} canRates={canRates} />
+      <EquipmentSupplierCards suppliers={suppliers} canRates={canRates} perKm={perKm} />
     </div>
   );
 }

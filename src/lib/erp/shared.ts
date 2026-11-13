@@ -46,6 +46,25 @@ export function emiratesFromRow(emirates: unknown, emirate: string) {
   return EMIRATES.filter((item) => stored.includes(item));
 }
 
+export function regionLabel(emirate: string) {
+  const regions = emiratesFromRow(null, emirate);
+  if (regions.length === 0) return "";
+  if (regions.length === EMIRATES.length) return "All regions";
+  return regions.join(", ");
+}
+
+export function coversRegion(emirate: string, extras: string[], region: string) {
+  if (!region) return true;
+  const regions = emiratesFromRow(null, [emirate, ...extras].filter(Boolean).join(", "));
+  return (regions as readonly string[]).includes(region);
+}
+
+export function clientEmirate(value: string) {
+  if (value === "all") return EMIRATES.join(", ");
+  if ((EMIRATES as readonly string[]).includes(value)) return value;
+  return "";
+}
+
 export function field(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
@@ -141,6 +160,13 @@ export function formatMoney(value: number | string | null | undefined) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+}
+
+export function formatPerKm(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") return "";
+  const amount = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(amount)) return "";
+  return `${formatMoney(amount)} / km`;
 }
 
 export function todayIso() {

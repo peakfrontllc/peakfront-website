@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { logActivity } from "@/lib/auth/activity";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
+import { equipmentChargesPerKm } from "@/lib/erp/equipment";
 import { checked, fail, field, parseMoney } from "@/lib/erp/shared";
 import { getServiceClient } from "@/lib/supabase/service";
 
@@ -36,13 +37,15 @@ export async function saveMarketRate(formData: FormData) {
   const daily = parseMoney(field(formData, "dailyRate"));
   const weekly = parseMoney(field(formData, "weeklyRate"));
   const monthly = parseMoney(field(formData, "monthlyRate"));
+  const perKm = parseMoney(field(formData, "perKmRate"));
   const notes = field(formData, "notes").slice(0, 500);
-  if ([daily, weekly, monthly].some((value) => Number.isNaN(value))) {
+  if ([daily, weekly, monthly, perKm].some((value) => Number.isNaN(value))) {
     fail(path, "Enter amounts as numbers with up to two decimal places.");
   }
+  const kilometre = await equipmentChargesPerKm(equipmentId) ? perKm : null;
 
   const service = getServiceClient();
-  if (daily === null && weekly === null && monthly === null && !notes) {
+  if (daily === null && weekly === null && monthly === null && kilometre === null && !notes) {
     const { error } = await service.from("equipment_market_rates").delete().eq("equipment_id", equipmentId);
     if (error) fail(path, "The general rate could not be cleared.");
   } else {
@@ -51,6 +54,7 @@ export async function saveMarketRate(formData: FormData) {
       daily_rate: daily,
       weekly_rate: weekly,
       monthly_rate: monthly,
+      per_km_rate: kilometre,
       vat_included: checked(formData, "vatIncluded"),
       notes,
       updated_by: session.userId,

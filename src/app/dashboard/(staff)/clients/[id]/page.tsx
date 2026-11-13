@@ -5,6 +5,7 @@ import { PermanentDeleteButton } from "@/components/manage/erp/PermanentDeleteBu
 import { SectionNav } from "@/components/manage/erp/SectionNav";
 import { ArchiveButton, EmirateField, ExtraFieldPanel, Flash, Panel, SectionStack, TextField, documentTypeLabel, fileHref } from "@/components/manage/erp/ui";
 import { buttonClass, fieldClass } from "@/components/manage/form-styles";
+import { regionLabel } from "@/lib/erp/shared";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
 import {
@@ -59,7 +60,7 @@ export default async function ClientDetailPage({
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Client</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-navy">{client.companyName}</h1>
-          <p className="mt-1 text-sm text-slate-500">{[client.industry, client.phone, client.email, client.website, client.emirate || "All regions"].filter(Boolean).join(" · ")}</p>
+          <p className="mt-1 text-sm text-slate-500">{[client.industry, client.phone, client.email, client.website, regionLabel(client.emirate) || "No region"].filter(Boolean).join(" · ")}</p>
         </div>
         {canWrite && (
           <div className="flex shrink-0 gap-2">
@@ -97,13 +98,13 @@ export default async function ClientDetailPage({
                 <TextField name="phone" label="Phone" defaultValue={client.phone} />
                 <TextField name="email" label="Email" type="email" defaultValue={client.email} />
                 <TextField name="website" label="Website" defaultValue={client.website} />
-                <EmirateField name="emirate" defaultValue={client.emirate} allowAll />
+                <EmirateField name="emirate" defaultValue={client.emirate} allowAll required />
                 <div className="sm:col-span-2"><TextField name="billingAddress" label="Billing address" defaultValue={client.billingAddress} /></div>
                 <div className="sm:col-span-2"><TextField name="notes" label="Summary" defaultValue={client.notes} /></div>
                 <button className={buttonClass} type="submit">Save company</button>
               </form>
             ) : (
-              <p className="text-sm text-slate-600">{[client.industry, client.phone, client.email, client.website, client.emirate || "All regions"].filter(Boolean).join(" · ")}</p>
+              <p className="text-sm text-slate-600">{[client.industry, client.phone, client.email, client.website, regionLabel(client.emirate) || "No region"].filter(Boolean).join(" · ")}</p>
             )}
           </Panel>
 

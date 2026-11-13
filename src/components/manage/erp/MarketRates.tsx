@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { saveMarketRate } from "@/lib/erp/market-rate-actions";
 import type { MarketRate } from "@/lib/erp/market-rates";
-import { measureNote } from "@/lib/erp/lengths";
-import { formatMoney } from "@/lib/erp/shared";
+import { chargesPerKm, measureNote } from "@/lib/erp/lengths";
+import { formatMoney, formatPerKm } from "@/lib/erp/shared";
 import { fieldClass, labelClass } from "@/components/manage/form-styles";
 
 function moneyValue(value: number | null) {
@@ -20,19 +20,25 @@ export function MarketRateFields({ rate, returnTo }: { rate: MarketRate; returnT
     <form action={saveMarketRate} className="grid gap-3">
       <input type="hidden" name="equipmentId" value={rate.equipmentId} />
       <input type="hidden" name="returnTo" value={returnTo} />
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div>
-          <label className={labelClass} htmlFor={`daily-${rate.equipmentId}`}>Day</label>
-          <input id={`daily-${rate.equipmentId}`} name="dailyRate" inputMode="decimal" defaultValue={moneyValue(rate.dailyRate)} placeholder="0.00" className={fieldClass} />
+      <div className={chargesPerKm(rate.typeName) ? "grid grid-cols-2 items-end gap-3 sm:grid-cols-4" : "grid grid-cols-3 items-end gap-3"}>
+        <div className="text-center">
+          <label className={`${labelClass} block`} htmlFor={`daily-${rate.equipmentId}`}>Daily AED</label>
+          <input id={`daily-${rate.equipmentId}`} name="dailyRate" inputMode="decimal" defaultValue={moneyValue(rate.dailyRate)} placeholder="0.00" className={`${fieldClass} text-center`} />
         </div>
-        <div>
-          <label className={labelClass} htmlFor={`weekly-${rate.equipmentId}`}>Week</label>
-          <input id={`weekly-${rate.equipmentId}`} name="weeklyRate" inputMode="decimal" defaultValue={moneyValue(rate.weeklyRate)} placeholder="0.00" className={fieldClass} />
+        <div className="text-center">
+          <label className={`${labelClass} block`} htmlFor={`weekly-${rate.equipmentId}`}>Weekly AED</label>
+          <input id={`weekly-${rate.equipmentId}`} name="weeklyRate" inputMode="decimal" defaultValue={moneyValue(rate.weeklyRate)} placeholder="0.00" className={`${fieldClass} text-center`} />
         </div>
-        <div>
-          <label className={labelClass} htmlFor={`monthly-${rate.equipmentId}`}>Month</label>
-          <input id={`monthly-${rate.equipmentId}`} name="monthlyRate" inputMode="decimal" defaultValue={moneyValue(rate.monthlyRate)} placeholder="0.00" className={fieldClass} />
+        <div className="text-center">
+          <label className={`${labelClass} block`} htmlFor={`monthly-${rate.equipmentId}`}>Monthly AED</label>
+          <input id={`monthly-${rate.equipmentId}`} name="monthlyRate" inputMode="decimal" defaultValue={moneyValue(rate.monthlyRate)} placeholder="0.00" className={`${fieldClass} text-center`} />
         </div>
+        {chargesPerKm(rate.typeName) && (
+          <div className="text-center">
+            <label className={`${labelClass} block`} htmlFor={`km-${rate.equipmentId}`}>Per km AED</label>
+            <input id={`km-${rate.equipmentId}`} name="perKmRate" inputMode="decimal" defaultValue={moneyValue(rate.perKmRate)} placeholder="0.00" className={`${fieldClass} text-center`} />
+          </div>
+        )}
       </div>
       <div>
         <label className={labelClass} htmlFor={`notes-${rate.equipmentId}`}>Note</label>
@@ -63,10 +69,18 @@ function Amounts({ rate }: { rate: MarketRate }) {
   );
 }
 
+function TripLine({ typeName, rate }: { typeName: string; rate: number | null }) {
+  if (!chargesPerKm(typeName)) return null;
+  const text = formatPerKm(rate);
+  if (!text) return null;
+  return <p className="text-center text-sm font-semibold text-navy">{text}</p>;
+}
+
 export function MarketRatePanel({ rate, canWrite, returnTo }: { rate: MarketRate; canWrite: boolean; returnTo: string }) {
   return (
     <div className="grid gap-3">
       <Amounts rate={rate} />
+      <TripLine typeName={rate.typeName} rate={rate.perKmRate} />
       {rate.notes ? <p className="text-sm text-slate-600">{rate.notes}</p> : null}
       {rate.vatIncluded ? <p className="text-xs text-slate-500">VAT included</p> : null}
       {!rate.hasRate && !canWrite ? <p className="text-sm text-slate-500">No general rate noted yet.</p> : null}
@@ -91,13 +105,14 @@ function RateCard({ rate, returnTo, canWrite }: { rate: MarketRate; returnTo: st
         </span>
       </div>
       <Amounts rate={rate} />
+      <TripLine typeName={rate.typeName} rate={rate.perKmRate} />
       {rate.notes ? <p className="text-[13px] text-slate-600">{rate.notes}</p> : null}
       {canWrite ? (
         <>
           <button type="button" onClick={() => setOpen((value) => !value)} className="self-start text-sm font-semibold text-navy underline-offset-2 hover:underline">
             {open ? "Close" : "Edit general rate"}
           </button>
-          {open ? <MarketRateFields key={`${rate.equipmentId}-${rate.dailyRate}-${rate.weeklyRate}-${rate.monthlyRate}-${rate.notes}`} rate={rate} returnTo={returnTo} /> : null}
+          {open ? <MarketRateFields key={`${rate.equipmentId}-${rate.dailyRate}-${rate.weeklyRate}-${rate.monthlyRate}-${rate.perKmRate}-${rate.notes}`} rate={rate} returnTo={returnTo} /> : null}
         </>
       ) : null}
     </article>
@@ -118,6 +133,7 @@ export function MarketRateCatalogue({ rates, returnTo, view, canWrite }: { rates
               <th className="px-3 py-2 font-semibold">Day</th>
               <th className="px-3 py-2 font-semibold">Week</th>
               <th className="px-3 py-2 font-semibold">Month</th>
+              <th className="px-3 py-2 font-semibold">Per km</th>
               <th className="px-3 py-2 font-semibold">Note</th>
             </tr>
           </thead>
@@ -131,6 +147,7 @@ export function MarketRateCatalogue({ rates, returnTo, view, canWrite }: { rates
                 <td className="px-3 py-2" data-label="Day">{formatMoney(rate.dailyRate)}</td>
                 <td className="px-3 py-2" data-label="Week">{formatMoney(rate.weeklyRate)}</td>
                 <td className="px-3 py-2" data-label="Month">{formatMoney(rate.monthlyRate)}</td>
+                <td className="px-3 py-2" data-label="Per km">{chargesPerKm(rate.typeName) ? (formatPerKm(rate.perKmRate) || "—") : ""}</td>
                 <td className="px-3 py-2 text-[13px] text-slate-600" data-label="Note">
                   <p>{rate.notes || "—"}</p>
                   {canWrite ? (

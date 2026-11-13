@@ -6,7 +6,7 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
 import { insertCustomFields } from "@/lib/erp/custom-fields";
 import { DOCUMENT_BUCKET, removeStoredFile, storeFile } from "@/lib/erp/files";
-import { checked, extraFieldPairs, fail, field, fileFromForm } from "@/lib/erp/shared";
+import { checked, clientEmirate, extraFieldPairs, fail, field, fileFromForm } from "@/lib/erp/shared";
 import { getServiceClient } from "@/lib/supabase/service";
 
 function clientInput(formData: FormData) {
@@ -18,7 +18,7 @@ function clientInput(formData: FormData) {
     phone: field(formData, "phone"),
     website: field(formData, "website"),
     billing_address: field(formData, "billingAddress"),
-    emirate: field(formData, "emirate"),
+    emirate: clientEmirate(field(formData, "emirate")),
     notes: field(formData, "notes"),
   };
 }
@@ -28,6 +28,7 @@ export async function createClientRecord(formData: FormData) {
   const input = clientInput(formData);
   const extras = extraFieldPairs(formData);
   if (input.company_name.length < 2) fail("/dashboard/clients/new", "Enter the company name.");
+  if (!input.emirate) fail("/dashboard/clients/new", "Select a region.");
   if (extras.error) fail("/dashboard/clients/new", extras.error);
   const { data, error } = await getServiceClient()
     .from("clients")
@@ -47,6 +48,7 @@ export async function updateClient(formData: FormData) {
   const input = clientInput(formData);
   const path = `/dashboard/clients/${id}`;
   if (input.company_name.length < 2) fail(path, "Enter the company name.");
+  if (!input.emirate) fail(path, "Select a region.");
   const { error } = await getServiceClient().from("clients").update(input).eq("id", id);
   if (error) fail(path, "The client could not be saved.");
   await logActivity(session, "client.updated", "client", id);

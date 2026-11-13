@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { logActivity } from "@/lib/auth/activity";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission, requireStaff } from "@/lib/auth/session";
-import { catalogueTypeGroups, catalogueTypeIdSet, listCategories } from "@/lib/erp/equipment";
+import { catalogueTypeGroups, catalogueTypeIdSet, listCategories, supplierEquipmentChargesPerKm } from "@/lib/erp/equipment";
 import { DOCUMENT_BUCKET, removeStoredFile, storeFile } from "@/lib/erp/files";
 import { insertCustomFields } from "@/lib/erp/custom-fields";
 import { checked, chosenEmirates, dayBefore, EMIRATES, extraFieldPairs, fail, field, fileFromForm, parseMoney, searchTerm, socialLinkPairs, todayIso } from "@/lib/erp/shared";
@@ -348,12 +348,14 @@ export async function addSupplierRate(formData: FormData) {
   const monthly = parseMoney(field(formData, "monthlyRate"));
   const transport = parseMoney(field(formData, "transportCharge"));
   const operator = parseMoney(field(formData, "operatorDailyCharge"));
+  const perKm = parseMoney(field(formData, "perKmRate"));
   if (!validFrom) fail(path, "Enter the date this rate starts.");
-  if ([daily, weekly, monthly, transport, operator].some((value) => Number.isNaN(value))) {
+  if ([daily, weekly, monthly, transport, operator, perKm].some((value) => Number.isNaN(value))) {
     fail(path, "Enter amounts as numbers with up to two decimal places.");
   }
-  if (daily === null && weekly === null && monthly === null) {
-    fail(path, "Enter at least one of the daily, weekly, or monthly rates.");
+  const kilometre = await supplierEquipmentChargesPerKm(supplierEquipmentId) ? perKm : null;
+  if (daily === null && weekly === null && monthly === null && kilometre === null) {
+    fail(path, "Enter a hire rate or an AED amount per kilometre.");
   }
 
   const service = getServiceClient();
@@ -384,6 +386,7 @@ export async function addSupplierRate(formData: FormData) {
       monthly_rate: monthly,
       transport_charge: transport,
       operator_daily_charge: operator,
+      per_km_rate: kilometre,
       vat_included: checked(formData, "vatIncluded"),
       valid_from: validFrom,
       notes: field(formData, "notes"),
@@ -428,12 +431,14 @@ export async function updateEquipmentRate(formData: FormData) {
   const monthly = parseMoney(field(formData, "monthlyRate"));
   const transport = parseMoney(field(formData, "transportCharge"));
   const operator = parseMoney(field(formData, "operatorDailyCharge"));
+  const perKm = parseMoney(field(formData, "perKmRate"));
   if (!supplierEquipmentId) fail(path, "Link a supplier before saving a rate.");
-  if ([daily, weekly, monthly, transport, operator].some((value) => Number.isNaN(value))) {
+  if ([daily, weekly, monthly, transport, operator, perKm].some((value) => Number.isNaN(value))) {
     fail(path, "Enter amounts as numbers with up to two decimal places.");
   }
-  if (daily === null && weekly === null && monthly === null) {
-    fail(path, "Enter at least one of the daily, weekly, or monthly rates.");
+  const kilometre = await supplierEquipmentChargesPerKm(supplierEquipmentId) ? perKm : null;
+  if (daily === null && weekly === null && monthly === null && kilometre === null) {
+    fail(path, "Enter a hire rate or an AED amount per kilometre.");
   }
 
   const service = getServiceClient();
@@ -443,6 +448,7 @@ export async function updateEquipmentRate(formData: FormData) {
     monthly_rate: monthly,
     transport_charge: transport,
     operator_daily_charge: operator,
+    per_km_rate: kilometre,
     vat_included: checked(formData, "vatIncluded"),
   };
   if (rateId) {

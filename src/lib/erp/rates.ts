@@ -24,6 +24,7 @@ export type CurrentRate = {
   monthlyRate: number | null;
   transportCharge: number | null;
   operatorDailyCharge: number | null;
+  perKmRate: number | null;
   vatIncluded: boolean;
   validFrom: string;
   validTo: string | null;
@@ -39,6 +40,7 @@ type RawMoneyRate = {
   monthly_rate: number | string | null;
   transport_charge: number | string | null;
   operator_daily_charge: number | string | null;
+  per_km_rate: number | string | null;
   vat_included: boolean;
   valid_from: string;
   valid_to: string | null;
@@ -125,6 +127,7 @@ function rateRow(
     monthlyRate: current ? amount(current.monthly_rate) : null,
     transportCharge: current ? amount(current.transport_charge) : null,
     operatorDailyCharge: current ? amount(current.operator_daily_charge) : null,
+    perKmRate: current ? amount(current.per_km_rate) : null,
     vatIncluded: current?.vat_included ?? false,
     validFrom: current?.valid_from ?? "",
     validTo: current?.valid_to ?? null,
@@ -142,7 +145,7 @@ async function loadRates(): Promise<CurrentRate[]> {
       .select(`
         id, equipment_id,
         suppliers(id, company_name, archived_at, emirate, emirates, supplier_locations(emirate)),
-        supplier_rates(id, daily_rate, weekly_rate, monthly_rate, transport_charge, operator_daily_charge, vat_included, valid_from, valid_to)
+        supplier_rates(id, daily_rate, weekly_rate, monthly_rate, transport_charge, operator_daily_charge, per_km_rate, vat_included, valid_from, valid_to)
       `),
   ]);
   if (error) throw new Error(error.message);

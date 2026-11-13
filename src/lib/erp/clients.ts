@@ -2,7 +2,7 @@ import "server-only";
 
 import { getServiceClient } from "@/lib/supabase/service";
 import { matchesSearch } from "@/lib/erp/search";
-import { searchTerm } from "@/lib/erp/shared";
+import { coversRegion, searchTerm } from "@/lib/erp/shared";
 
 export type ClientListItem = {
   id: string;
@@ -12,6 +12,7 @@ export type ClientListItem = {
   email: string;
   website: string;
   emirate: string;
+  locationEmirates: string[];
   contactName: string;
   contactTitle: string;
   interestCount: number;
@@ -70,6 +71,7 @@ export async function listClients(filters: { q?: string; archived?: boolean; reg
     .select(`
       id, company_name, industry, phone, email, website, emirate, archived_at,
       client_contacts(name, job_title, is_primary),
+      client_locations(emirate),
       client_equipment_interests(id)
     `)
     .order("company_name");
@@ -81,6 +83,7 @@ export async function listClients(filters: { q?: string; archived?: boolean; reg
   return (data ?? []).flatMap((row) => {
     const contacts = (Array.isArray(row.client_contacts) ? row.client_contacts : []) as { name: string; job_title: string; is_primary: boolean }[];
     const contact = contacts.find((item) => item.is_primary) ?? contacts[0];
+    const locations = (Array.isArray(row.client_locations) ? row.client_locations : []) as { emirate?: string }[];
     const companyName = row.company_name as string;
     const contactName = (contact?.name ?? "").trim();
     const item: ClientListItem = {
@@ -91,12 +94,13 @@ export async function listClients(filters: { q?: string; archived?: boolean; reg
       email: (row.email as string) ?? "",
       website: (row.website as string) ?? "",
       emirate: (row.emirate as string) ?? "",
+      locationEmirates: locations.map((location) => (location.emirate ?? "").trim()).filter(Boolean),
       contactName: contactName.toLowerCase() === companyName.toLowerCase() ? "" : contactName,
       contactTitle: (contact?.job_title ?? "").trim(),
       interestCount: Array.isArray(row.client_equipment_interests) ? row.client_equipment_interests.length : 0,
       archivedAt: (row.archived_at as string | null) ?? null,
     };
-    if (region && item.emirate !== region) return [];
+    if (!coversRegion(item.emirate, item.locationEmirates, region)) return [];
     if (!matchesSearch(term, [item.companyName, item.industry, item.phone, item.email, item.website, item.emirate, item.contactName, item.contactTitle])) return [];
     return [item];
   });

@@ -30,7 +30,7 @@ export default async function NewClientPage({
             <TextField name="phone" label="Phone" />
             <TextField name="email" label="Email" type="email" />
             <TextField name="website" label="Website" />
-            <EmirateField name="emirate" allowAll />
+            <EmirateField name="emirate" allowAll required />
             <div className="sm:col-span-2">
               <label className={labelClass} htmlFor="billingAddress">Billing address</label>
               <textarea id="billingAddress" name="billingAddress" rows={3} className={fieldClass} />

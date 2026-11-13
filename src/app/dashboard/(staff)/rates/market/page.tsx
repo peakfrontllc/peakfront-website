@@ -57,7 +57,7 @@ export default async function MarketRatesPage({
     <>
       <MasterHero kicker="Pricing" title="General rates" icon={Receipt} action={{ href: "/dashboard/rates", label: "Supplier rates" }} />
       <p className="-mt-4 mb-6 max-w-2xl text-sm text-slate-500">
-        A market note for each machine: day, week, and month. These figures stay separate from the prices a supplier charges.
+        A market note for each machine: day, week, month, and an AED amount per kilometre. These figures stay separate from the prices a supplier charges.
         {" "}
         <span className="font-semibold text-navy">{noted}</span> of {rates.length} machines have a note.
       </p>

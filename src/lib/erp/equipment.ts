@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getServiceClient } from "@/lib/supabase/service";
-import { boomMetres, equipmentFacts } from "@/lib/erp/lengths";
+import { boomMetres, chargesPerKm, equipmentFacts } from "@/lib/erp/lengths";
 import { matchesSearch } from "@/lib/erp/search";
 import { emiratesFromRow, isCurrentRate } from "@/lib/erp/shared";
 
@@ -60,8 +60,33 @@ export type EquipmentSupplier = {
   dailyRate: number | null;
   weeklyRate: number | null;
   monthlyRate: number | null;
+  perKmRate: number | null;
   source: "available" | "catalogue";
 };
+
+export async function equipmentChargesPerKm(equipmentId: string) {
+  const [categories, row] = await Promise.all([
+    listCategories(true),
+    getServiceClient().from("equipment").select("category_id").eq("id", equipmentId).maybeSingle(),
+  ]);
+  if (row.error || !row.data) return false;
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  const category = byId.get(row.data.category_id as string);
+  const parent = category?.parentId ? byId.get(category.parentId) : undefined;
+  const grandparent = parent?.parentId ? byId.get(parent.parentId) : undefined;
+  const typeName = grandparent ? parent?.name ?? "" : category?.name ?? "";
+  return chargesPerKm(typeName);
+}
+
+export async function supplierEquipmentChargesPerKm(supplierEquipmentId: string) {
+  const { data, error } = await getServiceClient()
+    .from("supplier_equipment")
+    .select("equipment_id")
+    .eq("id", supplierEquipmentId)
+    .maybeSingle();
+  if (error || !data) return false;
+  return equipmentChargesPerKm(data.equipment_id as string);
+}
 
 function cataloguePlace(category: CategoryOption | undefined, categories: Map<string, CategoryOption>, capacity: string) {
   const parent = category?.parentId ? categories.get(category.parentId) : undefined;
@@ -474,7 +499,7 @@ export async function listEquipmentSuppliers(equipmentId: string): Promise<Equip
       .select(`
         lead_time,
         suppliers(id, company_name, party_type, phone, email, emirate, emirates, archived_at, supplier_contacts(name, job_title, phone, is_primary)),
-        supplier_rates(daily_rate, weekly_rate, monthly_rate, valid_from, valid_to)
+        supplier_rates(daily_rate, weekly_rate, monthly_rate, per_km_rate, valid_from, valid_to)
       `)
       .eq("equipment_id", equipmentId),
     getServiceClient().from("equipment").select("category_id, boom_length").eq("id", equipmentId).maybeSingle(),
@@ -494,6 +519,7 @@ export async function listEquipmentSuppliers(equipmentId: string): Promise<Equip
       daily_rate: number | string | null;
       weekly_rate: number | string | null;
       monthly_rate: number | string | null;
+      per_km_rate: number | string | null;
       valid_from: string;
       valid_to: string | null;
     }[]) ?? [])]
@@ -518,6 +544,7 @@ export async function listEquipmentSuppliers(equipmentId: string): Promise<Equip
       dailyRate: money(current?.daily_rate),
       weeklyRate: money(current?.weekly_rate),
       monthlyRate: money(current?.monthly_rate),
+      perKmRate: money(current?.per_km_rate),
       source: "available" as const,
     }];
   });
@@ -541,6 +568,7 @@ export async function listEquipmentSuppliers(equipmentId: string): Promise<Equip
       dailyRate: null,
       weeklyRate: null,
       monthlyRate: null,
+      perKmRate: null,
       source: "catalogue" as const,
     }];
   });

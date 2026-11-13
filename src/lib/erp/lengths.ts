@@ -1,3 +1,30 @@
+const PER_KM_TYPES = new Set([
+  "pickup crane",
+  "boom truck",
+  "pickup truck",
+  "dyna truck",
+  "tipper truck",
+  "flatbed truck",
+  "dump truck",
+  "recovery truck",
+  "low bed trailer",
+  "diesel tanker",
+  "fuel tanker",
+  "sweet water tanker",
+  "salt water tanker",
+  "sewage tanker",
+  "chiller van",
+  "freezer van",
+  "dry van",
+  "insulated van",
+  "passenger van",
+  "bus",
+]);
+
+export function chargesPerKm(typeName: string) {
+  return PER_KM_TYPES.has(typeName.trim().toLowerCase());
+}
+
 export function lengthField(purposeName: string, typeName: string): "boom" | "bed" | "" {
   const purpose = purposeName.toLowerCase();
   const type = typeName.toLowerCase();

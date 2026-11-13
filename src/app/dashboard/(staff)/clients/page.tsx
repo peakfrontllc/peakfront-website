@@ -9,7 +9,7 @@ import { requirePermission } from "@/lib/auth/session";
 import { listClients } from "@/lib/erp/clients";
 import { currentPage, pageSlice } from "@/lib/erp/pagination";
 import { matchesSearch } from "@/lib/erp/search";
-import { EMIRATES } from "@/lib/erp/shared";
+import { EMIRATES, coversRegion } from "@/lib/erp/shared";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Clients", robots: { index: false, follow: false } };
@@ -31,7 +31,7 @@ export default async function ClientsPage({
   const region = (EMIRATES as readonly string[]).includes(params.region ?? "") ? params.region ?? "" : "";
   const industry = industries.includes(params.industry ?? "") ? params.industry ?? "" : "";
   const clients = loaded.filter((client) => {
-    if (region && client.emirate && client.emirate !== region) return false;
+    if (!coversRegion(client.emirate, client.locationEmirates, region)) return false;
     if (industry && client.industry !== industry) return false;
     return matchesSearch(params.q ?? "", [client.companyName, client.industry, client.phone, client.email, client.website, client.emirate, client.contactName, client.contactTitle]);
   });

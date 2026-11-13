@@ -6,8 +6,8 @@ import { useState } from "react";
 import { CataloguePhoto } from "@/components/manage/erp/CataloguePhoto";
 import { buttonClass, fieldClass, labelClass } from "@/components/manage/form-styles";
 import { updateEquipmentRate } from "@/lib/erp/supplier-actions";
-import { capacityLabel, measureNote } from "@/lib/erp/lengths";
-import { formatMoney } from "@/lib/erp/shared";
+import { capacityLabel, chargesPerKm, measureNote } from "@/lib/erp/lengths";
+import { formatMoney, formatPerKm } from "@/lib/erp/shared";
 
 type RateView = "cards" | "list" | "table";
 
@@ -29,6 +29,7 @@ type RateLine = {
   monthlyRate: number | null;
   transportCharge: number | null;
   operatorDailyCharge: number | null;
+  perKmRate: number | null;
   vatIncluded: boolean;
   validFrom: string;
   hasRate: boolean;
@@ -106,7 +107,7 @@ function EditButton({ open, onClick }: { open: boolean; onClick: () => void }) {
 
 function RateForm({ rate, filters }: { rate: RateLine; filters: RateFilters }) {
   return (
-    <form action={updateEquipmentRate} className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    <form action={updateEquipmentRate} className="grid gap-3">
       <input type="hidden" name="supplierEquipmentId" value={rate.supplierEquipmentId} />
       <input type="hidden" name="rateId" value={rate.rateId} />
       <input type="hidden" name="q" value={filters.q} />
@@ -115,30 +116,38 @@ function RateForm({ rate, filters }: { rate: RateLine; filters: RateFilters }) {
       <input type="hidden" name="region" value={filters.region} />
       <input type="hidden" name="status" value={filters.status} />
       {filters.view !== "cards" && <input type="hidden" name="view" value={filters.view} />}
-      <label className="block">
-        <span className={labelClass}>Daily AED</span>
-        <input name="dailyRate" inputMode="decimal" defaultValue={moneyValue(rate.dailyRate)} className={fieldClass} />
-      </label>
-      <label className="block">
-        <span className={labelClass}>Weekly AED</span>
-        <input name="weeklyRate" inputMode="decimal" defaultValue={moneyValue(rate.weeklyRate)} className={fieldClass} />
-      </label>
-      <label className="block">
-        <span className={labelClass}>Monthly AED</span>
-        <input name="monthlyRate" inputMode="decimal" defaultValue={moneyValue(rate.monthlyRate)} className={fieldClass} />
-      </label>
-      <label className="block">
-        <span className={labelClass}>Transport AED</span>
-        <input name="transportCharge" inputMode="decimal" defaultValue={moneyValue(rate.transportCharge)} className={fieldClass} />
-      </label>
-      <label className="block">
-        <span className={labelClass}>Operator / day AED</span>
-        <input name="operatorDailyCharge" inputMode="decimal" defaultValue={moneyValue(rate.operatorDailyCharge)} className={fieldClass} />
-      </label>
-      <label className="flex items-end gap-2 pb-2 text-sm text-navy">
+      <div className="flex flex-wrap items-end justify-center gap-3">
+        <label className="block w-[calc(50%-0.375rem)] text-center sm:w-36">
+          <span className={`${labelClass} block`}>Daily AED</span>
+          <input name="dailyRate" inputMode="decimal" defaultValue={moneyValue(rate.dailyRate)} className={`${fieldClass} text-center`} />
+        </label>
+        <label className="block w-[calc(50%-0.375rem)] text-center sm:w-36">
+          <span className={`${labelClass} block`}>Weekly AED</span>
+          <input name="weeklyRate" inputMode="decimal" defaultValue={moneyValue(rate.weeklyRate)} className={`${fieldClass} text-center`} />
+        </label>
+        <label className="block w-[calc(50%-0.375rem)] text-center sm:w-36">
+          <span className={`${labelClass} block`}>Monthly AED</span>
+          <input name="monthlyRate" inputMode="decimal" defaultValue={moneyValue(rate.monthlyRate)} className={`${fieldClass} text-center`} />
+        </label>
+        <label className="block w-[calc(50%-0.375rem)] text-center sm:w-36">
+          <span className={`${labelClass} block`}>Transport AED</span>
+          <input name="transportCharge" inputMode="decimal" defaultValue={moneyValue(rate.transportCharge)} className={`${fieldClass} text-center`} />
+        </label>
+        <label className="block w-[calc(50%-0.375rem)] text-center sm:w-36">
+          <span className={`${labelClass} block`}>Operator / day AED</span>
+          <input name="operatorDailyCharge" inputMode="decimal" defaultValue={moneyValue(rate.operatorDailyCharge)} className={`${fieldClass} text-center`} />
+        </label>
+        {chargesPerKm(rate.typeName) && (
+          <label className="block w-[calc(50%-0.375rem)] text-center sm:w-36">
+            <span className={`${labelClass} block`}>Per km AED</span>
+            <input name="perKmRate" inputMode="decimal" defaultValue={moneyValue(rate.perKmRate)} className={`${fieldClass} text-center`} />
+          </label>
+        )}
+      </div>
+      <label className="flex items-center gap-2 text-sm text-navy">
         <input name="vatIncluded" type="checkbox" defaultChecked={rate.vatIncluded} /> VAT included
       </label>
-      <div className="sm:col-span-3 lg:col-span-6">
+      <div>
         <button className={buttonClass} type="submit">{rate.hasRate ? "Save rate" : "Add rate"}</button>
       </div>
     </form>
@@ -156,6 +165,13 @@ function RateTiles({ rate }: { rate: RateLine }) {
       ))}
     </dl>
   );
+}
+
+function TripNote({ rate }: { rate: RateLine }) {
+  if (!chargesPerKm(rate.typeName)) return null;
+  const text = formatPerKm(rate.perKmRate);
+  if (!text) return null;
+  return <p className="mt-2 text-[11px] font-semibold text-navy">{text}</p>;
 }
 
 function SupplierName({ rate }: { rate: RateLine }) {
@@ -200,7 +216,7 @@ function RateCard({
         <SupplierName rate={rate} />
         <PlaceLine place={rate.place} />
       </div>
-      <div className="mt-2"><RateTiles rate={rate} /></div>
+      <div className="mt-2"><RateTiles rate={rate} /><TripNote rate={rate} /></div>
       <p className="mt-2 text-[11px] text-slate-400">{rate.hasRate ? `From ${rate.validFrom}${rate.vatIncluded ? " · VAT included" : ""}` : "No rate yet"}</p>
       {open && canEdit && <div className="mt-3 border-t border-navy/10 pt-3"><RateForm rate={rate} filters={filters} /></div>}
     </article>
@@ -270,7 +286,7 @@ function RateListItem({
           <SupplierName rate={rate} />
           <PlaceLine place={rate.place} />
         </div>
-        <div className="lg:w-64"><RateTiles rate={rate} /></div>
+        <div className="lg:w-64"><RateTiles rate={rate} /><TripNote rate={rate} /></div>
         {canEdit && <EditButton open={open} onClick={() => setOpen((value) => !value)} />}
       </div>
       {open && canEdit && <div className="mt-3"><RateForm rate={rate} filters={filters} /></div>}
@@ -298,6 +314,7 @@ function RatesTable({
             <th className="px-4 py-3">Daily</th>
             <th className="px-4 py-3">Weekly</th>
             <th className="px-4 py-3">Monthly</th>
+            <th className="px-4 py-3">Per km</th>
             <th className="px-4 py-3">From</th>
             {canWrite && <th className="px-4 py-3"><span className="sr-only">Edit</span></th>}
           </tr>
@@ -340,6 +357,7 @@ function RateTableRow({
         <td className="px-4 py-3" data-label="Daily">{formatMoney(rate.dailyRate)}</td>
         <td className="px-4 py-3" data-label="Weekly">{formatMoney(rate.weeklyRate)}</td>
         <td className="px-4 py-3" data-label="Monthly">{formatMoney(rate.monthlyRate)}</td>
+        <td className="px-4 py-3" data-label="Per km">{chargesPerKm(rate.typeName) ? (formatPerKm(rate.perKmRate) || "—") : ""}</td>
         <td className="px-4 py-3" data-label="From">{rate.hasRate ? `${rate.validFrom}${rate.vatIncluded ? " · VAT in" : ""}` : "No rate yet"}</td>
         {canWrite && (
           <td className="px-4 py-3 text-right" data-label="">
@@ -349,7 +367,7 @@ function RateTableRow({
       </tr>
       {open && canEdit && (
         <tr className="border-b border-slate-100 bg-[#f4f7fa]">
-          <td colSpan={canWrite ? 8 : 7} className="px-4 py-3" data-label="">
+          <td colSpan={canWrite ? 9 : 8} className="px-4 py-3" data-label="">
             <RateForm rate={rate} filters={filters} />
           </td>
         </tr>

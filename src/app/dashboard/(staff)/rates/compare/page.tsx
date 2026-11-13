@@ -6,7 +6,8 @@ import { PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
 import { equipmentGroups, listEquipmentOptions } from "@/lib/erp/equipment";
 import { compareEquipmentRates } from "@/lib/erp/rates";
-import { formatMoney } from "@/lib/erp/shared";
+import { chargesPerKm } from "@/lib/erp/lengths";
+import { formatMoney, formatPerKm } from "@/lib/erp/shared";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Compare rates", robots: { index: false, follow: false } };
@@ -22,6 +23,7 @@ export default async function CompareRatesPage({
   const rates = params.equipment ? await compareEquipmentRates(params.equipment) : [];
   const selected = equipment.find((item) => item.id === params.equipment);
   const selectedLabel = selected ? [selected.label, selected.detail].filter(Boolean).join(" · ") : "";
+  const perKm = selected ? chargesPerKm(selected.typeName) : false;
 
   return (
     <>
@@ -54,13 +56,14 @@ export default async function CompareRatesPage({
                     <th className="px-4 py-3">Weekly</th>
                     <th className="px-4 py-3">Monthly</th>
                     <th className="px-4 py-3">Transport</th>
+                    {perKm && <th className="px-4 py-3">Per km</th>}
                     <th className="px-4 py-3">Operator</th>
                     <th className="px-4 py-3">VAT</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rates.length === 0 ? (
-                    <tr><td className="px-4 py-4 text-slate-500" colSpan={7} data-label="">No current supplier rates for {selectedLabel}.</td></tr>
+                    <tr><td className="px-4 py-4 text-slate-500" colSpan={perKm ? 8 : 7} data-label="">No current supplier rates for {selectedLabel}.</td></tr>
                   ) : rates.map((rate) => (
                     <tr key={rate.id} className="border-b border-slate-100 last:border-0">
                       <td className="px-4 py-3" data-label="Supplier"><Link className="font-semibold text-blue hover:underline" href={`/dashboard/suppliers/${rate.supplierId}`}>{rate.supplierName}</Link></td>
@@ -68,6 +71,7 @@ export default async function CompareRatesPage({
                       <td className="px-4 py-3" data-label="Weekly">{formatMoney(rate.weeklyRate)}</td>
                       <td className="px-4 py-3" data-label="Monthly">{formatMoney(rate.monthlyRate)}</td>
                       <td className="px-4 py-3" data-label="Transport">{formatMoney(rate.transportCharge)}</td>
+                      {perKm && <td className="px-4 py-3" data-label="Per km">{formatPerKm(rate.perKmRate) || "—"}</td>}
                       <td className="px-4 py-3" data-label="Operator">{formatMoney(rate.operatorDailyCharge)}</td>
                       <td className="px-4 py-3" data-label="VAT">{rate.vatIncluded ? "Included" : "Extra"}</td>
                     </tr>

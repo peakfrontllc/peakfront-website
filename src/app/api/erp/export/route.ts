@@ -6,7 +6,7 @@ import { csvFile, moneyCell, yesNo } from "@/lib/erp/csv";
 import { listEquipment } from "@/lib/erp/equipment";
 import { listCurrentRates } from "@/lib/erp/rates";
 import { matchesSearch } from "@/lib/erp/search";
-import { EMIRATES, ownershipLabel } from "@/lib/erp/shared";
+import { EMIRATES, coversRegion, ownershipLabel, regionLabel } from "@/lib/erp/shared";
 import { listSuppliers } from "@/lib/erp/suppliers";
 import { getServiceClient } from "@/lib/supabase/service";
 
@@ -67,7 +67,7 @@ async function exportEquipment(url: URL) {
     "Category", "Type", "Size", "Name", "Code", "Capacity", "Boom length", "Bed length", "Ownership", "Status", "Archived",
     "Supplier", "Supplier type", "Phone", "Email", "Website", "Trade licence", "Address", "Contact", "Job title", "Regions", "Lead time", "Notes",
   ];
-  if (canRates) headers.push("Daily AED", "Weekly AED", "Monthly AED", "Transport AED", "Operator AED", "VAT included", "Rate from");
+  if (canRates) headers.push("Daily AED", "Weekly AED", "Monthly AED", "Transport AED", "Per km AED", "Operator AED", "VAT included", "Rate from");
   const rows = items.flatMap((item) => {
     const machine = [
       item.purposeName,
@@ -107,6 +107,7 @@ async function exportEquipment(url: URL) {
           moneyCell(rate?.weeklyRate ?? null),
           moneyCell(rate?.monthlyRate ?? null),
           moneyCell(rate?.transportCharge ?? null),
+          moneyCell(rate?.perKmRate ?? null),
           moneyCell(rate?.operatorDailyCharge ?? null),
           rate?.hasRate ? yesNo(rate.vatIncluded) : "",
           rate?.validFrom ?? "",
@@ -157,7 +158,7 @@ async function exportClients(url: URL) {
   const industry = text(url, "industry");
   const loaded = await listClients({ archived: text(url, "archived") === "1" });
   const items = loaded.filter((client) => {
-    if (region && client.emirate && client.emirate !== region) return false;
+    if (!coversRegion(client.emirate, client.locationEmirates, region)) return false;
     if (industry && client.industry !== industry) return false;
     return matchesSearch(text(url, "q"), [client.companyName, client.industry, client.phone, client.email, client.website, client.emirate, client.contactName, client.contactTitle]);
   });
@@ -170,7 +171,7 @@ async function exportClients(url: URL) {
       item.phone,
       item.email,
       item.website,
-      item.emirate || "All regions",
+      regionLabel(item.emirate) || "No region",
       item.contactName,
       item.contactTitle,
       item.interestCount,
@@ -206,7 +207,7 @@ async function exportRates(url: URL) {
   });
   return csvFile(
     "peakfront-rates.csv",
-    ["Category", "Type", "Size", "Equipment", "Boom length", "Bed length", "Supplier", "Region", "Daily AED", "Weekly AED", "Monthly AED", "Transport AED", "Operator AED", "VAT included", "Valid from", "Valid to", "Has a rate"],
+    ["Category", "Type", "Size", "Equipment", "Boom length", "Bed length", "Supplier", "Region", "Daily AED", "Weekly AED", "Monthly AED", "Transport AED", "Per km AED", "Operator AED", "VAT included", "Valid from", "Valid to", "Has a rate"],
     items.map((item) => [
       item.purposeName,
       item.typeName,
@@ -220,6 +221,7 @@ async function exportRates(url: URL) {
       moneyCell(item.weeklyRate),
       moneyCell(item.monthlyRate),
       moneyCell(item.transportCharge),
+      moneyCell(item.perKmRate),
       moneyCell(item.operatorDailyCharge),
       item.hasRate ? yesNo(item.vatIncluded) : "",
       item.validFrom,

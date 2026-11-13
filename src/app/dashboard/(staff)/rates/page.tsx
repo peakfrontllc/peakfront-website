@@ -97,7 +97,7 @@ export default async function RatesPage({
         ]}
       />
       <p className="-mt-4 mb-6 max-w-2xl text-sm text-slate-500">
-        Each size keeps its own supplier rate, including boom length and bed length. General rates are the market notes, kept apart from supplier prices.
+        Each size keeps its own supplier rate, including boom length, bed length, and an AED amount per kilometre. General rates are the market notes, kept apart from supplier prices.
       </p>
       <Flash error={params.error} />
       <div className="overflow-hidden rounded-2xl border border-navy/10 shadow-sm">
