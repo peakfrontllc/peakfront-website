@@ -421,7 +421,8 @@ export async function updateEquipmentRate(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.ratesWrite);
   const supplierEquipmentId = field(formData, "supplierEquipmentId");
   const rateId = field(formData, "rateId");
-  const path = ratesReturnPath(formData);
+  const supplierId = field(formData, "supplierId");
+  const path = field(formData, "returnTo") && supplierId ? supplierPath(formData, supplierId) : ratesReturnPath(formData);
   const daily = parseMoney(field(formData, "dailyRate"));
   const weekly = parseMoney(field(formData, "weeklyRate"));
   const monthly = parseMoney(field(formData, "monthlyRate"));

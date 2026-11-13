@@ -87,9 +87,17 @@ export default async function RatesPage({
 
   return (
     <>
-      <MasterHero kicker="Pricing" title="Current supplier rates" icon={Receipt} action={{ href: "/dashboard/rates/compare", label: "Compare" }} />
+      <MasterHero
+        kicker="Pricing"
+        title="Current supplier rates"
+        icon={Receipt}
+        actions={[
+          { href: "/dashboard/rates/market", label: "General rates" },
+          { href: "/dashboard/rates/compare", label: "Compare" },
+        ]}
+      />
       <p className="-mt-4 mb-6 max-w-2xl text-sm text-slate-500">
-        Each size keeps its own rate, including boom length and bed length.
+        Each size keeps its own supplier rate, including boom length and bed length. General rates are the market notes, kept apart from supplier prices.
       </p>
       <Flash error={params.error} />
       <div className="overflow-hidden rounded-2xl border border-navy/10 shadow-sm">

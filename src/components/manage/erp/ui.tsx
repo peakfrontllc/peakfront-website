@@ -12,12 +12,15 @@ export function MasterHero({
   title,
   icon: Icon,
   action,
+  actions,
 }: {
   kicker: string;
   title: string;
   icon?: LucideIcon;
   action?: { href: string; label: string };
+  actions?: { href: string; label: string }[];
 }) {
+  const links = actions ?? (action ? [action] : []);
   return (
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="flex items-start gap-3">
@@ -31,11 +34,21 @@ export function MasterHero({
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-navy">{title}</h1>
         </div>
       </div>
-      {action && (
-        <Link href={action.href} className={`${buttonClass} w-full sm:w-auto`}>
-          {action.label.startsWith("Add") && <Plus className="h-4 w-4" aria-hidden />}
-          {action.label}
-        </Link>
+      {links.length > 0 && (
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          {links.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={actions
+                ? "inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-amber px-4 py-2 text-sm font-semibold text-navy shadow-sm transition hover:bg-amber/90 sm:w-auto"
+                : `${buttonClass} w-full sm:w-auto`}
+            >
+              {item.label.startsWith("Add") && <Plus className="h-4 w-4" aria-hidden />}
+              {item.label}
+            </Link>
+          ))}
+        </div>
       )}
     </div>
   );

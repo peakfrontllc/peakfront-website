@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
 import { CataloguePhoto } from "@/components/manage/erp/CataloguePhoto";
+import { MarketRatePanel } from "@/components/manage/erp/MarketRates";
 import { EquipmentSupplierCards } from "@/components/manage/erp/EquipmentSupplierCards";
 import { EquipmentCategoryFields } from "@/components/manage/erp/EquipmentCategoryFields";
 import { InlineEdit } from "@/components/manage/erp/InlineEdit";
@@ -13,6 +14,7 @@ import { buttonClass, fieldClass, labelClass } from "@/components/manage/form-st
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
 import { getEquipment, listCategories, listEquipmentSuppliers } from "@/lib/erp/equipment";
+import { getMarketRate } from "@/lib/erp/market-rates";
 import { linkSupplierEquipment } from "@/lib/erp/supplier-actions";
 import { listSuppliers } from "@/lib/erp/suppliers";
 import {
@@ -45,17 +47,19 @@ export default async function EquipmentDetailPage({
   const session = await requirePermission(PERMISSIONS.equipmentRead);
   const { id } = await params;
   const query = await searchParams;
-  const [equipment, categories, suppliers, allSuppliers] = await Promise.all([
+  const [equipment, categories, suppliers, allSuppliers, storedRate] = await Promise.all([
     getEquipment(id),
     listCategories(true),
     listEquipmentSuppliers(id),
     listSuppliers({}),
+    getMarketRate(id),
   ]);
   if (!equipment) notFound();
   const canWrite = hasPermission(session.permissions, PERMISSIONS.equipmentWrite);
   const canLinkSupplier = canWrite || hasPermission(session.permissions, PERMISSIONS.suppliersWrite);
   const canDocuments = hasPermission(session.permissions, PERMISSIONS.documentsWrite);
   const canRates = hasPermission(session.permissions, PERMISSIONS.ratesRead);
+  const canWriteRates = hasPermission(session.permissions, PERMISSIONS.ratesWrite);
   const category = categories.find((item) => item.id === equipment.categoryId);
   const parent = category?.parentId ? categories.find((item) => item.id === category.parentId) : undefined;
   const grandparent = parent?.parentId ? categories.find((item) => item.id === parent.parentId) : undefined;
@@ -99,6 +103,7 @@ export default async function EquipmentDetailPage({
       </div>
       <SectionNav items={[
         { id: "details", label: "Details" },
+        ...(canRates ? [{ id: "general-rate", label: "General rate" }] : []),
         { id: "suppliers", label: "Suppliers" },
         { id: "specs", label: "Specs" },
         { id: "assets", label: "Assets" },
@@ -157,6 +162,25 @@ export default async function EquipmentDetailPage({
               <p className="text-sm text-slate-600">{equipment.description || "No description."}</p>
             )}
           </Panel>
+
+          {canRates && (
+            <Panel id="general-rate" title="General rate">
+              <p className="mb-3 text-sm text-slate-600">The market note for this machine. It is separate from supplier prices.</p>
+              <MarketRatePanel
+                rate={{
+                  equipmentId: equipment.id,
+                  purposeName,
+                  typeName,
+                  sizeName,
+                  boomLength: equipment.boomLength,
+                  bedLength: equipment.bedLength,
+                  ...storedRate,
+                }}
+                canWrite={canWriteRates}
+                returnTo={`/dashboard/equipment/${equipment.id}`}
+              />
+            </Panel>
+          )}
 
           <Panel
             id="suppliers"
