@@ -11,6 +11,25 @@ export const EMIRATES = [
   "Fujairah",
 ] as const;
 
+export const CLIENT_INDUSTRIES = [
+  "Contracting",
+  "Construction",
+  "Infrastructure",
+  "Telecommunication",
+  "Oil and Gas",
+  "Utilities",
+  "Manufacturing",
+  "Logistics",
+  "Real Estate",
+  "Facilities Management",
+  "Government",
+  "Events",
+] as const;
+
+export function knownIndustry(value: string) {
+  return (CLIENT_INDUSTRIES as readonly string[]).includes(value);
+}
+
 export const EQUIPMENT_STATUSES = [
   "available",
   "reserved",
@@ -62,6 +81,18 @@ export function coversRegion(emirate: string, extras: string[], region: string) 
 export function field(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
+}
+
+export function personContact(formData: FormData) {
+  const contact = {
+    name: field(formData, "contactName"),
+    job_title: field(formData, "contactJobTitle"),
+    phone: field(formData, "contactPhone"),
+    email: field(formData, "contactEmail"),
+    whatsapp: field(formData, "contactWhatsapp"),
+  };
+  const started = Object.values(contact).some(Boolean);
+  return { contact, started, error: started && contact.name.length < 2 ? "Enter the contact name." : null };
 }
 
 export type SocialLink = { label: string; url: string };

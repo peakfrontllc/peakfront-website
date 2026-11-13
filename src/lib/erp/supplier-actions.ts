@@ -8,7 +8,7 @@ import { requirePermission, requireStaff } from "@/lib/auth/session";
 import { catalogueSelection, listCategories, supplierEquipmentChargesPerKm } from "@/lib/erp/equipment";
 import { DOCUMENT_BUCKET, removeStoredFile, storeFile } from "@/lib/erp/files";
 import { insertCustomFields } from "@/lib/erp/custom-fields";
-import { checked, chosenEmirates, dayBefore, EMIRATES, extraFieldPairs, fail, field, fileFromForm, parseMoney, searchTerm, socialLinkPairs, todayIso } from "@/lib/erp/shared";
+import { checked, chosenEmirates, dayBefore, EMIRATES, extraFieldPairs, fail, field, fileFromForm, parseMoney, personContact, searchTerm, socialLinkPairs, todayIso } from "@/lib/erp/shared";
 import { getServiceClient } from "@/lib/supabase/service";
 
 function redirectTo(path: string): never {
@@ -59,8 +59,10 @@ export async function createSupplier(formData: FormData) {
   const parsed = supplierInput(formData);
   const input = parsed.input;
   const extras = extraFieldPairs(formData);
+  const contact = personContact(formData);
   if (parsed.error) fail("/dashboard/suppliers/new", parsed.error);
   if (input.company_name.length < 2) fail("/dashboard/suppliers/new", input.party_type === "individual" ? "Enter the person's name." : "Enter the company name.");
+  if (contact.error) fail("/dashboard/suppliers/new", contact.error);
   if (extras.error) fail("/dashboard/suppliers/new", extras.error);
   const { data, error } = await getServiceClient()
     .from("suppliers")
@@ -68,6 +70,14 @@ export async function createSupplier(formData: FormData) {
     .select("id")
     .single();
   if (error || !data) fail("/dashboard/suppliers/new", "The supplier could not be saved.");
+  if (contact.started) {
+    const { error: contactError } = await getServiceClient().from("supplier_contacts").insert({
+      supplier_id: data.id,
+      ...contact.contact,
+      is_primary: true,
+    });
+    if (contactError) fail(`/dashboard/suppliers/${data.id}`, "The supplier was saved, but the contact could not be saved.");
+  }
   const catalogueError = await replaceSupplierCatalogue(data.id as string, formData);
   if (catalogueError) fail(`/dashboard/suppliers/${data.id}`, "The supplier was saved, but the equipment list could not be saved.");
   const fieldError = await insertCustomFields("supplier", data.id as string, extras.pairs);

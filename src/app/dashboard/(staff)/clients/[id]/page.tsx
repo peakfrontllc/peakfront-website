@@ -4,7 +4,7 @@ import { InlineEdit } from "@/components/manage/erp/InlineEdit";
 import { ProvidedEquipmentField } from "@/components/manage/erp/ProvidedEquipmentField";
 import { PermanentDeleteButton } from "@/components/manage/erp/PermanentDeleteButton";
 import { SectionNav } from "@/components/manage/erp/SectionNav";
-import { ArchiveButton, EmiratesField, ExtraFieldPanel, Flash, Panel, SectionStack, TextField, documentTypeLabel, fileHref } from "@/components/manage/erp/ui";
+import { ArchiveButton, EmiratesField, ExtraFieldPanel, Flash, IndustryField, Panel, SectionStack, TextField, documentTypeLabel, fileHref } from "@/components/manage/erp/ui";
 import { buttonClass, fieldClass } from "@/components/manage/form-styles";
 import { emiratesFromRow, regionLabel } from "@/lib/erp/shared";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
@@ -94,7 +94,7 @@ export default async function ClientDetailPage({
                 <input type="hidden" name="id" value={client.id} />
                 <div className="sm:col-span-2"><TextField name="companyName" label="Company" required defaultValue={client.companyName} /></div>
                 <TextField name="tradeLicence" label="Trade licence" defaultValue={client.tradeLicence} />
-                <TextField name="industry" label="Industry" defaultValue={client.industry} />
+                <IndustryField defaultValue={client.industry} />
                 <TextField name="phone" label="Phone" defaultValue={client.phone} />
                 <TextField name="email" label="Email" type="email" defaultValue={client.email} />
                 <TextField name="website" label="Website" defaultValue={client.website} />

@@ -4,6 +4,7 @@ import { CollapsibleSection } from "@/components/manage/erp/CollapsibleSection";
 import { EmiratesField } from "@/components/manage/erp/EmiratesField";
 import type { LucideIcon } from "lucide-react";
 import { Archive, ArchiveRestore, Plus } from "lucide-react";
+import { IndustryField } from "@/components/manage/erp/IndustryField";
 import { buttonClass, fieldClass, labelClass } from "@/components/manage/form-styles";
 
 export function MasterHero({
@@ -115,7 +116,7 @@ export function DataCard({ children }: { children: ReactNode }) {
   );
 }
 
-export { EmiratesField };
+export { EmiratesField, IndustryField };
 
 export function TextField({
   name,

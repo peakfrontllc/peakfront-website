@@ -9,7 +9,7 @@ import { requirePermission } from "@/lib/auth/session";
 import { listClients } from "@/lib/erp/clients";
 import { currentPage, pageSlice } from "@/lib/erp/pagination";
 import { matchesClientSearch } from "@/lib/erp/search";
-import { EMIRATES, coversRegion } from "@/lib/erp/shared";
+import { CLIENT_INDUSTRIES, EMIRATES, coversRegion, knownIndustry } from "@/lib/erp/shared";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Clients", robots: { index: false, follow: false } };
@@ -27,7 +27,10 @@ export default async function ClientsPage({
   const archived = params.archived === "1";
   const view = clientView(params.view);
   const loaded = await listClients({ archived });
-  const industries = [...new Set(loaded.map((client) => client.industry).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const industries = [
+    ...CLIENT_INDUSTRIES,
+    ...[...new Set(loaded.map((client) => client.industry).filter((item) => item && !knownIndustry(item)))].sort((a, b) => a.localeCompare(b)),
+  ];
   const region = (EMIRATES as readonly string[]).includes(params.region ?? "") ? params.region ?? "" : "";
   const industry = industries.includes(params.industry ?? "") ? params.industry ?? "" : "";
   const clients = loaded.filter((client) => {

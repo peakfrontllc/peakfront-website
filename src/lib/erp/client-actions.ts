@@ -8,14 +8,78 @@ import { requirePermission } from "@/lib/auth/session";
 import { insertCustomFields } from "@/lib/erp/custom-fields";
 import { catalogueSelection, listCategories } from "@/lib/erp/equipment";
 import { DOCUMENT_BUCKET, removeStoredFile, storeFile } from "@/lib/erp/files";
-import { checked, chosenEmirates, extraFieldPairs, fail, field, fileFromForm } from "@/lib/erp/shared";
+import { checked, chosenEmirates, extraFieldPairs, fail, field, fileFromForm, personContact } from "@/lib/erp/shared";
 import { getServiceClient } from "@/lib/supabase/service";
+
+function clientIndustry(value: string) {
+  const industry = value.trim().slice(0, 80);
+  if (!industry || industry.toLowerCase() === "other" || industry.length < 2) return "";
+  return industry;
+}
+
+function industryError(formData: FormData) {
+  const raw = field(formData, "industry").trim();
+  if (!raw) return null;
+  if (!clientIndustry(raw)) return "Enter the industry.";
+  return null;
+}
+
+export type NewClientState = {
+  attempt: number;
+  error: string;
+  companyName: string;
+  tradeLicence: string;
+  industry: string;
+  phone: string;
+  email: string;
+  website: string;
+  emirates: string[];
+  billingAddress: string;
+  notes: string;
+  contactName: string;
+  contactJobTitle: string;
+  contactPhone: string;
+  contactEmail: string;
+  contactWhatsapp: string;
+  extras: { label: string; value: string }[];
+};
+
+function keptClient(formData: FormData, error: string, attempt: number): NewClientState {
+  const labels = formData.getAll("fieldLabel").map((value) => (typeof value === "string" ? value : ""));
+  const values = formData.getAll("fieldValue").map((value) => (typeof value === "string" ? value : ""));
+  const count = Math.max(labels.length, values.length);
+  const extras = [];
+  for (let index = 0; index < count; index += 1) {
+    const label = (labels[index] ?? "").trim();
+    const value = (values[index] ?? "").trim();
+    if (label || value) extras.push({ label, value });
+  }
+  return {
+    attempt: attempt + 1,
+    error,
+    companyName: field(formData, "companyName"),
+    tradeLicence: field(formData, "tradeLicence"),
+    industry: field(formData, "industry"),
+    phone: field(formData, "phone"),
+    email: field(formData, "email"),
+    website: field(formData, "website"),
+    emirates: [...chosenEmirates(formData)],
+    billingAddress: field(formData, "billingAddress"),
+    notes: field(formData, "notes"),
+    contactName: field(formData, "contactName"),
+    contactJobTitle: field(formData, "contactJobTitle"),
+    contactPhone: field(formData, "contactPhone"),
+    contactEmail: field(formData, "contactEmail"),
+    contactWhatsapp: field(formData, "contactWhatsapp"),
+    extras,
+  };
+}
 
 function clientInput(formData: FormData) {
   return {
     company_name: field(formData, "companyName"),
     trade_licence: field(formData, "tradeLicence"),
-    industry: field(formData, "industry"),
+    industry: clientIndustry(field(formData, "industry")),
     email: field(formData, "email"),
     phone: field(formData, "phone"),
     website: field(formData, "website"),
@@ -25,19 +89,29 @@ function clientInput(formData: FormData) {
   };
 }
 
-export async function createClientRecord(formData: FormData) {
+export async function createClientRecord(previous: NewClientState, formData: FormData): Promise<NewClientState> {
   const session = await requirePermission(PERMISSIONS.clientsWrite);
   const input = clientInput(formData);
   const extras = extraFieldPairs(formData);
-  if (input.company_name.length < 2) fail("/dashboard/clients/new", "Enter the company name.");
-  if (!input.emirate) fail("/dashboard/clients/new", "Select a region.");
-  if (extras.error) fail("/dashboard/clients/new", extras.error);
+  const contact = personContact(formData);
+  const problem = input.company_name.length < 2
+    ? "Enter the company name."
+    : industryError(formData) || (!input.emirate ? "Select a region." : contact.error || extras.error);
+  if (problem) return keptClient(formData, problem, previous.attempt);
   const { data, error } = await getServiceClient()
     .from("clients")
     .insert({ ...input, created_by: session.userId })
     .select("id")
     .single();
-  if (error || !data) fail("/dashboard/clients/new", "The client could not be saved.");
+  if (error || !data) return keptClient(formData, "The client could not be saved.", previous.attempt);
+  if (contact.started) {
+    const { error: contactError } = await getServiceClient().from("client_contacts").insert({
+      client_id: data.id,
+      ...contact.contact,
+      is_primary: true,
+    });
+    if (contactError) fail(`/dashboard/clients/${data.id}`, "The client was saved, but the contact could not be saved.");
+  }
   const fieldError = await insertCustomFields("client", data.id as string, extras.pairs);
   if (fieldError) fail(`/dashboard/clients/${data.id}`, "The client was saved, but an extra field could not be saved.");
   await logActivity(session, "client.created", "client", data.id as string, { name: input.company_name });
@@ -50,6 +124,8 @@ export async function updateClient(formData: FormData) {
   const input = clientInput(formData);
   const path = `/dashboard/clients/${id}`;
   if (input.company_name.length < 2) fail(path, "Enter the company name.");
+  const industryProblem = industryError(formData);
+  if (industryProblem) fail(path, industryProblem);
   if (!input.emirate) fail(path, "Select a region.");
   const { error } = await getServiceClient().from("clients").update(input).eq("id", id);
   if (error) fail(path, "The client could not be saved.");

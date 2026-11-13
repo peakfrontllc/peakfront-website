@@ -44,8 +44,6 @@ export default async function NewSupplierPage({
         <form action={createSupplier} className="space-y-4">
           <FormSection title="Supplier">
             <SupplierKindFields />
-          </FormSection>
-          <FormSection title="Contact">
             <TextField name="phone" label="Phone" />
             <TextField name="email" label="Email" type="email" />
             <TextField name="website" label="Website" />
@@ -58,6 +56,15 @@ export default async function NewSupplierPage({
               <textarea id="address" name="address" rows={3} className={fieldClass} />
             </div>
             <SocialLinksField />
+            <div className="sm:col-span-2 border-t border-slate-100 pt-2">
+              <p className="text-sm font-semibold text-navy">Contact person</p>
+              <p className="mt-1 text-sm text-slate-500">Optional. Leave this blank, or enter a name to save them as the primary contact.</p>
+            </div>
+            <TextField name="contactName" label="Name" />
+            <TextField name="contactJobTitle" label="Job title" />
+            <TextField name="contactPhone" label="Phone" />
+            <TextField name="contactEmail" label="Email" type="email" />
+            <TextField name="contactWhatsapp" label="WhatsApp" />
           </FormSection>
           <FormSection title="Equipment they provide">
             <div className="sm:col-span-2">
