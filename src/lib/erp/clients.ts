@@ -16,6 +16,7 @@ export type ClientListItem = {
   contactName: string;
   contactTitle: string;
   contactEmail: string;
+  contacts: { name: string; jobTitle: string; email: string }[];
   searchParts: string[];
   interestCount: number;
   archivedAt: string | null;
@@ -92,7 +93,12 @@ export async function listClients(filters: { q?: string; archived?: boolean; reg
       whatsapp?: string;
       is_primary?: boolean;
     }[];
-    const contact = contacts.find((item) => item.is_primary) ?? contacts[0];
+    const primary = contacts.find((item) => item.is_primary) ?? contacts[0];
+    const people = (primary ? [primary, ...contacts.filter((item) => item !== primary)] : contacts).map((person) => ({
+      name: (person.name ?? "").trim(),
+      jobTitle: (person.job_title ?? "").trim(),
+      email: (person.email ?? "").trim(),
+    }));
     const locations = (Array.isArray(row.client_locations) ? row.client_locations : []) as {
       label?: string;
       address?: string;
@@ -106,7 +112,7 @@ export async function listClients(filters: { q?: string; archived?: boolean; reg
       equipment_categories?: { name?: string } | { name?: string }[] | null;
     }[];
     const companyName = row.company_name as string;
-    const contactName = (contact?.name ?? "").trim();
+    const contactName = (primary?.name ?? "").trim();
     const interestNames = interests.flatMap((interest) => {
       const category = Array.isArray(interest.equipment_categories) ? interest.equipment_categories[0] : interest.equipment_categories;
       return category?.name ? [category.name] : [];
@@ -137,8 +143,9 @@ export async function listClients(filters: { q?: string; archived?: boolean; reg
       emirate: (row.emirate as string) ?? "",
       locationEmirates: locations.map((location) => (location.emirate ?? "").trim()).filter(Boolean),
       contactName: contactName.toLowerCase() === companyName.toLowerCase() ? "" : contactName,
-      contactTitle: (contact?.job_title ?? "").trim(),
-      contactEmail: (contact?.email ?? "").trim(),
+      contactTitle: (primary?.job_title ?? "").trim(),
+      contactEmail: (primary?.email ?? "").trim(),
+      contacts: people,
       searchParts,
       interestCount: interests.length,
       archivedAt: (row.archived_at as string | null) ?? null,

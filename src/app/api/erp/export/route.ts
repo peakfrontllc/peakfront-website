@@ -21,6 +21,10 @@ function regionOf(url: URL) {
   return (EMIRATES as readonly string[]).includes(region) ? region : "";
 }
 
+function contactColumn(people: { name: string; jobTitle: string; email: string }[], key: "name" | "jobTitle" | "email") {
+  return people.map((person) => person[key]).join("; ");
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const kind = text(url, "kind");
@@ -140,9 +144,9 @@ async function exportSuppliers(url: URL) {
       item.phone,
       item.email,
       item.emirates.join("; "),
-      item.contactName,
-      item.contactTitle,
-      item.contactEmail,
+      contactColumn(item.contacts, "name"),
+      contactColumn(item.contacts, "jobTitle"),
+      contactColumn(item.contacts, "email"),
       item.equipmentCount,
       item.equipmentNames.join("; "),
       item.providedNames.join("; "),
@@ -173,9 +177,9 @@ async function exportClients(url: URL) {
       item.email,
       item.website,
       regionLabel(item.emirate) || "No region",
-      item.contactName,
-      item.contactTitle,
-      item.contactEmail,
+      contactColumn(item.contacts, "name"),
+      contactColumn(item.contacts, "jobTitle"),
+      contactColumn(item.contacts, "email"),
       item.interestCount,
       yesNo(Boolean(item.archivedAt)),
     ]),

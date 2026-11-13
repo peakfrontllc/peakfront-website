@@ -17,6 +17,7 @@ export type SupplierListItem = {
   contactName: string;
   contactTitle: string;
   contactEmail: string;
+  contacts: { name: string; jobTitle: string; email: string }[];
   equipmentCount: number;
   equipmentNames: string[];
   providedNames: string[];
@@ -189,6 +190,11 @@ export async function listSuppliers(filters: { q?: string; archived?: boolean; p
     if (region && !(emirates as readonly string[]).includes(region) && !storedRegion.includes(region)) return [];
     const contacts = (Array.isArray(row.supplier_contacts) ? row.supplier_contacts : []) as { name: string; job_title: string; phone: string; email?: string; is_primary: boolean }[];
     const primary = contacts.find((contact) => contact.is_primary) ?? contacts[0];
+    const people = (primary ? [primary, ...contacts.filter((contact) => contact !== primary)] : contacts).map((person) => ({
+      name: (person.name ?? "").trim(),
+      jobTitle: (person.job_title ?? "").trim(),
+      email: (person.email ?? "").trim(),
+    }));
     const equipment = Array.isArray(row.supplier_equipment) ? row.supplier_equipment : [];
     const catalogueIds = (Array.isArray(row.supplier_catalogue) ? row.supplier_catalogue : [])
       .map((item) => (item as { category_id?: string }).category_id ?? "")
@@ -214,13 +220,10 @@ export async function listSuppliers(filters: { q?: string; archived?: boolean; p
     if (term && !matchesSearch(term, [
       row.company_name as string,
       (row.phone as string) ?? "",
-      primary?.phone ?? "",
       (row.email as string) ?? "",
       storedRegion,
       ...emirates,
-      primary?.name ?? "",
-      primary?.job_title ?? "",
-      primary?.email ?? "",
+      ...contacts.flatMap((person) => [person.name ?? "", person.job_title ?? "", person.phone ?? "", person.email ?? ""]),
       ...equipmentNames,
       ...catalogueIds.flatMap((id) => catalogueSearchParts(id, categories)),
       ...socialLinks,
@@ -236,6 +239,7 @@ export async function listSuppliers(filters: { q?: string; archived?: boolean; p
       contactName: primary?.name ?? "",
       contactTitle: (primary?.job_title ?? "").trim(),
       contactEmail: (primary?.email ?? "").trim(),
+      contacts: people,
       equipmentCount: equipment.length,
       equipmentNames: [...new Set(equipmentNames)],
       providedNames,
