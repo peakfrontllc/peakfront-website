@@ -1,12 +1,14 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { logActivity } from "@/lib/auth/activity";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
 import { insertCustomFields } from "@/lib/erp/custom-fields";
+import { catalogueSelection, listCategories } from "@/lib/erp/equipment";
 import { DOCUMENT_BUCKET, removeStoredFile, storeFile } from "@/lib/erp/files";
-import { checked, clientEmirate, extraFieldPairs, fail, field, fileFromForm } from "@/lib/erp/shared";
+import { checked, chosenEmirates, extraFieldPairs, fail, field, fileFromForm } from "@/lib/erp/shared";
 import { getServiceClient } from "@/lib/supabase/service";
 
 function clientInput(formData: FormData) {
@@ -18,7 +20,7 @@ function clientInput(formData: FormData) {
     phone: field(formData, "phone"),
     website: field(formData, "website"),
     billing_address: field(formData, "billingAddress"),
-    emirate: clientEmirate(field(formData, "emirate")),
+    emirate: chosenEmirates(formData).join(", "),
     notes: field(formData, "notes"),
   };
 }
@@ -235,25 +237,43 @@ export async function deleteClientDocument(formData: FormData) {
   redirect(`${path}#documents`);
 }
 
-export async function addClientInterest(formData: FormData) {
+export async function saveClientEquipment(formData: FormData) {
   const session = await requirePermission(PERMISSIONS.clientsWrite);
   const clientId = field(formData, "clientId");
-  const equipmentId = field(formData, "equipmentId");
   const path = `/dashboard/clients/${clientId}`;
-  const quantity = Number(field(formData, "quantity") || "1");
-  if (!equipmentId) fail(path, "Choose equipment.");
-  if (!Number.isInteger(quantity) || quantity < 1) fail(path, "Enter a quantity of at least 1.");
-  const { error } = await getServiceClient().from("client_equipment_interests").insert({
-    client_id: clientId,
-    equipment_id: equipmentId,
-    typical_quantity: quantity,
-    duration_note: field(formData, "durationNote"),
-  });
-  if (error) {
-    fail(path, error.message.includes("duplicate") ? "That equipment is already listed." : "The equipment interest could not be saved.");
+  const categories = await listCategories();
+  const selected = new Set(catalogueSelection(
+    categories,
+    formData.getAll("catalogueCategoryId").filter((value): value is string => typeof value === "string"),
+  ));
+  const service = getServiceClient();
+  const { data: existing, error: loadError } = await service
+    .from("client_equipment_interests")
+    .select("id, category_id")
+    .eq("client_id", clientId);
+  if (loadError) fail(path, "The equipment list could not be saved.");
+  const current = (existing ?? []) as { id: string; category_id: string }[];
+  const removeIds = current.filter((row) => !selected.has(row.category_id)).map((row) => row.id);
+  const have = new Set(current.map((row) => row.category_id));
+  const insertIds = [...selected].filter((id) => !have.has(id));
+  if (removeIds.length > 0) {
+    const { error } = await service.from("client_equipment_interests").delete().in("id", removeIds).eq("client_id", clientId);
+    if (error) fail(path, "The equipment list could not be saved.");
   }
-  await logActivity(session, "client_interest.created", "client", clientId, { equipmentId });
-  redirect(path);
+  if (insertIds.length > 0) {
+    const { error } = await service.from("client_equipment_interests").insert(
+      insertIds.map((categoryId) => ({
+        client_id: clientId,
+        category_id: categoryId,
+        typical_quantity: 1,
+        duration_note: "",
+      })),
+    );
+    if (error) fail(path, "The equipment list could not be saved.");
+  }
+  await logActivity(session, "client_interest.updated", "client", clientId, { count: selected.size });
+  refresh();
+  redirect(`${path}#equipment`);
 }
 
 export async function updateClientInterest(formData: FormData) {
@@ -268,7 +288,8 @@ export async function updateClientInterest(formData: FormData) {
   }).eq("id", field(formData, "id")).eq("client_id", clientId);
   if (error) fail(path, "The equipment interest could not be saved.");
   await logActivity(session, "client_interest.updated", "client", clientId);
-  redirect(path);
+  refresh();
+  redirect(`${path}#equipment`);
 }
 
 export async function deleteClientInterest(formData: FormData) {
@@ -276,5 +297,6 @@ export async function deleteClientInterest(formData: FormData) {
   const clientId = field(formData, "clientId");
   await getServiceClient().from("client_equipment_interests").delete().eq("id", field(formData, "id"));
   await logActivity(session, "client_interest.deleted", "client", clientId);
-  redirect(`/dashboard/clients/${clientId}`);
+  refresh();
+  redirect(`/dashboard/clients/${clientId}#equipment`);
 }

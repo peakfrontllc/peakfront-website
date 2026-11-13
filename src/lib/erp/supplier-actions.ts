@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { logActivity } from "@/lib/auth/activity";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission, requireStaff } from "@/lib/auth/session";
-import { catalogueTypeGroups, catalogueTypeIdSet, listCategories, supplierEquipmentChargesPerKm } from "@/lib/erp/equipment";
+import { catalogueSelection, listCategories, supplierEquipmentChargesPerKm } from "@/lib/erp/equipment";
 import { DOCUMENT_BUCKET, removeStoredFile, storeFile } from "@/lib/erp/files";
 import { insertCustomFields } from "@/lib/erp/custom-fields";
 import { checked, chosenEmirates, dayBefore, EMIRATES, extraFieldPairs, fail, field, fileFromForm, parseMoney, searchTerm, socialLinkPairs, todayIso } from "@/lib/erp/shared";
@@ -40,15 +40,10 @@ function supplierInput(formData: FormData) {
 
 async function replaceSupplierCatalogue(supplierId: string, formData: FormData) {
   const categories = await listCategories();
-  const allowed = catalogueTypeIdSet(categories);
-  const selected = new Set(
-    formData.getAll("catalogueCategoryId").filter((value): value is string => typeof value === "string" && allowed.has(value)),
+  const categoryIds = catalogueSelection(
+    categories,
+    formData.getAll("catalogueCategoryId").filter((value): value is string => typeof value === "string"),
   );
-  for (const group of catalogueTypeGroups(categories)) {
-    if (!selected.has(group.purposeId)) continue;
-    for (const item of group.items) selected.delete(item.id);
-  }
-  const categoryIds = [...selected];
   const service = getServiceClient();
   const { error: clearError } = await service.from("supplier_catalogue").delete().eq("supplier_id", supplierId);
   if (clearError) return "The equipment list could not be saved.";

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ExtraFields } from "@/components/manage/erp/ExtraFields";
-import { EmirateField, Flash, MasterHero, TextField } from "@/components/manage/erp/ui";
+import { EmiratesField, Flash, MasterHero, TextField } from "@/components/manage/erp/ui";
 import { buttonClass, fieldClass, labelClass } from "@/components/manage/form-styles";
 import { PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
@@ -30,7 +30,7 @@ export default async function NewClientPage({
             <TextField name="phone" label="Phone" />
             <TextField name="email" label="Email" type="email" />
             <TextField name="website" label="Website" />
-            <EmirateField name="emirate" allowAll required />
+            <EmiratesField />
             <div className="sm:col-span-2">
               <label className={labelClass} htmlFor="billingAddress">Billing address</label>
               <textarea id="billingAddress" name="billingAddress" rows={3} className={fieldClass} />

@@ -78,14 +78,14 @@ export function categoryUnits(purposeName: string, typeName: string) {
       capacityHint = "ton";
       capacityPlaceholder = "3 ton";
     }
-  } else if (purpose.includes("transport")) {
-    if (/tanker|water|sewage|fuel/.test(type)) {
-      capacityHint = "gallons";
-      capacityPlaceholder = "5000 gal";
-    } else if (/bus/.test(type)) {
-      capacityHint = "seats";
-      capacityPlaceholder = "30 seater";
-    } else if (/pickup/.test(type)) {
+  } else if (purpose.includes("tanker")) {
+    capacityHint = "gallons";
+    capacityPlaceholder = "5000 gal";
+  } else if (purpose.includes("bus")) {
+    capacityHint = "seats";
+    capacityPlaceholder = "30 seater";
+  } else if (purpose.includes("truck") || purpose.includes("recovery") || purpose.includes("transport")) {
+    if (/pickup/.test(type)) {
       capacityHint = "cab";
       capacityPlaceholder = "Double Cab";
     } else {

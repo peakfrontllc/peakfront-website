@@ -30,7 +30,7 @@ export function lengthField(purposeName: string, typeName: string): "boom" | "be
   const type = typeName.toLowerCase();
   if (purpose.includes("lifting") || /\bcrane\b|boom truck/.test(type)) return "boom";
   if (purpose.includes("access") && /boom|spider/.test(type) && !/scissor|mast/.test(type)) return "boom";
-  if (purpose.includes("transport") && /trailer|truck|recovery/.test(type)) return "bed";
+  if ((purpose.includes("truck") || purpose.includes("recovery") || purpose.includes("transport")) && /trailer|truck|recovery/.test(type)) return "bed";
   return "";
 }
 

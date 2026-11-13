@@ -364,7 +364,6 @@ export async function deleteEquipment(formData: FormData) {
     const { error } = await service.from("supplier_equipment").delete().in("id", linkIds);
     if (error) fail(path, "The equipment could not be deleted.");
   }
-  await service.from("client_equipment_interests").delete().eq("equipment_id", id);
   const [{ data: images }, { data: documents }] = await Promise.all([
     service.from("equipment_images").select("storage_path").eq("equipment_id", id),
     service.from("equipment_documents").select("storage_path").eq("equipment_id", id),

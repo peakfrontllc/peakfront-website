@@ -5,7 +5,6 @@ import { EmiratesField } from "@/components/manage/erp/EmiratesField";
 import type { LucideIcon } from "lucide-react";
 import { Archive, ArchiveRestore, Plus } from "lucide-react";
 import { buttonClass, fieldClass, labelClass } from "@/components/manage/form-styles";
-import { EMIRATES, emiratesFromRow } from "@/lib/erp/shared";
 
 export function MasterHero({
   kicker,
@@ -117,33 +116,6 @@ export function DataCard({ children }: { children: ReactNode }) {
 }
 
 export { EmiratesField };
-
-export function EmirateField({
-  name,
-  defaultValue = "",
-  allowAll = false,
-  required = false,
-}: {
-  name: string;
-  defaultValue?: string;
-  allowAll?: boolean;
-  required?: boolean;
-}) {
-  const regions = emiratesFromRow(null, defaultValue);
-  const selected = regions.length === EMIRATES.length ? "all" : regions[0] ?? "";
-  return (
-    <div>
-      <label className={labelClass} htmlFor={name}>Region</label>
-      <select id={name} name={name} required={required} defaultValue={selected} className={fieldClass}>
-        <option value="" disabled={required}>Select region</option>
-        {allowAll && <option value="all">All regions</option>}
-        {EMIRATES.map((emirate) => (
-          <option key={emirate} value={emirate}>{emirate}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
 
 export function TextField({
   name,

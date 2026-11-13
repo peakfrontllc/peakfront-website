@@ -105,10 +105,16 @@ function sizeRank(value: string) {
   return Number.isFinite(number) ? number : Number.MAX_SAFE_INTEGER;
 }
 
+export type CatalogueTypeItem = {
+  id: string;
+  name: string;
+  children: { id: string; name: string }[];
+};
+
 export type CatalogueTypeGroup = {
   purpose: string;
   purposeId: string;
-  items: { id: string; name: string }[];
+  items: CatalogueTypeItem[];
 };
 
 export function catalogueTypes(categories: CategoryOption[]) {
@@ -123,10 +129,21 @@ export function catalogueTypes(categories: CategoryOption[]) {
 }
 
 export function catalogueTypeGroups(categories: CategoryOption[]): CatalogueTypeGroup[] {
+  const byId = new Map(categories.map((category) => [category.id, category]));
+  const childrenByType = new Map<string, { id: string; name: string }[]>();
+  for (const category of categories) {
+    if (category.archivedAt || !category.parentId || category.kind === "boom" || category.kind === "length") continue;
+    const type = byId.get(category.parentId);
+    if (!type?.parentId || type.archivedAt || type.name.trim().toLowerCase() !== "bus") continue;
+    const children = childrenByType.get(type.id) ?? [];
+    children.push({ id: category.id, name: category.name });
+    childrenByType.set(type.id, children);
+  }
   const groups = new Map<string, CatalogueTypeGroup>();
   for (const item of catalogueTypes(categories)) {
     const group = groups.get(item.purposeId) ?? { purpose: item.purposeName, purposeId: item.purposeId, items: [] };
-    group.items.push({ id: item.id, name: item.name });
+    const children = (childrenByType.get(item.id) ?? []).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    group.items.push({ id: item.id, name: item.name, children });
     groups.set(item.purposeId, group);
   }
   for (const category of categories) {
@@ -138,8 +155,30 @@ export function catalogueTypeGroups(categories: CategoryOption[]): CatalogueType
 
 export function catalogueTypeIdSet(categories: CategoryOption[]) {
   const ids = new Set(catalogueTypes(categories).map((item) => item.id));
-  for (const group of catalogueTypeGroups(categories)) ids.add(group.purposeId);
+  for (const group of catalogueTypeGroups(categories)) {
+    ids.add(group.purposeId);
+    for (const item of group.items) for (const child of item.children) ids.add(child.id);
+  }
   return ids;
+}
+
+export function catalogueSelection(categories: CategoryOption[], picked: Iterable<string>) {
+  const allowed = catalogueTypeIdSet(categories);
+  const selected = new Set([...picked].filter((id) => allowed.has(id)));
+  for (const group of catalogueTypeGroups(categories)) {
+    if (selected.has(group.purposeId)) {
+      for (const item of group.items) {
+        selected.delete(item.id);
+        for (const child of item.children) selected.delete(child.id);
+      }
+      continue;
+    }
+    for (const item of group.items) {
+      if (!selected.has(item.id)) continue;
+      for (const child of item.children) selected.delete(child.id);
+    }
+  }
+  return [...selected];
 }
 
 export function listedBoomFits(

@@ -5,7 +5,7 @@ import { listClients } from "@/lib/erp/clients";
 import { csvFile, moneyCell, yesNo } from "@/lib/erp/csv";
 import { listEquipment } from "@/lib/erp/equipment";
 import { listCurrentRates } from "@/lib/erp/rates";
-import { matchesSearch } from "@/lib/erp/search";
+import { matchesClientSearch, matchesSearch } from "@/lib/erp/search";
 import { EMIRATES, coversRegion, ownershipLabel, regionLabel } from "@/lib/erp/shared";
 import { listSuppliers } from "@/lib/erp/suppliers";
 import { getServiceClient } from "@/lib/supabase/service";
@@ -160,7 +160,7 @@ async function exportClients(url: URL) {
   const items = loaded.filter((client) => {
     if (!coversRegion(client.emirate, client.locationEmirates, region)) return false;
     if (industry && client.industry !== industry) return false;
-    return matchesSearch(text(url, "q"), [client.companyName, client.industry, client.phone, client.email, client.website, client.emirate, client.contactName, client.contactTitle]);
+    return matchesClientSearch(text(url, "q"), client.searchParts);
   });
   return csvFile(
     "peakfront-clients.csv",

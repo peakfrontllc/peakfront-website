@@ -80,7 +80,10 @@ export async function loadOperationsOverview(): Promise<OperationsOverview> {
     return (grandparent?.name as string) || (parent?.name as string) || (category?.name as string) || "Uncategorised";
   });
   const supplierRegions = (supplierRows.data ?? []).flatMap((row) => emiratesFromRow(row.emirates, (row.emirate as string) ?? ""));
-  const clientRegions = (clientRows.data ?? []).map((row) => (row.emirate as string) || "Not set");
+  const clientRegions = (clientRows.data ?? []).flatMap((row) => {
+    const regions = emiratesFromRow(null, (row.emirate as string) ?? "");
+    return regions.length > 0 ? regions : ["Not set"];
+  });
 
   return {
     categories,

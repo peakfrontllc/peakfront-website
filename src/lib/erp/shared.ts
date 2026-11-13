@@ -59,12 +59,6 @@ export function coversRegion(emirate: string, extras: string[], region: string) 
   return (regions as readonly string[]).includes(region);
 }
 
-export function clientEmirate(value: string) {
-  if (value === "all") return EMIRATES.join(", ");
-  if ((EMIRATES as readonly string[]).includes(value)) return value;
-  return "";
-}
-
 export function field(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";

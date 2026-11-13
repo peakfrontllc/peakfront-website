@@ -12,7 +12,7 @@ export function clientView(value: string | undefined): ClientView {
 
 function interestLabel(count: number) {
   if (count === 0) return "No equipment yet";
-  return count === 1 ? "1 machine" : `${count} machines`;
+  return count === 1 ? "1 equipment" : `${count} equipment`;
 }
 
 function ClientIcon() {

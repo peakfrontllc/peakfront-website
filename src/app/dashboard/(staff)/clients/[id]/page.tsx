@@ -1,23 +1,24 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { InlineEdit } from "@/components/manage/erp/InlineEdit";
+import { ProvidedEquipmentField } from "@/components/manage/erp/ProvidedEquipmentField";
 import { PermanentDeleteButton } from "@/components/manage/erp/PermanentDeleteButton";
 import { SectionNav } from "@/components/manage/erp/SectionNav";
-import { ArchiveButton, EmirateField, ExtraFieldPanel, Flash, Panel, SectionStack, TextField, documentTypeLabel, fileHref } from "@/components/manage/erp/ui";
+import { ArchiveButton, EmiratesField, ExtraFieldPanel, Flash, Panel, SectionStack, TextField, documentTypeLabel, fileHref } from "@/components/manage/erp/ui";
 import { buttonClass, fieldClass } from "@/components/manage/form-styles";
-import { regionLabel } from "@/lib/erp/shared";
+import { emiratesFromRow, regionLabel } from "@/lib/erp/shared";
 import { hasPermission, PERMISSIONS } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/session";
 import {
   addClientContact,
   addClientDocument,
-  addClientInterest,
   addClientLocation,
   addClientNote,
   deleteClientContact,
   deleteClientDocument,
   deleteClientInterest,
   deleteClient,
+  saveClientEquipment,
   setClientArchived,
   updateClient,
   updateClientContact,
@@ -27,7 +28,7 @@ import {
 import { getClient } from "@/lib/erp/clients";
 import { addCustomField, deleteCustomField } from "@/lib/erp/custom-field-actions";
 import { listCustomFields } from "@/lib/erp/custom-fields";
-import { equipmentGroups, listEquipmentOptions, type EquipmentOption } from "@/lib/erp/equipment";
+import { catalogueTypeGroups, listCategories, type CategoryOption } from "@/lib/erp/equipment";
 import { DOCUMENT_BUCKET } from "@/lib/erp/files";
 
 export const dynamic = "force-dynamic";
@@ -43,16 +44,15 @@ export default async function ClientDetailPage({
   const session = await requirePermission(PERMISSIONS.clientsRead);
   const { id } = await params;
   const query = await searchParams;
-  const [client, equipment, customFields] = await Promise.all([
+  const [client, categories, customFields] = await Promise.all([
     getClient(id),
-    listEquipmentOptions(),
+    listCategories(),
     listCustomFields("client", id),
   ]);
   if (!client) notFound();
   const canWrite = hasPermission(session.permissions, PERMISSIONS.clientsWrite);
   const canDocuments = hasPermission(session.permissions, PERMISSIONS.documentsWrite);
-  const linked = new Set(client.interests.map((item) => item.equipmentId));
-  const available = equipment.filter((item) => !linked.has(item.id));
+  const catalogue = catalogueTypeGroups(categories);
 
   return (
     <>
@@ -98,7 +98,7 @@ export default async function ClientDetailPage({
                 <TextField name="phone" label="Phone" defaultValue={client.phone} />
                 <TextField name="email" label="Email" type="email" defaultValue={client.email} />
                 <TextField name="website" label="Website" defaultValue={client.website} />
-                <EmirateField name="emirate" defaultValue={client.emirate} allowAll required />
+                <EmiratesField defaultValue={emiratesFromRow(null, client.emirate)} />
                 <div className="sm:col-span-2"><TextField name="billingAddress" label="Billing address" defaultValue={client.billingAddress} /></div>
                 <div className="sm:col-span-2"><TextField name="notes" label="Summary" defaultValue={client.notes} /></div>
                 <button className={buttonClass} type="submit">Save company</button>
@@ -205,46 +205,43 @@ export default async function ClientDetailPage({
           </Panel>
 
           <Panel id="equipment" title="Equipment they regularly need">
-            {client.interests.map((interest) => (
-              canWrite ? (
-                <InlineEdit
-                  key={interest.id}
-                  summary={<p><strong>{interestTitle(equipment, interest)}</strong> · Qty {interest.typicalQuantity} · {interest.durationNote}</p>}
-                  actions={
-                    <form action={deleteClientInterest}>
-                      <input type="hidden" name="clientId" value={client.id} />
-                      <input type="hidden" name="id" value={interest.id} />
-                      <button className="text-xs font-bold text-red-700" type="submit">Remove</button>
-                    </form>
-                  }
-                >
-                  <form action={updateClientInterest} className="grid gap-3 sm:grid-cols-2">
-                    <input type="hidden" name="clientId" value={client.id} />
-                    <input type="hidden" name="id" value={interest.id} />
-                    <input name="quantity" type="number" min={1} defaultValue={interest.typicalQuantity} className={fieldClass} />
-                    <input name="durationNote" defaultValue={interest.durationNote} placeholder="Typical duration" className={fieldClass} />
-                    <button className={buttonClass} type="submit">Save equipment</button>
-                  </form>
-                </InlineEdit>
-              ) : (
-                <p key={interest.id} className="mb-2 text-sm"><strong>{interestTitle(equipment, interest)}</strong> · Qty {interest.typicalQuantity} · {interest.durationNote}</p>
-              )
-            ))}
-            {canWrite && available.length > 0 && (
-              <form action={addClientInterest} className="mt-4 grid gap-3 sm:grid-cols-3 sm:items-end">
+            {canWrite ? (
+              <form action={saveClientEquipment}>
                 <input type="hidden" name="clientId" value={client.id} />
-                <select name="equipmentId" required className={fieldClass} defaultValue="">
-                  <option value="" disabled>Choose equipment</option>
-                  {equipmentGroups(available).map(([group, items]) => (
-                    <optgroup key={group} label={group}>
-                      {items.map((item) => <option key={item.id} value={item.id}>{[item.label, item.detail].filter(Boolean).join(" · ")}</option>)}
-                    </optgroup>
-                  ))}
-                </select>
-                <input name="quantity" type="number" min={1} defaultValue={1} className={fieldClass} />
-                <input name="durationNote" placeholder="Typical duration" className={fieldClass} />
-                <button className={buttonClass} type="submit">Add equipment</button>
+                <ProvidedEquipmentField groups={catalogue} selectedIds={client.interests.map((item) => item.categoryId)} />
+                <button className={`${buttonClass} mt-4`} type="submit">Save equipment list</button>
               </form>
+            ) : client.interests.length === 0 ? (
+              <p className="text-sm text-slate-500">No equipment is listed yet.</p>
+            ) : null}
+            {client.interests.length > 0 && (
+              <div className={canWrite ? "mt-4" : ""}>
+                {client.interests.map((interest) => (
+                  canWrite ? (
+                    <InlineEdit
+                      key={interest.id}
+                      summary={<p><strong>{interestTitle(categories, interest.categoryId, interest.categoryName)}</strong> · Qty {interest.typicalQuantity}{interest.durationNote ? ` · ${interest.durationNote}` : ""}</p>}
+                      actions={
+                        <form action={deleteClientInterest}>
+                          <input type="hidden" name="clientId" value={client.id} />
+                          <input type="hidden" name="id" value={interest.id} />
+                          <button className="text-xs font-bold text-red-700" type="submit">Remove</button>
+                        </form>
+                      }
+                    >
+                      <form action={updateClientInterest} className="grid gap-3 sm:grid-cols-2">
+                        <input type="hidden" name="clientId" value={client.id} />
+                        <input type="hidden" name="id" value={interest.id} />
+                        <input name="quantity" type="number" min={1} defaultValue={interest.typicalQuantity} className={fieldClass} />
+                        <input name="durationNote" defaultValue={interest.durationNote} placeholder="Typical duration" className={fieldClass} />
+                        <button className={buttonClass} type="submit">Save equipment</button>
+                      </form>
+                    </InlineEdit>
+                  ) : (
+                    <p key={interest.id} className="mb-2 text-sm"><strong>{interestTitle(categories, interest.categoryId, interest.categoryName)}</strong> · Qty {interest.typicalQuantity}{interest.durationNote ? ` · ${interest.durationNote}` : ""}</p>
+                  )
+                ))}
+              </div>
             )}
           </Panel>
 
@@ -306,8 +303,8 @@ export default async function ClientDetailPage({
   );
 }
 
-function interestTitle(options: EquipmentOption[], interest: { equipmentId: string; equipmentName: string }) {
-  const option = options.find((item) => item.id === interest.equipmentId);
-  if (!option) return interest.equipmentName;
-  return [option.label, option.detail].filter(Boolean).join(" · ");
+function interestTitle(categories: CategoryOption[], categoryId: string, fallback: string) {
+  const category = categories.find((item) => item.id === categoryId);
+  if (!category) return fallback;
+  return category.parentName ? `${category.parentName} · ${category.name}` : category.name;
 }

@@ -1,8 +1,8 @@
 import "server-only";
 
 import { getServiceClient } from "@/lib/supabase/service";
-import { matchesSearch } from "@/lib/erp/search";
-import { coversRegion, searchTerm } from "@/lib/erp/shared";
+import { matchesClientSearch } from "@/lib/erp/search";
+import { coversRegion } from "@/lib/erp/shared";
 
 export type ClientListItem = {
   id: string;
@@ -15,6 +15,7 @@ export type ClientListItem = {
   locationEmirates: string[];
   contactName: string;
   contactTitle: string;
+  searchParts: string[];
   interestCount: number;
   archivedAt: string | null;
 };
@@ -50,8 +51,8 @@ export type ClientDetail = {
   }[];
   interests: {
     id: string;
-    equipmentId: string;
-    equipmentName: string;
+    categoryId: string;
+    categoryName: string;
     typicalQuantity: number;
     durationNote: string;
   }[];
@@ -69,23 +70,62 @@ export async function listClients(filters: { q?: string; archived?: boolean; reg
   let query = getServiceClient()
     .from("clients")
     .select(`
-      id, company_name, industry, phone, email, website, emirate, archived_at,
-      client_contacts(name, job_title, is_primary),
-      client_locations(emirate),
-      client_equipment_interests(id)
+      id, company_name, trade_licence, industry, phone, email, website, billing_address, emirate, notes, archived_at,
+      client_contacts(name, job_title, phone, email, whatsapp, is_primary),
+      client_locations(label, address, city, emirate, notes),
+      client_notes(body),
+      client_documents(title),
+      client_equipment_interests(id, equipment_categories(name))
     `)
     .order("company_name");
   query = filters.archived ? query.not("archived_at", "is", null) : query.is("archived_at", null);
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   const region = filters.region ?? "";
-  const term = searchTerm(filters.q);
   return (data ?? []).flatMap((row) => {
-    const contacts = (Array.isArray(row.client_contacts) ? row.client_contacts : []) as { name: string; job_title: string; is_primary: boolean }[];
+    const contacts = (Array.isArray(row.client_contacts) ? row.client_contacts : []) as {
+      name?: string;
+      job_title?: string;
+      phone?: string;
+      email?: string;
+      whatsapp?: string;
+      is_primary?: boolean;
+    }[];
     const contact = contacts.find((item) => item.is_primary) ?? contacts[0];
-    const locations = (Array.isArray(row.client_locations) ? row.client_locations : []) as { emirate?: string }[];
+    const locations = (Array.isArray(row.client_locations) ? row.client_locations : []) as {
+      label?: string;
+      address?: string;
+      city?: string;
+      emirate?: string;
+      notes?: string;
+    }[];
+    const notes = (Array.isArray(row.client_notes) ? row.client_notes : []) as { body?: string }[];
+    const documents = (Array.isArray(row.client_documents) ? row.client_documents : []) as { title?: string }[];
+    const interests = (Array.isArray(row.client_equipment_interests) ? row.client_equipment_interests : []) as {
+      equipment_categories?: { name?: string } | { name?: string }[] | null;
+    }[];
     const companyName = row.company_name as string;
     const contactName = (contact?.name ?? "").trim();
+    const interestNames = interests.flatMap((interest) => {
+      const category = Array.isArray(interest.equipment_categories) ? interest.equipment_categories[0] : interest.equipment_categories;
+      return category?.name ? [category.name] : [];
+    });
+    const searchParts = [
+      companyName,
+      (row.trade_licence as string) ?? "",
+      (row.industry as string) ?? "",
+      (row.phone as string) ?? "",
+      (row.email as string) ?? "",
+      (row.website as string) ?? "",
+      (row.billing_address as string) ?? "",
+      (row.emirate as string) ?? "",
+      (row.notes as string) ?? "",
+      ...contacts.flatMap((person) => [person.name ?? "", person.job_title ?? "", person.phone ?? "", person.email ?? "", person.whatsapp ?? ""]),
+      ...locations.flatMap((location) => [location.label ?? "", location.address ?? "", location.city ?? "", location.emirate ?? "", location.notes ?? ""]),
+      ...notes.map((note) => note.body ?? ""),
+      ...documents.map((document) => document.title ?? ""),
+      ...interestNames,
+    ];
     const item: ClientListItem = {
       id: row.id as string,
       companyName,
@@ -97,11 +137,12 @@ export async function listClients(filters: { q?: string; archived?: boolean; reg
       locationEmirates: locations.map((location) => (location.emirate ?? "").trim()).filter(Boolean),
       contactName: contactName.toLowerCase() === companyName.toLowerCase() ? "" : contactName,
       contactTitle: (contact?.job_title ?? "").trim(),
-      interestCount: Array.isArray(row.client_equipment_interests) ? row.client_equipment_interests.length : 0,
+      searchParts,
+      interestCount: interests.length,
       archivedAt: (row.archived_at as string | null) ?? null,
     };
     if (!coversRegion(item.emirate, item.locationEmirates, region)) return [];
-    if (!matchesSearch(term, [item.companyName, item.industry, item.phone, item.email, item.website, item.emirate, item.contactName, item.contactTitle])) return [];
+    if (!matchesClientSearch(filters.q ?? "", item.searchParts)) return [];
     return [item];
   });
 }
@@ -115,7 +156,7 @@ export async function getClient(id: string): Promise<ClientDetail | null> {
       client_locations(id, label, address, city, emirate, notes),
       client_notes(id, body, created_at),
       client_documents(id, doc_type, title, storage_path, expires_on),
-      client_equipment_interests(id, equipment_id, typical_quantity, duration_note, equipment(name))
+      client_equipment_interests(id, category_id, typical_quantity, duration_note, equipment_categories(name, parent_id))
     `)
     .eq("id", id)
     .maybeSingle();
@@ -154,16 +195,16 @@ export async function getClient(id: string): Promise<ClientDetail | null> {
     locations: ((data.client_locations as ClientDetail["locations"]) ?? []),
     interests: ((data.client_equipment_interests as {
       id: string;
-      equipment_id: string;
+      category_id: string;
       typical_quantity: number;
       duration_note: string;
-      equipment: { name: string } | { name: string }[] | null;
+      equipment_categories: { name: string; parent_id: string | null } | { name: string; parent_id: string | null }[] | null;
     }[]) ?? []).map((item) => {
-      const equipment = Array.isArray(item.equipment) ? item.equipment[0] : item.equipment;
+      const category = Array.isArray(item.equipment_categories) ? item.equipment_categories[0] : item.equipment_categories;
       return {
         id: item.id,
-        equipmentId: item.equipment_id,
-        equipmentName: equipment?.name ?? "Equipment",
+        categoryId: item.category_id,
+        categoryName: category?.name ?? "Equipment",
         typicalQuantity: item.typical_quantity,
         durationNote: item.duration_note,
       };

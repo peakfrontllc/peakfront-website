@@ -40,6 +40,11 @@ const CATEGORY_PHOTOS: Record<string, string> = {
   "material handling": "/images/categories/material-handling.webp",
   "power and site services": "/images/categories/power-site.webp",
   transport: "/images/categories/transport.webp",
+  "water tankers": "/images/categories/water-tankers.webp",
+  "fuel tankers": "/images/categories/fuel-tankers.webp",
+  buses: "/images/categories/buses.webp",
+  trucks: "/images/categories/trucks.webp",
+  recovery: "/images/categories/recovery.webp",
   tma: "/images/categories/tma.webp",
   van: "/images/categories/van.webp",
 };
@@ -58,8 +63,33 @@ function picture(item: CategoryItem) {
   return categoryPhoto(item.name);
 }
 
+const MAIN_ORDER = [
+  "earthmoving",
+  "compaction",
+  "lifting and cranes",
+  "access equipment",
+  "material handling",
+  "trucks",
+  "water tankers",
+  "fuel tankers",
+  "recovery",
+  "buses",
+  "van",
+  "tma",
+  "power and site services",
+];
+
 function byName(a: CategoryItem, b: CategoryItem) {
   return a.name.localeCompare(b.name, undefined, { numeric: true });
+}
+
+function byMain(a: CategoryItem, b: CategoryItem) {
+  const rank = (name: string) => {
+    const index = MAIN_ORDER.indexOf(name.trim().toLowerCase());
+    return index === -1 ? MAIN_ORDER.length : index;
+  };
+  const difference = rank(a.name) - rank(b.name);
+  return difference === 0 ? byName(a, b) : difference;
 }
 
 function isWeightCapacity(name: string) {
@@ -151,8 +181,8 @@ export function CategoryBoard({
     selfMatch(item) || categories.some((child) => child.parentId === item.id && branchMatch(child));
   const mains = categories.filter((category) => !category.parentId);
   const matches = branchMatch;
-  const active = mains.filter((category) => !category.archivedAt && matches(category));
-  const archived = mains.filter((category) => category.archivedAt && matches(category));
+  const active = mains.filter((category) => !category.archivedAt && matches(category)).sort(byMain);
+  const archived = mains.filter((category) => category.archivedAt && matches(category)).sort(byMain);
   const visible = [...active, ...archived];
   const selected = visible.find((category) => category.id === picked) ?? visible[0] ?? null;
   const types = selected

@@ -130,7 +130,10 @@ export async function listSuppliers(filters: { q?: string; archived?: boolean; p
   const typeOrder = new Map<string, number>();
   catalogueTypeGroups(categories).forEach((group, groupIndex) => {
     typeOrder.set(group.purposeId, groupIndex * 1000);
-    group.items.forEach((item, itemIndex) => typeOrder.set(item.id, groupIndex * 1000 + itemIndex + 1));
+    group.items.forEach((item, itemIndex) => {
+      typeOrder.set(item.id, groupIndex * 1000 + itemIndex + 1);
+      item.children.forEach((child, childIndex) => typeOrder.set(child.id, groupIndex * 1000 + itemIndex + 1 + (childIndex + 1) / 100));
+    });
   });
   let coveredCategoryIds = new Set<string>();
   let selectedCategoryId = "";

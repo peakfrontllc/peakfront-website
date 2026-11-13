@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Fragment } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Building2, Search } from "lucide-react";
@@ -110,7 +111,12 @@ export default async function SuppliersPage({
               {catalogueTypeGroups(categories).map((group) => (
                 <optgroup key={group.purposeId} label={group.purpose}>
                   <option value={group.purposeId}>{group.purpose}</option>
-                  {group.items.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}
+                  {group.items.map((type) => (
+                    <Fragment key={type.id}>
+                      <option value={type.id}>{type.name}</option>
+                      {type.children.map((child) => <option key={child.id} value={child.id}>{type.name} · {child.name}</option>)}
+                    </Fragment>
+                  ))}
                 </optgroup>
               ))}
             </EquipmentFilterSelect>
